@@ -1,6 +1,7 @@
 name: Swarm1 CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, master ]
   pull_request:
@@ -13,12 +14,13 @@ concurrency:
 jobs:
   test-and-verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
+    # CI uses 127.0.0.1 to avoid Lighthouse interstitials
     env:
-      # use 127.0.0.1 to avoid LH interstitials
       STAGING_URL: http://127.0.0.1:3000
       API_BASE:    http://127.0.0.1:3000/api
-      AUV_ID:      AUV-0002   # used by hooks if you later run them in CI
+      AUV_ID:      AUV-0002
 
     steps:
       - name: Checkout
@@ -31,23 +33,41 @@ jobs:
           cache: 'npm'
 
       - name: Install deps
-        run: npm ci
+        shell: bash
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm i
+          fi
 
       - name: Install Playwright browsers + system deps
+        shell: bash
         run: npx playwright install --with-deps
 
       - name: Start mock server
+        shell: bash
         run: node mock/server.js &
-      
-      - name: Run Playwright tests (all)
+
+      - name: Wait for mock server
+        shell: bash
+        run: npx wait-on http://127.0.0.1:3000/health
+
+      - name: Run Playwright tests
+        shell: bash
         run: npx playwright test -c tests/robot/playwright/playwright.config.ts
 
-      # --- Lighthouse + CVF block (add more AUVs as you ship) ---
+      # ---- Lighthouse + CVF for AUV-0002 ----
+      - name: Ensure perf artifact directory
+        shell: bash
+        run: mkdir -p runs/AUV-0002/perf
+
       - name: Install Lighthouse deps
+        shell: bash
         run: npm i -D lighthouse chrome-launcher
 
-      # Prefer the CLI here to avoid Chrome-path issues:
       - name: Perf proof (Lighthouse) — AUV-0002
+        shell: bash
         run: |
           npx lighthouse "$STAGING_URL/products.html" \
             --only-categories=performance \
@@ -57,8 +77,9 @@ jobs:
             --output-path="runs/AUV-0002/perf/lighthouse.json"
 
       - name: CVF gate — AUV-0002
+        shell: bash
         run: node orchestration/cvf-check.mjs AUV-0002
-      # --- end Lighthouse + CVF block ---
+      # ---------------------------------------
 
       - name: Upload artifacts (always)
         if: always()

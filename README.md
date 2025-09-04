@@ -1,7 +1,7 @@
 # Swarm1
 
 General‑purpose **Agent Swarm** that delivers AUV‑sized (Acceptable Unit of Value) increments with
-contract‑first development, deterministic tests (“User Robot”), and evidence‑based gates (CVF → QA → Security → DevOps).
+contract‑first development, deterministic tests (“User Robot”) and evidence‑based gates (CVF → QA → Security → DevOps).
 
 ## Quickstart
 ```bash
