@@ -1,0 +1,45 @@
+Great instinct. Right now you’ve got most of the pieces (CLAUDE.md, ARCHITECTURE.md, verify/runbook/operate, MCP registry & policies), but they’re scattered. A new contributor could still wonder: “what’s the point of this whole thing, how does it hang together, and what do I do first?”
+
+I’ve put a tidy, opinionated docs layer on top so Swarm1 reads like a real product:
+
+New docs I just added (download them)
+
+Root overview: README.md — quickstart, layout, key links.
+
+Docs index: docs/README.md
+
+Strategy (the “11 sections”) formalized: docs/SWARM1-GUIDE.md
+
+Orchestration lifecycle & scheduling: docs/ORCHESTRATION.md
+
+Gates definitions/thresholds: docs/QUALITY-GATES.md
+
+Onboarding: docs/ONBOARDING.md
+
+Roadmap: docs/ROADMAP.md
+
+Contribution guide: CONTRIBUTING.md
+
+PR template: .github/PULL_REQUEST_TEMPLATE.md
+
+How this answers your concern
+
+The “Swarm1: what to keep, what to change…” analysis is now a first-class doc: SWARM1-GUIDE.md with 11 sections and a mapping to where each concept lives in the repo.
+
+A single entry point (root README) tells newcomers what this is, how to run the mock, how to run tests, and where to read more.
+
+A clear lifecycle (ORCHESTRATION.md) explains AUVs, lanes, evidence, escalations, and serialization.
+
+Gates are explicit (QUALITY-GATES.md), not implied in prompts.
+
+Next steps are visible (ROADMAP.md), so “what now?” is answered.
+
+Onboarding and CONTRIBUTING explain how to add new AUVs, update contracts, and pass gates.
+
+If you’re happy with this structure, I can also:
+
+Add a docs/decisions/ folder with an ADR template to capture big choices.
+
+Generate Issue templates (bug/feature) to align with your AUV workflow.
+
+Fold links to these docs inside CLAUDE.md so agents reference the canonical files.

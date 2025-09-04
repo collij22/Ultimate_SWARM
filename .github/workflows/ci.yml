@@ -1,0 +1,70 @@
+name: Swarm1 CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-verify:
+    runs-on: ubuntu-latest
+
+    env:
+      # use 127.0.0.1 to avoid LH interstitials
+      STAGING_URL: http://127.0.0.1:3000
+      API_BASE:    http://127.0.0.1:3000/api
+      AUV_ID:      AUV-0002   # used by hooks if you later run them in CI
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Install Playwright browsers + system deps
+        run: npx playwright install --with-deps
+
+      - name: Start mock server
+        run: node mock/server.js &
+      
+      - name: Run Playwright tests (all)
+        run: npx playwright test -c tests/robot/playwright/playwright.config.ts
+
+      # --- Lighthouse + CVF block (add more AUVs as you ship) ---
+      - name: Install Lighthouse deps
+        run: npm i -D lighthouse chrome-launcher
+
+      # Prefer the CLI here to avoid Chrome-path issues:
+      - name: Perf proof (Lighthouse) — AUV-0002
+        run: |
+          npx lighthouse "$STAGING_URL/products.html" \
+            --only-categories=performance \
+            --quiet \
+            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
+            --output=json \
+            --output-path="runs/AUV-0002/perf/lighthouse.json"
+
+      - name: CVF gate — AUV-0002
+        run: node orchestration/cvf-check.mjs AUV-0002
+      # --- end Lighthouse + CVF block ---
+
+      - name: Upload artifacts (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auv-artifacts
+          path: |
+            runs/**
+            test-results/**

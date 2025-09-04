@@ -1,0 +1,4 @@
+npm warn "C:\Users\jonlc\AppData\Roaming\npm\claude" is being parsed as a normal command line argument.
+npm warn "install" is being parsed as a normal command line argument.
+npm warn Unknown cli config "--forcedel". This will stop working in the next major version of npm.
+npm warn Unknown cli config "--forcenpm". This will stop working in the next major version of npm.

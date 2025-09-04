@@ -115,7 +115,6 @@ DANGEROUS_CMD_PATTERNS = [
     r"sudo\s+",
     r"curl\s+[^\n]+?\|\s*(sh|bash)",
     r"Invoke-WebRequest[^\n]+?\|\s*iex",  # powershell
-    r"git\s+push\b",
     r"scp\s+",
     r"ssh\s+",
     r"docker\s+(login|push)\b",
