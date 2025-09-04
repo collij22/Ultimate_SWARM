@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Swarm1 Mock Shop</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      .btn { padding: .6rem 1rem; border: 1px solid #ccc; border-radius: .5rem; cursor: pointer; }
+      .row { display: flex; gap: 1rem; align-items: center; }
+    </style>
+  </head>
+  <body>
+    <h1>Mock Shop</h1>
+    <div class="row">
+      <button class="btn" data-testid="add-to-cart">Add “demo-1”</button>
+      <div>Cart: <span data-testid="cart-count">0</span></div>
+    </div>
+
+    <script>
+      const addBtn = document.querySelector('[data-testid="add-to-cart"]');
+      const cartCount = document.querySelector('[data-testid="cart-count"]');
+
+      addBtn.addEventListener('click', async () => {
+        try {
+          const res = await fetch('/api/cart', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: 'demo-1', qty: 1 })
+          });
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            alert('Add failed: ' + (err?.error?.message || res.status));
+            return;
+          }
+          const body = await res.json();
+          cartCount.textContent = String(body.count ?? parseInt(cartCount.textContent, 10) + 1);
+        } catch (e) {
+          alert('Network error');
+        }
+      });
+    </script>
+  </body>
+</html>

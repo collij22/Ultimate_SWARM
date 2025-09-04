@@ -1,0 +1,125 @@
+asyncapi: '2.6.0'
+info:
+  title: Swarm1 Event Contracts
+  version: 0.1.0
+  description: >
+    Contract-first catalogue of domain events for Swarm1.
+    Extend incrementally per AUV. Keep topics versioned with `.vN`.
+defaultContentType: application/json
+
+servers:
+  staging-bus:
+    url: https://example-staging-bus.invalid
+    protocol: http
+    description: Placeholder for your broker or webhook endpoint used during tests
+
+channels:
+  cart.item.added.v1:
+    description: Emitted when a product is added to a cart
+    publish:
+      operationId: emitCartItemAddedV1
+      summary: Service publishes the event
+      message:
+        $ref: '#/components/messages/CartItemAddedV1'
+    subscribe:
+      operationId: onCartItemAddedV1
+      summary: Consumers subscribe for side effects (analytics, email, etc.)
+      message:
+        $ref: '#/components/messages/CartItemAddedV1'
+
+  order.created.v1:
+    description: Emitted when an order is created from a cart checkout
+    publish:
+      operationId: emitOrderCreatedV1
+      message:
+        $ref: '#/components/messages/OrderCreatedV1'
+    subscribe:
+      operationId: onOrderCreatedV1
+      message:
+        $ref: '#/components/messages/OrderCreatedV1'
+
+  user.registered.v1:
+    description: Emitted when a new user signs up
+    publish:
+      operationId: emitUserRegisteredV1
+      message:
+        $ref: '#/components/messages/UserRegisteredV1'
+    subscribe:
+      operationId: onUserRegisteredV1
+      message:
+        $ref: '#/components/messages/UserRegisteredV1'
+
+components:
+  messages:
+    CartItemAddedV1:
+      name: cart.item.added.v1
+      title: Cart Item Added (v1)
+      contentType: application/json
+      correlationId:
+        description: Propagated trace id
+        location: $message.header#/traceId
+      payload:
+        $ref: '#/components/schemas/CartItemAddedPayloadV1'
+      examples:
+        - name: ok
+          summary: Successful add
+          payload:
+            eventId: 'evt_123'
+            traceId: 'trace_abc'
+            occurredAt: '2025-09-04T12:00:00Z'
+            cartId: '0e2a1...'
+            userId: '9f71c...'
+            productId: 'SKU-123'
+            qty: 1
+    OrderCreatedV1:
+      name: order.created.v1
+      title: Order Created (v1)
+      payload:
+        $ref: '#/components/schemas/OrderCreatedPayloadV1'
+    UserRegisteredV1:
+      name: user.registered.v1
+      title: User Registered (v1)
+      payload:
+        $ref: '#/components/schemas/UserRegisteredPayloadV1'
+
+  schemas:
+    # Keep a small metadata envelope consistent across events
+    EventMeta:
+      type: object
+      properties:
+        eventId: { type: string, description: Unique id for the event }
+        traceId: { type: string, description: Correlates logs/traces across services }
+        occurredAt: { type: string, format: date-time }
+      required: [eventId, occurredAt]
+
+    CartItemAddedPayloadV1:
+      allOf:
+        - $ref: '#/components/schemas/EventMeta'
+        - type: object
+          properties:
+            cartId: { type: string }
+            userId: { type: string }
+            productId: { type: string }
+            qty: { type: integer, minimum: 1 }
+          required: [cartId, productId, qty]
+
+    OrderCreatedPayloadV1:
+      allOf:
+        - $ref: '#/components/schemas/EventMeta'
+        - type: object
+          properties:
+            orderId: { type: string }
+            cartId: { type: string }
+            userId: { type: string }
+            total: { type: number, minimum: 0 }
+            currency: { type: string, minLength: 3, maxLength: 3 }
+          required: [orderId, cartId, total, currency]
+
+    UserRegisteredPayloadV1:
+      allOf:
+        - $ref: '#/components/schemas/EventMeta'
+        - type: object
+          properties:
+            userId: { type: string }
+            email: { type: string, format: email }
+          required: [userId, email]

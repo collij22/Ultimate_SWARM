@@ -1,0 +1,17 @@
+name: "Performance Optimizer \u2192 perf.web + perf.api (primary, with optional secondary)"
+input:
+  agent: performance-optimizer
+  requested_capabilities:
+  - perf.web
+  - perf.api
+expected:
+  allowlist:
+  - lighthouse
+  - bundle-analyzer
+  - latency-sampler
+  secondary_candidates:
+  - k6
+  budgets:
+    secondary_total_usd: 0.1
+  notes:
+  - k6 proposed only if load test explicitly requested

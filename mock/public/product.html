@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Product</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      .btn { padding: .6rem 1rem; border: 1px solid #ccc; border-radius: .5rem; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <a href="/products.html">← Back</a>
+    <h1 data-testid="product-detail-title"></h1>
+    <div>Price: <span data-testid="product-detail-price"></span></div>
+    <div style="margin-top:1rem;">
+      <button class="btn" data-testid="add-to-cart">Add to Cart</button>
+      <span>Cart: <span data-testid="cart-count">0</span></span>
+    </div>
+
+    <script>
+      function getParam(name) {
+        const u = new URL(window.location.href);
+        return u.searchParams.get(name);
+      }
+      async function fetchJSON(url, opts) {
+        const res = await fetch(url, opts);
+        const json = await res.json();
+        if (!res.ok) throw new Error(JSON.stringify(json));
+        return json;
+      }
+      async function main() {
+        const id = getParam('id');
+        if (!id) { document.body.textContent = 'Missing id'; return; }
+        try {
+          const p = await fetchJSON('/api/products/' + encodeURIComponent(id));
+          document.querySelector('[data-testid="product-detail-title"]').textContent = p.title;
+          document.querySelector('[data-testid="product-detail-price"]').textContent = '$' + p.price.toFixed(2);
+        } catch (e) {
+          document.body.textContent = 'Not found';
+          return;
+        }
+        const addBtn = document.querySelector('[data-testid="add-to-cart"]');
+        const cartCount = document.querySelector('[data-testid="cart-count"]');
+        addBtn.addEventListener('click', async () => {
+          try {
+            const body = await fetchJSON('/api/cart', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ productId: getParam('id'), qty: 1 })
+            });
+            cartCount.textContent = String(body.count ?? 1);
+          } catch (e) {
+            alert('Add failed');
+          }
+        });
+      }
+      main();
+    </script>
+  </body>
+</html>

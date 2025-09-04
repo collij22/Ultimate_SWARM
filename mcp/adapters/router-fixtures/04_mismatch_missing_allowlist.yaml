@@ -1,0 +1,12 @@
+name: "Capability mapped but agent allowlist excludes all \u2192 escalation"
+input:
+  agent: code-migrator
+  requested_capabilities:
+  - code.codemod
+expected:
+  escalation:
+    type: missing-allowlist
+    message: No permitted tools intersect capability 'code.codemod' for agent code-migrator
+    request:
+    - Add jscodeshift or ts-morph to agents.code-migrator.allowlist.primary
+    - Or add another tool to capability_map.code.codemod

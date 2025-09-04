@@ -1,0 +1,13 @@
+{
+  "name": "swarm1-router-fixtures",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:router": "ts-node mcp/adapters/router-fixtures/run-fixtures.ts"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "yaml": "^2.4.5"
+  }
+}

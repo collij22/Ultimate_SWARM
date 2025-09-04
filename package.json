@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "chrome-launcher": "^1.2.0",
+    "lighthouse": "^12.8.2"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "scripts": {
+    "mock:staging": "node mock/server.js"
+  }
+}

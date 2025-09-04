@@ -1,0 +1,7 @@
+.env
+dist/
+runs/
+coverage/
+reports/
+node_modules/
+*.lock

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Products</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 1rem; }
+      .card { border: 1px solid #ddd; border-radius: .5rem; padding: .75rem; }
+      .title { font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <h1>Products</h1>
+    <div class="grid" data-testid="product-grid"></div>
+    <script>
+      async function main() {
+        const grid = document.querySelector('[data-testid="product-grid"]');
+        try {
+          const res = await fetch('/api/products');
+          const products = await res.json();
+          products.forEach(p => {
+            const a = document.createElement('a');
+            a.href = '/product.html?id=' + encodeURIComponent(p.id);
+            a.className = 'card';
+            a.setAttribute('data-testid', 'product-card');
+            a.innerHTML = '<div class="title" data-testid="product-title">' + p.title + '</div>' +
+                          '<div data-testid="product-price">$' + p.price.toFixed(2) + '</div>';
+            grid.appendChild(a);
+          });
+        } catch (e) {
+          grid.textContent = 'Failed to load products';
+        }
+      }
+      main();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "addToCart": "[data-testid='add-to-cart']",
+  "cartCount": "[data-testid='cart-count']"
+}

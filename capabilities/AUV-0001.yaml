@@ -1,0 +1,57 @@
+id: AUV-0001
+title: Add to Cart (minimal vertical slice)
+description: >
+  A user can add a product to their cart via API and see the cart count update in the UI.
+  This is a smallest-viable end-to-end capability for Swarm1 demo and validation.
+user_story: |
+  As a shopper,
+  I want to add a product to my cart,
+  So that I can proceed to checkout.
+
+constraints:
+  contracts_frozen: true
+  deliverable_level: 3
+  environments: [local, staging]
+  privacy: no_pii
+  budgets:
+    perf:
+      api_p95_ms: 200
+      web_lcp_ms: 2500
+    cost_est_usd: 0.01
+
+acceptance:
+  - name: API returns 200 with item in payload
+    proof: http_trace
+  - name: UI shows cart count increments to 1
+    proof: playwright_video
+  - name: Error envelope respected on invalid qty
+    proof: http_trace_400
+
+proofs:
+  required: [http_trace, playwright_video]
+  optional: [dom_snapshot]
+
+contracts:
+  http:
+    openapi: contracts/openapi.yaml
+    paths:
+      - path: /cart
+        method: POST
+        request_schema: CartAddRequest
+        response_schema: CartState
+  events:
+    asyncapi: contracts/events.yaml
+    topics: [cart.item.added.v1]
+
+ownership:
+  primary_agents: [project-architect, backend-api-integrator, frontend-specialist]
+  supporting_agents: [ai-ml-specialist, database-expert, devops-engineer]
+
+observability:
+  logs: request_id, auv_id
+  metrics: http_status_codes, latency_ms
+  traces: enabled
+
+docs:
+  runbook_anchor: docs/runbook.md#AUV-0001
+  verify_anchor: docs/verify.md#AUV-0001-—-Add-to-Cart-(API-+-UI)

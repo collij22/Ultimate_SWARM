@@ -1,0 +1,80 @@
+# Swarm1 Orchestration Policies
+# Place this file at: /orchestration/policies.yaml
+# These settings are read by the Orchestrator and tooling to control parallelism, budgets, and safety.
+
+parallelization:
+  # Hard ceiling; Orchestrator must never exceed this number of concurrent sub-agents.
+  max_parallel_agents: 4
+
+  # Recommended ranges by task complexity. The Orchestrator may choose any value
+  # up to max_parallel_agents, but should stay within these tier hints.
+  tiers:
+    simple: 1-2          # trivial AUVs
+    moderate: 2-4        # typical AUVs (default)
+    complex: 5-8         # only if AUV is decomposed into independent lanes and contracts are fixed
+
+  # Guardrails to determine if parallelization is allowed.
+  guardrails:
+    require_contracts_fixed: true      # API/interface contracts must be finalized before parallel work
+    forbid_shared_write_paths: true    # disallow two agents writing to the same file/glob at once
+    serialize_db_migrations: true      # DB schema changes run alone
+    serialize_package_manifest: true   # e.g., package.json / lockfile updates run alone
+    cancel_on_first_p0_failure: true   # fan-in cancels remaining lanes on a critical failure
+
+  # Declare common "lanes" with their write scopes to help detect conflicts.
+  lanes:
+    frontend_wiring:
+      writes:
+        - "src/frontend/**"
+    backend_endpoint:
+      writes:
+        - "api/**"
+        - "src/server/**"
+    robot_tests:
+      writes:
+        - "tests/robot/**"
+    docs:
+      writes:
+        - "docs/**"
+
+  # Optional: files/globs that always require serialization (high contention risk).
+  serialize_globs:
+    - "migrations/**"
+    - "package.json"
+    - "pnpm-lock.yaml"
+    - "yarn.lock"
+    - "requirements.txt"
+    - "Dockerfile"
+    - "infra/**"
+
+scheduling:
+  priority_order:
+    - blocking_fixes      # red builds, failing gates
+    - auv_p0              # highest value/critical AUVs
+    - security            # security gates / Semgrep fixes
+    - auv_p1
+    - docs
+  preemption: true         # allow the Orchestrator to pause/abort low-priority lanes when a higher priority task arrives
+
+budgets:
+  # Soft limits the Orchestrator should respect; per-agent and overall.
+  max_tokens_per_agent: 80000
+  max_runtime_sec_per_agent: 300
+  total_runtime_sec_per_fanout: 900
+
+  cost:
+    secondary_tools:
+      require_consent: true
+      default_budget_usd: 0.05
+
+fan_in:
+  require_all_result_cards: true
+  require_artifacts_for_each_auv: true
+  # When true, fan-in fails if any lane misses required artifacts (videos/snapshots/traces/reports).
+  fail_on_missing_artifacts: true
+
+# Safety switches for production-like actions.
+safety:
+  allow_production_mutations: false         # default deny; override per-environment
+  require_stripe_test_mode: true            # payments MCP must be in test mode unless explicitly allowed
+  allow_external_crawling: false            # disable heavy crawling by default (enable per-project in /mcp/policies.yaml)

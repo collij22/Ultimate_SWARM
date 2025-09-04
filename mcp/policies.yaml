@@ -1,0 +1,103 @@
+# Swarm1 MCP Policies
+# Place at: /mcp/policies.yaml
+version: 1
+
+# Primary vs Secondary tool policy
+tiers:
+  primary:
+    require_consent: false
+  secondary:
+    require_consent: true
+    default_budget_usd: 0.10
+    budget_overrides:
+      vercel: 0.10
+      k6: 0.50
+      datadog: 0.20
+      sbom: 0.15
+      license-checker: 0.10
+
+# Global environment safety
+safety:
+  allow_production_mutations: false
+  require_test_mode_for:
+    - payments
+    - external_search
+    - email
+  redact_logs:
+    - api_keys
+    - access_tokens
+    - passwords
+
+
+```yaml
+# NOTE: The PreToolUse hook enforces secondary-tool consent, budgets, and environment safety; this file remains the source of truth for routing/allowlists.
+
+# Capability → tool mappings used by the Tool Router
+capability_map:
+  browser.automation: [playwright]
+  api.test: [http]
+  db.query: [postgres]
+  docs.search: [refdocs]
+  security.scan: [semgrep]
+  security.secrets: [gitleaks]
+  security.iac: [checkov]
+  security.container: [trivy]
+  visual.regression: [visual-compare]
+  perf.web: [lighthouse, bundle-analyzer]
+  perf.api: [latency-sampler]
+  perf.db: [explain]
+  trace.profile: [traces]
+  packaging.bundle: [zip, checksum]
+  packaging.sbom: [sbom, license-checker]
+  container.build: [docker-buildx]
+  deploy.k8s: [kubectl, helm]
+  deploy.preview: [vercel]
+  header.csp: [fetch]
+  dep.graph: [depgraph]
+  code.codemod: [jscodeshift, ts-morph]
+  typecheck: [tsc]
+  lint: [eslint]
+  perf.load: [k6]
+  monitoring.saas: [datadog]
+
+# Agent-level allowlists for auxiliary agents
+agents:
+  performance-optimizer:
+    capabilities: [perf.web, perf.api, perf.db, trace.profile]
+    allowlist:
+      primary: [lighthouse, bundle-analyzer, latency-sampler, explain, traces]
+      secondary: [k6]
+    notes: "Run baselines first; verify deltas with identical scripts/env."
+
+  code-migrator:
+    capabilities: [dep.graph, code.codemod, typecheck, lint]
+    allowlist:
+      primary: [depgraph, jscodeshift, ts-morph, tsc, eslint]
+      secondary: [openrewrite]
+    serialized_files: ["package.json", "pnpm-lock.yaml", "yarn.lock", "migrations/**"]
+    notes: "Use codemods with reports; phase changes; respect serialize_globs."
+
+# Router hints: prefer primary tools unless the capability explicitly demands a secondary
+routing:
+  prefer_primary: true
+  on_missing_primary:
+    action: "propose_secondary_with_budget"
+    default_budget_usd: 0.10
+
+# Header/CSP check defaults
+headers_csp:
+  require_https: true
+  require_hsts: true
+  require_csp: true
+
+# Performance thresholds (defaults)
+performance:
+  web:
+    lcp_ms: 2500
+    tti_ms: 3000
+    cls: 0.10
+    transfer_kb: 250
+  api:
+    p95_ms: 200
+  db:
+    query_ms: 50

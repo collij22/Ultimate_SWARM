@@ -1,0 +1,55 @@
+id: AUV-0002
+title: Product Listing & Detail (extends AUV-0001)
+description: >
+  Minimal e-commerce slice: list products and view a product detail page.
+  Builds on AUV-0001 (Add to Cart) and reuses the cart button on detail.
+user_story: |
+  As a shopper,
+  I want to browse products and open a product page,
+  So that I can decide to add an item to my cart.
+
+constraints:
+  contracts_frozen: true
+  deliverable_level: 3
+  environments: [local, staging]
+  privacy: no_pii
+  budgets:
+    perf:
+      web_lcp_ms: 2500
+    cost_est_usd: 0.02
+
+acceptance:
+  - name: API returns 200 for /products and /products/{id}
+    proof: http_trace
+  - name: UI renders a grid of products with at least one card
+    proof: playwright_screenshot_grid
+  - name: UI detail page shows product title and price
+    proof: playwright_screenshot_detail
+  - name: Performance LCP <= 2500ms on /products (Lighthouse)
+    proof: lighthouse_json
+
+proofs:
+  required: [http_trace, playwright_screenshot_grid, playwright_screenshot_detail, lighthouse_json]
+
+contracts:
+  http:
+    openapi: contracts/openapi.yaml
+    paths:
+      - path: /products
+        method: GET
+        response_schema: ProductList
+      - path: /products/{id}
+        method: GET
+        response_schema: ProductDetail
+
+ownership:
+  primary_agents: [requirements-analyst, project-architect, api-integrator, frontend-specialist]
+  supporting_agents: [quality-guardian, security-auditor, devops-engineer]
+
+observability:
+  logs: request_id, auv_id
+  metrics: http_status_codes, latency_ms
+  traces: enabled
+
+docs:
+  verify_anchor: docs/verify.md#AUV-0002---Product-Listing--Detail

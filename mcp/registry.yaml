@@ -1,0 +1,279 @@
+# Swarm1 MCP Tool Registry (v2)
+# Place at: /mcp/registry.yaml
+version: 2
+
+# Map-by-ID so prompts & policies can refer to stable IDs.
+tools:
+  # -------- Core / Primary (free or local) --------
+  playwright:
+    name: Playwright MCP
+    tier: primary
+    capabilities: [browser.automation]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network, file_read, file_write, exec]
+    description: Headless browser automation for UI journeys; captures video/screenshots.
+    notes: Good for deterministic UI proofs.
+
+  http:
+    name: HTTP Client MCP
+    tier: primary
+    capabilities: [api.test]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network, file_read, file_write]
+    description: Minimal HTTP client for API verification and trace capture.
+
+  postgres:
+    name: Postgres MCP
+    tier: primary
+    capabilities: [db.query]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network]
+    description: Postgres client for sandbox/test DB work.
+
+  refdocs:
+    name: Reference Docs MCP
+    tier: primary
+    capabilities: [docs.search]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network]
+    description: Query official docs for frameworks/libraries.
+
+  semgrep:
+    name: Semgrep MCP
+    tier: primary
+    capabilities: [security.scan, code.static_analysis]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read]
+    description: Static analysis (SAST) with JSON output.
+    notes: Pre-deploy security gate.
+
+  visual-compare:
+    name: Visual Compare MCP
+    tier: primary
+    capabilities: [visual.regression]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read, file_write]
+    description: Screenshot diffing for visual regression checks.
+
+  lighthouse:
+    name: Lighthouse MCP
+    tier: primary
+    capabilities: [perf.web]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network, file_read, file_write]
+    description: Web performance audits (LCP/TTI/CLS/transfer size).
+
+  bundle-analyzer:
+    name: Bundle Analyzer MCP
+    tier: primary
+    capabilities: [perf.web]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read]
+    description: JS bundle composition & size analysis.
+
+  latency-sampler:
+    name: Latency Sampler MCP
+    tier: primary
+    capabilities: [perf.api]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network, file_write]
+    description: Samples API latency and emits histograms.
+
+  explain:
+    name: DB EXPLAIN MCP
+    tier: primary
+    capabilities: [perf.db]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network]
+    description: Runs EXPLAIN/ANALYZE and serializes query plans.
+
+  traces:
+    name: Trace/Profile MCP
+    tier: primary
+    capabilities: [trace.profile]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_write]
+    description: Capture/convert OpenTelemetry or Chrome trace profiles.
+
+  jscodeshift:
+    name: jscodeshift MCP
+    tier: primary
+    capabilities: [code.codemod]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read, file_write, exec]
+    description: JS/TS codemods for sweeping refactors.
+
+  ts-morph:
+    name: ts-morph MCP
+    tier: primary
+    capabilities: [code.codemod]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read, file_write]
+    description: TypeScript AST transforms (typed codemods).
+
+  depgraph:
+    name: Dependency Graph MCP
+    tier: primary
+    capabilities: [dep.graph]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read, file_write]
+    description: Builds a package/module dependency graph.
+
+  tsc:
+    name: TypeScript Check MCP
+    tier: primary
+    capabilities: [typecheck]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read]
+    description: Type checking with machine-readable output.
+
+  eslint:
+    name: ESLint MCP
+    tier: primary
+    capabilities: [lint]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read, file_write]
+    description: Linting with JSON/SARIF outputs.
+
+  zip:
+    name: Zip MCP
+    tier: primary
+    capabilities: [packaging.bundle]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read, file_write]
+    description: Create zip/tar archives.
+
+  checksum:
+    name: Checksum MCP
+    tier: primary
+    capabilities: [packaging.checksum]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read, file_write]
+    description: Produce checksums for release bundles.
+
+  kubectl:
+    name: kubectl MCP
+    tier: primary
+    capabilities: [deploy.k8s]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network, exec]
+    description: Apply/read Kubernetes manifests.
+
+  helm:
+    name: Helm MCP
+    tier: primary
+    capabilities: [deploy.k8s]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network, exec]
+    description: Helm chart deploy/rollback.
+
+  docker-buildx:
+    name: Docker Buildx MCP
+    tier: primary
+    capabilities: [container.build]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [exec, file_read, file_write]
+    description: Build container images and report digests.
+
+  gitleaks:
+    name: Gitleaks MCP
+    tier: primary
+    capabilities: [security.secrets]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read]
+    description: Secret scanner with JSON output.
+
+  checkov:
+    name: Checkov MCP
+    tier: primary
+    capabilities: [security.iac]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [file_read]
+    description: IaC scanning (Terraform/K8s) with JSON output.
+
+  trivy:
+    name: Trivy MCP
+    tier: primary
+    capabilities: [security.container]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [exec, file_read]
+    description: Container image vulnerability scanning.
+
+  fetch:
+    name: Fetch MCP
+    tier: primary
+    capabilities: [header.csp]
+    requires_api_key: false
+    cost_score: 0
+    side_effects: [network]
+    description: Fetch URLs and record headers for CSP/HSTS checks.
+
+  # -------- Secondary (paid or rate-limited) --------
+  vercel:
+    name: Vercel MCP
+    tier: secondary
+    capabilities: [deploy.preview]
+    requires_api_key: true
+    cost_score: 1
+    side_effects: [network]
+    description: Preview deployments for web apps.
+
+  k6:
+    name: k6 MCP
+    tier: secondary
+    capabilities: [perf.load]
+    requires_api_key: false
+    cost_score: 1
+    side_effects: [network, exec, file_write]
+    description: Load testing for P95/P99 validation.
+
+  datadog:
+    name: Datadog MCP
+    tier: secondary
+    capabilities: [monitoring.saas]
+    requires_api_key: true
+    cost_score: 2
+    side_effects: [network]
+    description: SaaS monitoring (logs/metrics/traces) dashboards & alerts.
+
+  sbom:
+    name: SBOM MCP
+    tier: secondary
+    capabilities: [packaging.sbom]
+    requires_api_key: false
+    cost_score: 1
+    side_effects: [exec, file_read, file_write]
+    description: Generate SBOMs.
+
+  license-checker:
+    name: License Checker MCP
+    tier: secondary
+    capabilities: [packaging.license]
+    requires_api_key: false
+    cost_score: 1
+    side_effects: [file_read, file_write]
+    description: OSS license summary for bundles.

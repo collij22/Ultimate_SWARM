@@ -1,0 +1,14 @@
+name: "Preview deploy (secondary + api key) \u2192 proposal with secret note"
+input:
+  agent: devops-engineer
+  requested_capabilities:
+  - deploy.preview
+expected:
+  allowlist: []
+  proposal:
+    secondary:
+    - vercel
+    budget_usd: 0.1
+    reason: Secondary-only capability
+  notes:
+  - "vercel.requires_api_key: true \u2014 fetch from secret manager before enabling"
