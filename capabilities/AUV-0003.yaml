@@ -1,0 +1,44 @@
+id: AUV-0003
+title: Product Search & Filter
+description: >
+  Users can search products (q), filter by price range (minPrice/maxPrice),
+  and sort (price_asc, price_desc, title_asc) on /products.html.
+user_story: |
+  As a shopper, I want to narrow the product list quickly so I can find relevant items.
+
+constraints:
+  deliverable_level: 3
+  environments: [local, staging]
+  privacy: no_pii
+  budgets:
+    perf:
+      web_lcp_ms: 2500
+
+acceptance:
+  - name: API supports q, minPrice, maxPrice, sort; returns 200
+    proof: http_trace
+  - name: UI shows filtered results when using search & price controls
+    proof: playwright_screenshot_grid
+  - name: Sorting changes order deterministically
+    proof: playwright_video_or_screenshot
+  - name: LCP ≤ 2.5s on /products.html with search applied
+    proof: lighthouse_json
+
+proofs:
+  required: [http_trace, playwright_screenshot_grid, playwright_video_or_screenshot, lighthouse_json]
+
+contracts:
+  http:
+    openapi: contracts/openapi.yaml
+    paths:
+      - path: /products
+        method: GET
+        query: [q, minPrice, maxPrice, sort]
+        response_schema: ProductList
+
+ownership:
+  primary_agents: [requirements-analyst, project-architect, api-integrator, frontend-specialist]
+  supporting_agents: [quality-guardian, security-auditor, devops-engineer]
+
+docs:
+  verify_anchor: docs/verify.md#AUV-0003---Product-Search--Filter

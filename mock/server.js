@@ -47,12 +47,32 @@ const PRODUCTS = [
   { id: "demo-6", title: "Demo Product 6", price: 19.99, imageUrl: "/img/demo6.png" }
 ];
 
-// GET /api/products
-app.get('/api/products', (_req, res) => {
-  res.json(PRODUCTS);
+// GET /api/products  — REPLACE the old handler with this one
+app.get('/api/products', (req, res) => {
+  const { q, minPrice, maxPrice, sort } = req.query;
+  let out = [...PRODUCTS];
+
+  // text search
+  if (q && String(q).trim()) {
+    const s = String(q).toLowerCase();
+    out = out.filter(p => p.title.toLowerCase().includes(s));
+  }
+
+  // price bounds
+  const min = minPrice !== undefined ? Number(minPrice) : undefined;
+  const max = maxPrice !== undefined ? Number(maxPrice) : undefined;
+  if (!Number.isNaN(min) && min !== undefined) out = out.filter(p => p.price >= min);
+  if (!Number.isNaN(max) && max !== undefined) out = out.filter(p => p.price <= max);
+
+  // sorting
+  if (sort === 'price_asc')   out.sort((a,b)=> a.price - b.price);
+  if (sort === 'price_desc')  out.sort((a,b)=> b.price - a.price);
+  if (sort === 'title_asc')   out.sort((a,b)=> a.title.localeCompare(b.title));
+
+  res.json(out);
 });
 
-// GET /api/products/:id
+// GET /api/products/:id  — LEAVE THIS UNCHANGED
 app.get('/api/products/:id', (req, res) => {
   const p = PRODUCTS.find(x => x.id === req.params.id);
   if (!p) return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Product not found' } });

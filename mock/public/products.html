@@ -9,31 +9,80 @@
       .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap: 1rem; }
       .card { border: 1px solid #ddd; border-radius: .5rem; padding: .75rem; }
       .title { font-weight: 600; }
+
+      /* minimal styles for the new controls */
+      .controls { margin-bottom:1rem; display:flex; gap:.5rem; align-items:end; flex-wrap:wrap; }
+      .controls label { font-size:.9rem; }
+      .controls input, .controls select { padding:.4rem .5rem; border:1px solid #ccc; border-radius:.35rem; }
+      .btn { padding:.45rem .7rem; border:1px solid #ccc; border-radius:.4rem; background:#f6f6f6; cursor:pointer; }
     </style>
   </head>
   <body>
     <h1>Products</h1>
+
+    <!-- NEW: search/filter/sort controls -->
+    <form id="filters" class="controls">
+      <label>Search<br><input type="text" id="q" placeholder="e.g. Demo" /></label>
+      <label>Min Price<br><input type="number" id="minPrice" step="0.01" /></label>
+      <label>Max Price<br><input type="number" id="maxPrice" step="0.01" /></label>
+      <label>Sort<br>
+        <select id="sort">
+          <option value="">(none)</option>
+          <option value="price_asc">Price ↑</option>
+          <option value="price_desc">Price ↓</option>
+          <option value="title_asc">Title A→Z</option>
+        </select>
+      </label>
+      <button type="submit" class="btn">Apply</button>
+    </form>
+
     <div class="grid" data-testid="product-grid"></div>
+
     <script>
-      async function main() {
+      async function loadProducts() {
         const grid = document.querySelector('[data-testid="product-grid"]');
+        grid.innerHTML = '';
+
+        // read controls
+        const q = document.getElementById('q').value;
+        const min = document.getElementById('minPrice').value;
+        const max = document.getElementById('maxPrice').value;
+        const sort = document.getElementById('sort').value;
+
+        const params = new URLSearchParams();
+        if (q)   params.set('q', q);
+        if (min) params.set('minPrice', min);
+        if (max) params.set('maxPrice', max);
+        if (sort) params.set('sort', sort);
+
         try {
-          const res = await fetch('/api/products');
+          const url = '/api/products' + (params.toString() ? `?${params}` : '');
+          const res = await fetch(url);
           const products = await res.json();
+
           products.forEach(p => {
             const a = document.createElement('a');
             a.href = '/product.html?id=' + encodeURIComponent(p.id);
             a.className = 'card';
             a.setAttribute('data-testid', 'product-card');
-            a.innerHTML = '<div class="title" data-testid="product-title">' + p.title + '</div>' +
-                          '<div data-testid="product-price">$' + p.price.toFixed(2) + '</div>';
+            a.innerHTML =
+              '<div class="title" data-testid="product-title">' + p.title + '</div>' +
+              '<div data-testid="product-price">$' + p.price.toFixed(2) + '</div>';
             grid.appendChild(a);
           });
         } catch (e) {
           grid.textContent = 'Failed to load products';
         }
       }
-      main();
+
+      // submit handler for filters
+      document.getElementById('filters').addEventListener('submit', (e) => {
+        e.preventDefault();
+        loadProducts();
+      });
+
+      // initial load (equivalent to your original main())
+      loadProducts();
     </script>
   </body>
 </html>

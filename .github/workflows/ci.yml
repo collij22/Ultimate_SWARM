@@ -20,7 +20,6 @@ jobs:
     env:
       STAGING_URL: http://127.0.0.1:3000
       API_BASE:    http://127.0.0.1:3000/api
-      AUV_ID:      AUV-0002
 
     steps:
       - name: Checkout
@@ -79,13 +78,26 @@ jobs:
       - name: CVF gate — AUV-0002
         shell: bash
         run: node orchestration/cvf-check.mjs AUV-0002
-      # ---------------------------------------
 
-      - name: Upload artifacts (always)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: auv-artifacts
-          path: |
-            runs/**
-            test-results/**
+      # ---- Lighthouse + CVF for AUV-0003 ----
+      - name: Ensure perf artifact directory
+        shell: bash
+        run: mkdir -p runs/AUV-0003/perf
+
+      - name: Install Lighthouse deps
+        shell: bash
+        run: npm i -D lighthouse chrome-launcher
+
+      - name: Perf proof (Lighthouse) — AUV-0003
+        shell: bash
+        run: |
+          npx lighthouse "$STAGING_URL/products.html" \
+            --only-categories=performance \
+            --quiet \
+            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
+            --output=json \
+            --output-path="runs/AUV-0003/perf/lighthouse.json"
+
+      - name: CVF gate — AUV-0003
+        shell: bash
+        run: node orchestration/cvf-check.mjs AUV-0003

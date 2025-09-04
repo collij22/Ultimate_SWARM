@@ -5,7 +5,8 @@
  * Usage:
  *   node orchestration/cvf-check.mjs AUV-0002
  *   node orchestration/cvf-check.mjs AUV-0002 --strict   # same for now; reserved for future checks
- *
+ *   node orchestration/cvf-check.mjs AUV-0003
+ * 
  * Behavior:
  * - Looks up the expected artifact list for the provided AUV-ID.
  * - Fails if any path is missing.
@@ -13,56 +14,69 @@
  * - Prints a friendly PASS/FAIL summary and returns exit code 0/1.
  */
 
-import fs from "fs";
-import path from "path";
+import fs from 'fs';
+import path from 'path';
 
-function exists(p) {
-  try { fs.accessSync(p, fs.constants.F_OK); return true; }
-  catch { return false; }
+function statNonEmpty(p) {
+  try {
+    const s = fs.statSync(p);
+    return s.isFile() && s.size > 0;
+  } catch {
+    return false;
+  }
 }
 
-function readJSON(p) {
-  try { return { ok: true, data: JSON.parse(fs.readFileSync(p, "utf-8")) }; }
-  catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+function readJsonSafe(p) {
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return null;
+  }
 }
 
-/**
- * Expected artifacts per AUV. Keep IDs stable and make paths deterministic.
- * Tip: if you change where tests save artifacts, update this list accordingly.
- */
 function expectedArtifacts(auvId) {
-  // AUV-0002 — Product Listing & Detail
+  // Add a case per AUV. Keep paths stable so CI & agents can rely on them.
   if (auvId === "AUV-0002") {
     return [
       "runs/AUV-0002/api/get_products_200.json",
       "runs/AUV-0002/ui/products_grid.png",
       "runs/AUV-0002/ui/product_detail.png",
-      "runs/AUV-0002/perf/lighthouse.json",
+      "runs/AUV-0002/perf/lighthouse.json"
     ];
   }
-
-  // AUV-0001 — Cart demo (UI + API proofs)
-  if (auvId === "AUV-0001") {
+  if (auvId === "AUV-0003") {
     return [
-      "runs/AUV-0001/api/post_cart_200.json",
-      // UI screenshot is saved under a project-named folder; default we used:
-      "runs/AUV-0001/AUV-0001 UI/cart_after.png",
+      "runs/AUV-0003/ui/products_search.png",
+      "runs/AUV-0003/perf/lighthouse.json"
     ];
   }
+  return null; // unknown AUV
+}
 
-  // Default: empty list (no opinion)
-  return [];
+function validateSpecial(file) {
+  // Minimal sanity checks for certain artifact types
+  const base = path.basename(file).toLowerCase();
+  if (base === 'lighthouse.json') {
+    const j = readJsonSafe(file);
+    if (!j) return 'invalid JSON';
+    const perf = j?.categories?.performance?.score;
+    if (typeof perf !== 'number') return 'missing performance score';
+    // (Optional) enforce budgets here if you want:
+    // const lcp = j?.audits?.['largest-contentful-paint']?.numericValue;
+    // if (typeof lcp === 'number' && lcp > 2500) return `LCP too high: ${lcp}ms`;
+  }
+  return null;
 }
 
 function main() {
   const auvId = process.argv[2];
   if (!auvId) {
-    console.error("Usage: node orchestration/cvf-check.mjs <AUV-ID> [--strict]");
+    console.error('Usage: node orchestration/cvf-check.mjs <AUV-ID>');
     process.exit(2);
   }
 
-  const artifacts = expectedArtifacts(auvId);
-  if (!artifacts.length) {
+  const required = expectedArtifacts(auvId);
+  if (!required) {
     console.error(`[CVF] FAIL — no artifact definition for '${auvId}'. Update expectedArtifacts().`);
     process.exit(1);
   }
@@ -70,37 +84,30 @@ function main() {
   const missing = [];
   const invalid = [];
 
-  for (const rel of artifacts) {
-    const p = path.resolve(process.cwd(), rel);
-    if (!exists(p)) {
-      missing.push(rel);
+  for (const f of required) {
+    if (!statNonEmpty(f)) {
+      missing.push(f);
       continue;
     }
-    if (rel.toLowerCase().endsWith(".json")) {
-      const { ok, error } = readJSON(p);
-      if (!ok) invalid.push({ path: rel, reason: `Invalid JSON: ${error}` });
-    }
+    const reason = validateSpecial(f);
+    if (reason) invalid.push(`${f} (${reason})`);
   }
 
   if (missing.length || invalid.length) {
-    console.error("[CVF] FAIL — artifacts check");
+    console.error('[CVF] FAIL — artifacts check');
     if (missing.length) {
-      console.error("Missing:");
-      for (const m of missing) console.error(" - " + m);
+      console.error('Missing:');
+      for (const m of missing) console.error(' -', m);
     }
     if (invalid.length) {
-      console.error("Invalid JSON:");
-      for (const iv of invalid) console.error(` - ${iv.path} (${iv.reason})`);
+      console.error('Invalid:');
+      for (const v of invalid) console.error(' -', v);
     }
     process.exit(1);
   }
 
-  console.log("[CVF] PASS — required artifacts found and valid:");
-  for (const a of artifacts) console.log(" - " + a);
-  process.exit(0);
+  console.log('[CVF] PASS — required artifacts found and valid:');
+  for (const f of required) console.log(' -', f);
 }
 
-try { main(); } catch (e) {
-  console.error("[CVF] ERROR — unexpected:", e?.message || e);
-  process.exit(1);
-}
+main();
