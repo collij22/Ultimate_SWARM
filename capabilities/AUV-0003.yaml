@@ -1,44 +1,42 @@
 id: AUV-0003
-title: Product Search & Filter
-description: >
-  Users can search products (q), filter by price range (minPrice/maxPrice),
-  and sort (price_asc, price_desc, title_asc) on /products.html.
-user_story: |
-  As a shopper, I want to narrow the product list quickly so I can find relevant items.
-
-constraints:
-  deliverable_level: 3
-  environments: [local, staging]
-  privacy: no_pii
-  budgets:
-    perf:
-      web_lcp_ms: 2500
+title: Product search, price bounds, and sorting
+owner: web
+status: active
+tags: [ui, api, products]
 
 acceptance:
-  - name: API supports q, minPrice, maxPrice, sort; returns 200
-    proof: http_trace
-  - name: UI shows filtered results when using search & price controls
-    proof: playwright_screenshot_grid
-  - name: Sorting changes order deterministically
-    proof: playwright_video_or_screenshot
-  - name: LCP ≤ 2.5s on /products.html with search applied
-    proof: lighthouse_json
+  summary: >
+    Users can filter products by text, constrain by min/max price, and sort results.
+    API supports q, minPrice, maxPrice, sort; UI renders and navigates to detail.
 
-proofs:
-  required: [http_trace, playwright_screenshot_grid, playwright_video_or_screenshot, lighthouse_json]
+requirements:
+  api:
+    - GET /api/products supports:
+      - q: substring match on title (case-insensitive)
+      - minPrice, maxPrice: numeric bounds
+      - sort: one of [price_asc, price_desc, title_asc]
+    - GET /api/products/:id unchanged (still returns exact item)
+  ui:
+    - /products.html shows controls for search, min/max price, sort
+    - Grid updates after Apply; clicking a card navigates to detail
 
-contracts:
-  http:
-    openapi: contracts/openapi.yaml
-    paths:
-      - path: /products
-        method: GET
-        query: [q, minPrice, maxPrice, sort]
-        response_schema: ProductList
+tests:
+  playwright:
+    - tests/robot/playwright/products-filter.spec.ts
+  api:
+    - optional: tests/robot/playwright/api/products-filter.spec.ts
 
-ownership:
-  primary_agents: [requirements-analyst, project-architect, api-integrator, frontend-specialist]
-  supporting_agents: [quality-guardian, security-auditor, devops-engineer]
+artifacts:
+  required:
+    - runs/AUV-0003/ui/products_search.png
+    - runs/AUV-0003/perf/lighthouse.json
 
-docs:
-  verify_anchor: docs/verify.md#AUV-0003---Product-Search--Filter
+perf_budget:
+  lighthouse:
+    pages:
+      - url: /products.html
+        min_performance_score: 0.9
+
+notes:
+  - Server health at /health must be OK.
+  - Keep test IDs stable: product-grid, product-card, product-title, product-price.

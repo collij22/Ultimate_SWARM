@@ -8,6 +8,9 @@
     "express": "^5.1.0"
   },
   "scripts": {
-    "mock:staging": "node mock/server.js"
+    "mock:staging": "node mock/server.js",
+    "deliver": "node orchestration/cli.mjs",
+    "deliver:0003": "node orchestration/cli.mjs AUV-0003",
+    "deliver:0002": "node orchestration/cli.mjs AUV-0002"
   }
 }
