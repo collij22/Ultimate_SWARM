@@ -50,6 +50,15 @@ function expectedArtifacts(auvId) {
       "runs/AUV-0003/perf/lighthouse.json"
     ];
   }
+  if (auvId === "AUV-0004") {
+    return [
+      "runs/AUV-0004/ui/cart_summary.png",
+      "runs/AUV-0004/perf/lighthouse.json"
+    ];
+  }
+  if (auvId === "AUV-0005") {
+    return [ "runs/AUV-0005/ui/checkout_success.png" ];
+  }    
   return null; // unknown AUV
 }
 

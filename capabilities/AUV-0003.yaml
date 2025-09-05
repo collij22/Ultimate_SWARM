@@ -9,34 +9,36 @@ acceptance:
     Users can filter products by text, constrain by min/max price, and sort results.
     API supports q, minPrice, maxPrice, sort; UI renders and navigates to detail.
 
-requirements:
-  api:
-    - GET /api/products supports:
-      - q: substring match on title (case-insensitive)
-      - minPrice, maxPrice: numeric bounds
-      - sort: one of [price_asc, price_desc, title_asc]
-    - GET /api/products/:id unchanged (still returns exact item)
-  ui:
-    - /products.html shows controls for search, min/max price, sort
-    - Grid updates after Apply; clicking a card navigates to detail
-
+# These are the spec paths the runbook will try to run (and auto-create if missing).
 tests:
   playwright:
     - tests/robot/playwright/products-filter.spec.ts
   api:
-    - optional: tests/robot/playwright/api/products-filter.spec.ts
+    - tests/robot/playwright/api/products-filter.spec.ts
 
 artifacts:
   required:
     - runs/AUV-0003/ui/products_search.png
     - runs/AUV-0003/perf/lighthouse.json
 
-perf_budget:
-  lighthouse:
-    pages:
-      - url: /products.html
-        min_performance_score: 0.9
-
-notes:
-  - Server health at /health must be OK.
-  - Keep test IDs stable: product-grid, product-card, product-title, product-price.
+# Optional, but lets the generator produce meaningful tests.
+authoring_hints:
+  ui:
+    page: /products.html
+    search_input: '#q'
+    min_price_input: '#minPrice'
+    max_price_input: '#maxPrice'
+    apply_button_text: 'Apply'
+    card_selector: '[data-testid="product-card"]'
+    title_selector: '[data-testid="product-title"]'
+    price_selector: '[data-testid="product-price"]'
+    screenshot: 'products_search.png'
+  api:
+    base_path: /products
+    cases:
+      - name: list returns 200 and array
+        query: ''
+        expect: list_ok
+      - name: q=3 filters by title
+        query: '?q=3'
+        expect: 'id=demo-3'

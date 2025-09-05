@@ -1,0 +1,379 @@
+import fs from 'fs';
+import path from 'path';
+import YAML from 'yaml';
+
+function ensureDir(p) { fs.mkdirSync(p, { recursive: true }); }
+function fileExists(p) { try { fs.accessSync(p, fs.constants.F_OK); return true; } catch { return false; } }
+function writeIfMissing(file, content) { ensureDir(path.dirname(file)); if (!fileExists(file)) { fs.writeFileSync(file, content, 'utf8'); return true; } return false; }
+
+function loadCapabilityRaw(auvId) {
+  const p = path.join(process.cwd(), 'capabilities', `${auvId}.yaml`);
+  if (!fileExists(p)) return null;
+  const text = fs.readFileSync(p, 'utf8');
+  return YAML.parse(text);
+}
+
+/**
+ * ensureTests(auvId)
+ * - Reads capabilities/<AUV>.yaml
+ * - Ensures spec files listed in tests.playwright + tests.api exist
+ * - If missing, generates baseline specs using authoring_hints
+ * - Returns array of spec paths to run
+ */
+export function ensureTests(auvId) {
+  const cap = loadCapabilityRaw(auvId) || {};
+  const tests = cap.tests || {};
+  let uiSpecs = Array.isArray(tests.playwright) ? [...tests.playwright] : [];
+  let apiSpecs = Array.isArray(tests.api) ? [...tests.api] : [];
+
+  if (uiSpecs.length === 0) uiSpecs.push(`tests/robot/playwright/${auvId.toLowerCase()}-ui.spec.ts`);
+  if (apiSpecs.length === 0) apiSpecs.push(`tests/robot/playwright/api/${auvId.toLowerCase()}-api.spec.ts`);
+
+  for (const spec of uiSpecs) {
+    if (!fileExists(spec)) {
+      const content = genUiSpec(auvId, cap);
+      writeIfMissing(spec, content);
+    }
+  }
+  for (const spec of apiSpecs) {
+    if (!fileExists(spec)) {
+      const content = genApiSpec(auvId, cap);
+      writeIfMissing(spec, content);
+    }
+  }
+  return [...uiSpecs.filter(fileExists), ...apiSpecs.filter(fileExists)];
+}
+
+/* ================= UI generator ================= */
+
+function genUiSpec(auvId, cap) {
+    const hints = cap.authoring_hints?.ui || {};
+    const pageUrl = hints.page || '/products.html';
+  
+    // Detect page type
+    const isCart = Boolean(hints.row_selector) || /\/cart\.html$/i.test(pageUrl);
+    const isCheckout = Boolean(hints.submit_selector || hints.success_selector) || /\/checkout\.html$/i.test(pageUrl);
+  
+    if (isCart)     return genUiCartSpec(auvId, cap);
+    if (isCheckout) return genUiCheckoutSpec(auvId, cap);
+  
+    // ---------- default: product list / search ----------
+    const searchSel = hints.search_input ?? '#q';
+    const minSel    = hints.min_price_input ?? '#minPrice';
+    const maxSel    = hints.max_price_input ?? '#maxPrice';
+    const applyText = hints.apply_button_text ?? 'Apply';
+    const cardSel   = hints.card_selector ?? '[data-testid="product-card"]';
+    const titleSel  = hints.title_selector ?? '[data-testid="product-title"]';
+    const priceSel  = hints.price_selector ?? '[data-testid="product-price"]';
+    const screenshot = hints.screenshot ?? 'products_search.png';
+  
+    return `import { test, expect } from '@playwright/test';
+  import fs from 'fs'; import path from 'path';
+  const STAGING_URL = process.env.STAGING_URL;
+  const AUV_ID = process.env.AUV_ID || '${auvId}';
+  
+  test.describe('${auvId} UI — baseline', () => {
+    test.skip(!STAGING_URL, 'STAGING_URL env var not set');
+  
+    test('page renders and search works', async ({ page }) => {
+      await page.goto(\`\${STAGING_URL}${pageUrl}\`);
+      const hasSearch = await page.$('${searchSel}');
+      if (hasSearch) {
+        await page.fill('${searchSel}', '3');
+        const waitResp = page.waitForResponse(r => r.url().includes('/api/') && r.ok());
+        await page.click('text=${applyText}');
+        await waitResp;
+      }
+      await page.waitForFunction(() => document.querySelectorAll('${cardSel}').length > 0);
+      const cards = page.locator('${cardSel}');
+      await expect(cards.first()).toBeVisible();
+  
+      const dir = path.resolve(process.cwd(), 'runs', AUV_ID, 'ui');
+      fs.mkdirSync(dir, { recursive: true });
+      await page.screenshot({ path: path.join(dir, '${screenshot}') });
+    });
+  
+    test('optional price bounds sanity', async ({ page }) => {
+      await page.goto(\`\${STAGING_URL}${pageUrl}\`);
+      const min = await page.$('${minSel}');
+      const max = await page.$('${maxSel}');
+      if (min && max) {
+        await page.fill('${minSel}', '10');
+        await page.fill('${maxSel}', '20');
+        const waitResp = page.waitForResponse(r => r.url().includes('/api/') && r.ok());
+        await page.click('text=${applyText}');
+        await waitResp;
+  
+        const prices = page.locator('${priceSel}');
+        const count = await prices.count();
+        if (count > 0) {
+          for (let i=0;i<count;i++) {
+            const t = await prices.nth(i).innerText();
+            const num = parseFloat(t.replace('$',''));
+            expect(num).toBeGreaterThanOrEqual(10);
+            expect(num).toBeLessThanOrEqual(20);
+          }
+        }
+      } else {
+        test.skip();
+      }
+    });
+  });
+  `;
+  }  
+
+function genUiCartSpec(auvId, cap) {
+    const ui = cap.authoring_hints?.ui || {};
+    const api = cap.authoring_hints?.api || {};
+    const pageUrl = ui.page || '/cart.html';
+    const rowSel  = ui.row_selector || '[data-testid="cart-row"]';
+    const subtotalSel = ui.subtotal_selector || '[data-testid="cart-subtotal"]';
+    const taxSel = ui.tax_selector || '[data-testid="cart-tax"]';
+    const totalSel = ui.total_selector || '[data-testid="cart-total"]';
+    const screenshot = ui.screenshot || 'cart_summary.png';
+  
+    // If API hints include a setup, we'll run it before navigating to the page
+    const firstCase = Array.isArray(api.cases) && api.cases.length ? api.cases[0] : null;
+    const setupJson = JSON.stringify(firstCase?.setup || []);
+  
+    return `import { test, expect } from '@playwright/test';
+  import fs from 'fs'; import path from 'path';
+  const STAGING_URL = process.env.STAGING_URL;
+  const API_BASE = process.env.API_BASE;
+  const AUV_ID = process.env.AUV_ID || '${auvId}';
+  
+  test.describe('${auvId} UI — cart summary', () => {
+    test.skip(!STAGING_URL || !API_BASE, 'STAGING_URL/API_BASE env vars not set');
+  
+    test('renders rows and totals after API setup', async ({ page, request }) => {
+      // Perform setup (add cart items) if any
+      const setup = ${setupJson};
+      for (const step of setup) {
+        const method = (step.method || 'POST').toUpperCase();
+        const rawPath = step.path || '';
+        const normPath = rawPath.replace(/^\\/api(?=\\/|$)/, ''); // strip leading /api if present
+        const url = \`\${API_BASE}\${normPath}\`;
+        if (method === 'POST') {
+          await request.post(url, { data: step.body || {} });
+        } else if (method === 'GET') {
+          await request.get(url);
+        }
+      }
+  
+      await page.goto(\`\${STAGING_URL}${pageUrl}\`);
+      // Be explicit: wait until cart summary call completes
+      await page.waitForResponse(r => r.url().endsWith('/api/cart/summary') && r.ok());
+  
+      const rows = page.locator('${rowSel}');
+      await expect(rows.first()).toBeVisible();
+  
+      const subtotalText = await page.locator('${subtotalSel}').innerText();
+      const taxText = await page.locator('${taxSel}').innerText();
+      const totalText = await page.locator('${totalSel}').innerText();
+      expect(totalText).toMatch(/\\$\\d/); // some currency
+  
+      const dir = path.resolve(process.cwd(), 'runs', AUV_ID, 'ui');
+      fs.mkdirSync(dir, { recursive: true });
+      await page.screenshot({ path: path.join(dir, '${screenshot}') });
+    });
+  });
+  `;
+  }  
+
+  function genUiCheckoutSpec(auvId, cap) {
+    const ui = cap.authoring_hints?.ui || {};
+    const pageUrl      = ui.page || '/checkout.html';
+    const nameSel      = ui.name_selector    || '#name';
+    const emailSel     = ui.email_selector   || '#email';
+    const addressSel   = ui.address_selector || '#address';
+    const cardSel      = ui.card_selector    || '#card';
+    const submitSel    = ui.submit_selector  || '[data-testid="submit-order"]';
+    const successSel   = ui.success_selector || '[data-testid="order-success"]';
+    const screenshot   = ui.screenshot       || 'checkout_success.png';
+  
+    return `import { test, expect } from '@playwright/test';
+  import fs from 'fs'; import path from 'path';
+  const STAGING_URL = process.env.STAGING_URL;
+  const AUV_ID = process.env.AUV_ID || '${auvId}';
+  
+  test.describe('${auvId} UI — checkout', () => {
+    test.skip(!STAGING_URL, 'STAGING_URL env var not set');
+  
+    test('fills form, submits, shows success', async ({ page }) => {
+      await page.goto(\`\${STAGING_URL}${pageUrl}\`);
+      await page.fill('${nameSel}', 'Jane Tester');
+      await page.fill('${emailSel}', 'jane@example.com');
+      await page.fill('${addressSel}', '1 Test Street');
+      await page.fill('${cardSel}', '4242424242424242');
+  
+      const [resp] = await Promise.all([
+        page.waitForResponse(r => r.url().endsWith('/api/checkout')),
+        page.click('${submitSel}')
+      ]);
+      expect(resp.ok()).toBeTruthy();
+  
+      await expect(page.locator('${successSel}')).toBeVisible();
+  
+      const dir = path.resolve(process.cwd(), 'runs', AUV_ID, 'ui');
+      fs.mkdirSync(dir, { recursive: true });
+      await page.screenshot({ path: path.join(dir, '${screenshot}') });
+    });
+  });
+  `;
+  }
+  
+
+/* ================= API generator ================= */
+
+function genApiSpec(auvId, cap) {
+    const hints = cap.authoring_hints?.api || {};
+    // Normalize base_path: if someone writes /api/checkout, strip the first /api since API_BASE already has it.
+    const rawBase = hints.base_path || '/products';
+    const basePath = rawBase.replace(/^\/api(\/|$)/, '/');
+  
+    const cases = Array.isArray(hints.cases) ? hints.cases : null;
+  
+    // Cart-style cases with setup+summary
+    if (cases && cases.some(c => c.setup || c.summary_path)) {
+      return genApiCartSpec(auvId, basePath, cases);
+    }
+  
+    // NEW: custom method cases (e.g., POST /checkout)
+    if (cases && cases.some(c => c.method)) {
+      return genApiCustomSpec(auvId, basePath, cases);
+    }
+  
+    // Fallback: simple list/filter checks (products-like)
+    const defaultCases = cases || [
+      { name: 'list returns 200 and array', query: '', expect: 'list_ok' },
+      { name: 'q=3 filters', query: '?q=3', expect: 'id=demo-3' },
+    ];
+    return `import { test, expect } from '@playwright/test';
+  const API_BASE = process.env.API_BASE;
+  
+  test.describe('${auvId} API — baseline', () => {
+    test.skip(!API_BASE, 'API_BASE env var not set');
+  
+    ${defaultCases.map((c) => genSimpleApiCase(basePath, c)).join('\n\n')}
+  });
+  `;
+  }
+  
+
+function genApiCartSpec(auvId, basePath, cases) {
+    // We’ll support minimal “setup + summary_path” shape.
+    const first = cases[0] || {};
+    const setupJson = JSON.stringify(first.setup || []);
+    const rawSummary = first.summary_path || `${basePath}/summary`;
+    const summaryPath = rawSummary.replace(/^\/api(?=\/|$)/, ''); // strip leading /api if present
+  
+    return `import { test, expect } from '@playwright/test';
+  const API_BASE = process.env.API_BASE;
+  
+  test.describe('${auvId} API — cart summary', () => {
+    test.skip(!API_BASE, 'API_BASE env var not set');
+  
+    test('setup cart then summary returns correct lineTotal & totals shape', async ({ request }) => {
+      const setup = ${setupJson};
+      for (const step of setup) {
+        const method = (step.method || 'POST').toUpperCase();
+        const rawPath = step.path || '';
+        const normPath = rawPath.replace(/^\\/api(?=\\/|$)/, ''); // strip leading /api if present
+        const url = \`\${API_BASE}\${normPath}\`;
+        if (method === 'POST') {
+          await request.post(url, { data: step.body || {} });
+        } else if (method === 'GET') {
+          await request.get(url);
+        }
+      }
+  
+      const sumRes = await request.get(\`\${API_BASE}${summaryPath}\`);
+      expect(sumRes.status()).toBe(200);
+      const sum = await sumRes.json();
+      expect(Array.isArray(sum.items)).toBeTruthy();
+  
+      // If setup added demo-1, validate its lineTotal against unit price
+      const added = setup.find(s => (s.body || {}).productId);
+      if (added) {
+        const id = added.body.productId;
+        const qty = added.body.qty || 1;
+        const prod = await (await request.get(\`\${API_BASE}/products/\${id}\`)).json();
+        const expectedLine = +(prod.price * qty).toFixed(2);
+        const item = sum.items.find((it) => it.id === id);
+        expect(item).toBeTruthy();
+        expect(item.lineTotal).toBeCloseTo(expectedLine, 2);
+      }
+  
+      // Totals are coherent
+      expect(typeof sum.subtotal).toBe('number');
+      expect(typeof sum.tax).toBe('number');
+      expect(typeof sum.total).toBe('number');
+      expect(sum.total).toBeCloseTo(sum.subtotal + sum.tax, 2);
+    });
+  });
+  `;
+  }  
+
+  function genApiCustomSpec(auvId, basePath, cases) {
+    // Each case may specify: method, path (optional), body (optional), expect_status (optional)
+    return `import { test, expect } from '@playwright/test';
+  const API_BASE = process.env.API_BASE;
+  
+  test.describe('${auvId} API — custom', () => {
+    test.skip(!API_BASE, 'API_BASE env var not set');
+  
+    ${cases.map((c, i) => {
+      // inline JS template for one case
+      const name = esc(c.name || `case #${i+1}`);
+      return `test('${name}', async ({ request }) => {
+      const method = '${(c.method || 'GET').toUpperCase()}';
+      const rawPath = '${(c.path || basePath)}';
+      const normPath = rawPath.replace(/^\\/api(?=\\/|$)/, '');
+      const url = \`\${API_BASE}\${normPath}\`;
+      let res;
+      if (method === 'POST') {
+        res = await request.post(url, { data: ${JSON.stringify(c.body || {})} });
+      } else if (method === 'PUT') {
+        res = await request.put(url, { data: ${JSON.stringify(c.body || {})} });
+      } else if (method === 'PATCH') {
+        res = await request.patch(url, { data: ${JSON.stringify(c.body || {})} });
+      } else if (method === 'DELETE') {
+        res = await request.delete(url);
+      } else { // GET default
+        res = await request.get(url);
+      }
+      const expected = ${Number.isInteger(c.expect_status) ? c.expect_status : ((c.method || '').toUpperCase() === 'POST' ? 201 : 200)};
+      expect(res.status()).toBe(expected);
+    });`;
+    }).join('\n\n')}
+  });
+  `;
+  }
+  
+/* ----------------- helpers ----------------- */
+function genSimpleApiCase(basePath, c) {
+  if (c.expect === 'list_ok') {
+    return `test('${esc(c.name || 'list returns 200 and array')}', async ({ request }) => {
+    const res = await request.get(\`\${API_BASE}${basePath}${c.query || ''}\`);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body)).toBeTruthy();
+    expect(body.length).toBeGreaterThan(0);
+  });`;
+  }
+  if (typeof c.expect === 'string' && c.expect.startsWith('id=')) {
+    const id = c.expect.slice(3);
+    return `test('${esc(c.name || 'q filter finds id')}', async ({ request }) => {
+    const res = await request.get(\`\${API_BASE}${basePath}${c.query || ''}\`);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.length).toBeGreaterThan(0);
+    expect(body.some((p) => p.id === '${id}')).toBeTruthy();
+  });`;
+  }
+  return `test('${esc(c.name || 'returns 200')}', async ({ request }) => {
+    const res = await request.get(\`\${API_BASE}${basePath}${c.query || ''}\`);
+    expect(res.status()).toBe(200);
+  });`;
+}
+function esc(s){ return String(s).replace(/'/g,"\\'"); }

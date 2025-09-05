@@ -99,6 +99,48 @@ jobs:
         shell: bash
         run: node orchestration/cvf-check.mjs AUV-0003
       # ------------------------------------------
+      # ---- Lighthouse + CVF for AUV-0004 ----
+      - name: Ensure perf artifact directory (AUV-0004)
+        shell: bash
+        run: mkdir -p runs/AUV-0004/perf
+
+      - name: Perf proof (Lighthouse) — AUV-0004
+        shell: bash
+        env:
+          STAGING_URL: http://127.0.0.1:3000   # omit if you already set job-level env
+        run: |
+          npx lighthouse "$STAGING_URL/cart.html" \
+            --only-categories=performance \
+            --quiet \
+            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
+            --output=json \
+            --output-path="runs/AUV-0004/perf/lighthouse.json"
+
+      - name: CVF gate — AUV-0004
+        shell: bash
+        run: node orchestration/cvf-check.mjs AUV-0004
+
+      # ---- Lighthouse + CVF for AUV-0005 ----
+      - name: Ensure perf artifact directory (AUV-0005)
+        shell: bash
+        run: mkdir -p runs/AUV-0005/perf
+
+      - name: Perf proof (Lighthouse) — AUV-0005
+        shell: bash
+        env:
+          STAGING_URL: http://127.0.0.1:3000
+        run: |
+          npx lighthouse "$STAGING_URL/checkout.html" \
+            --only-categories=performance \
+            --quiet \
+            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
+            --output=json \
+            --output-path="runs/AUV-0005/perf/lighthouse.json"
+
+      - name: CVF gate — AUV-0005
+        shell: bash
+        run: node orchestration/cvf-check.mjs AUV-0005
+      # ---------------------------------------
 
       - name: Upload artifacts (always)
         if: always()

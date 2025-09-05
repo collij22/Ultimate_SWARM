@@ -1,0 +1,48 @@
+id: AUV-0005
+title: Checkout validation & submit
+owner: web
+status: active
+tags: [ui, api, checkout, forms]
+
+acceptance:
+  summary: >
+    Users can fill a checkout form (name, email, address, card) with inline validation.
+    API accepts POST /checkout and returns { orderId } when payload is valid.
+
+requirements:
+  api:
+    - POST /api/checkout -> 201 { orderId } on valid; 400 { error } on invalid
+  ui:
+    - /checkout.html renders form with data-testids:
+      - name: #name, email: #email, address: #address, card: #card
+      - submit: [data-testid="submit-order"]
+      - errors inline: [data-testid="error-<field>"]
+      - success banner: [data-testid="order-success"]
+
+tests:
+  playwright:
+    - tests/robot/playwright/checkout.spec.ts
+  api:
+    - tests/robot/playwright/api/checkout.spec.ts
+
+artifacts:
+  required:
+    - runs/AUV-0005/ui/checkout_success.png
+
+authoring_hints:
+  ui:
+    page: /checkout.html
+    submit_selector: '[data-testid="submit-order"]'
+    success_selector: '[data-testid="order-success"]'
+    screenshot: 'checkout_success.png'
+  api:
+    base_path: /checkout
+    cases:
+      - name: valid -> 201
+        method: POST
+        body:
+          name: "Jane"
+          email: "jane@example.com"
+          address: "1 Test St"
+          card: "4242424242424242"
+        expect_status: 201

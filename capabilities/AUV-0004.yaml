@@ -1,0 +1,55 @@
+id: AUV-0004
+title: Cart summary & pricing accuracy
+owner: web
+status: active
+tags: [ui, api, cart, pricing]
+
+acceptance:
+  summary: >
+    Users can view a cart summary showing items, quantities, unit prices, subtotal,
+    tax, and total. API exposes a summary endpoint that computes totals.
+
+requirements:
+  api:
+    - GET /api/cart            # returns array of { productId, qty }
+    - GET /api/cart/summary    # { items:[{id,title,price,qty,lineTotal}], subtotal, tax, total }
+    - POST /api/cart           # adds/updates items
+    - Tax: fixed mock rate 10% for now
+  ui:
+    - /cart.html renders rows + Subtotal/Tax/Total
+    - data-testids: cart-row, cart-subtotal, cart-tax, cart-total
+
+tests:
+  playwright:
+    - tests/robot/playwright/cart-summary.spec.ts   # will be auto-created if missing
+  api:
+    - tests/robot/playwright/api/cart-summary.spec.ts
+
+artifacts:
+  required:
+    - runs/AUV-0004/ui/cart_summary.png
+    - runs/AUV-0004/perf/lighthouse.json
+
+perf_budget:
+  lighthouse:
+    pages:
+      - url: /cart.html
+        min_performance_score: 0.9
+
+authoring_hints:
+  ui:
+    page: /cart.html
+    row_selector: '[data-testid="cart-row"]'
+    subtotal_selector: '[data-testid="cart-subtotal"]'
+    tax_selector: '[data-testid="cart-tax"]'
+    total_selector: '[data-testid="cart-total"]'
+    screenshot: 'cart_summary.png'
+  api:
+    base_path: /cart
+    cases:
+      - name: add 2x demo-1 then summary totals
+        setup:
+          - method: POST
+            path: /cart            # no /api here
+            body: { productId: "demo-1", qty: 2 }
+        summary_path: /cart/summary # no /api here

@@ -5,7 +5,8 @@
     "lighthouse": "^12.8.2"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "yaml": "^2.8.1"
   },
   "scripts": {
     "mock:staging": "node mock/server.js",
