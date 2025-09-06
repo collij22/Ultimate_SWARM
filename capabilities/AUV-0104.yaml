@@ -1,0 +1,53 @@
+id: AUV-0104
+title: User Authentication
+owner: api
+status: pending
+tags:
+  - api
+  - auth
+acceptance:
+  summary: Secure user access control
+  criteria:
+    - User registration with email verification
+    - Secure login/logout
+    - Password reset functionality
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0104.spec.ts
+  api:
+    - tests/robot/playwright/api/auv-0104.spec.ts
+artifacts:
+  required:
+    - runs/AUV-0104/ui/screenshot.png
+    - runs/AUV-0104/perf/lighthouse.json
+authoring_hints:
+  ui: {}
+  api:
+    base_path: /user-authentication
+    cases:
+      - name: list
+        method: GET
+        path: /
+        expect: array
+      - name: get
+        method: GET
+        path: /:id
+        expect: object
+      - name: create
+        method: POST
+        path: /
+        expect: created
+      - name: update
+        method: PUT
+        path: /:id
+        expect: updated
+      - name: delete
+        method: DELETE
+        path: /:id
+        expect: deleted
+dependencies: []
+estimates:
+  complexity: 6
+  tokens: 108000
+  mcp_usd: 0.22
+  time_hours: 22

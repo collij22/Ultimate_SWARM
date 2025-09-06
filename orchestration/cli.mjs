@@ -1,7 +1,12 @@
 #!/usr/bin/env node
 /**
  * Swarm1 — Orchestration CLI
- * Usage: node orchestration/cli.mjs AUV-0003
+ * 
+ * Commands:
+ *   node orchestration/cli.mjs <AUV-ID>                    - Run AUV autopilot
+ *   node orchestration/cli.mjs plan <brief-path> [--dry-run] - Generate AUVs from brief
+ *   node orchestration/cli.mjs validate auv <AUV-ID>       - Validate AUV spec
+ *   node orchestration/cli.mjs help                        - Show help
  *
  * Exit codes:
  *   0 - Success
@@ -14,52 +19,191 @@
  *   105 - Server startup failed
  */
 import { runAuv, RunbookError } from './runbooks/auv_delivery.mjs';
+import { compileBrief, validateAuv } from './lib/auv_compiler.mjs';
+import { validateBriefCLI } from './lib/validate_brief.mjs';
 import fs from 'fs';
 import path from 'path';
 
-const auvId = process.argv[2];
-if (!auvId) {
-  console.error('Usage: node orchestration/cli.mjs <AUV-ID>');
+const args = process.argv.slice(2);
+const command = args[0];
+
+// Show help
+function showHelp() {
+  console.log(`
+Swarm1 Orchestration CLI
+
+Commands:
+  <AUV-ID>                     Run AUV autopilot (e.g., AUV-0003)
+  plan <brief-path> [--dry-run] Generate AUVs from brief
+  validate brief <brief-path>   Validate brief against schema
+  validate auv <AUV-ID>        Validate AUV spec
+  help                         Show this help message
+
+Examples:
+  node orchestration/cli.mjs AUV-0003
+  node orchestration/cli.mjs plan briefs/demo-01/brief.md
+  node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run
+  node orchestration/cli.mjs validate brief briefs/demo-01/brief.md
+  node orchestration/cli.mjs validate auv AUV-0101
+
+Environment Variables:
+  STAGING_URL    Staging server URL (default: http://127.0.0.1:3000)
+  API_BASE       API base URL (default: http://127.0.0.1:3000/api)
+`);
+}
+
+// Main command router
+async function main() {
+  if (!command || command === 'help' || command === '--help' || command === '-h') {
+    showHelp();
+    process.exit(0);
+  }
+  
+  // Handle plan command
+  if (command === 'plan') {
+    const briefPath = args[1];
+    if (!briefPath) {
+      console.error('Usage: node orchestration/cli.mjs plan <brief-path> [--dry-run]');
+      process.exit(2);
+    }
+    
+    const dryRun = args.includes('--dry-run');
+    
+    console.log(`[cli] Planning from brief: ${briefPath}`);
+    if (dryRun) console.log('[cli] Running in dry-run mode (heuristic extraction)');
+    
+    try {
+      const startTime = Date.now();
+      
+      // Compile brief to AUVs
+      const result = await compileBrief(briefPath, { dryRun });
+      
+      const duration = Date.now() - startTime;
+      
+      console.log('[cli] ✅ Compilation successful');
+      console.log(`[cli] Generated ${result.auvs.length} AUVs in ${duration}ms`);
+      console.log('[cli] Summary:');
+      console.log(`  - Total complexity: ${result.summary.totalComplexity}`);
+      console.log(`  - Total hours: ${result.summary.totalHours}`);
+      console.log(`  - Total cost: $${result.summary.totalCost.toFixed(2)}`);
+      console.log(`  - Backlog: ${result.backlogPath}`);
+      
+      if (result.auvs.length > 0) {
+        console.log('[cli] Generated AUVs:');
+        result.auvs.forEach(auv => {
+          const deps = auv.dependencies.length > 0 ? ` (depends on: ${auv.dependencies.join(', ')})` : '';
+          console.log(`  - ${auv.id}: ${auv.title}${deps}`);
+        });
+        
+        console.log(`\n[cli] Next step: node orchestration/cli.mjs ${result.auvs[0].id}`);
+      }
+      
+      process.exit(0);
+    } catch (error) {
+      console.error('[cli] Plan failed:', error.message);
+      process.exit(1);
+    }
+  }
+  
+  // Handle validate command
+  if (command === 'validate') {
+    const subCommand = args[1];
+    const target = args[2];
+    
+    if (subCommand === 'brief') {
+      if (!target) {
+        console.error('Usage: node orchestration/cli.mjs validate brief <brief-path>');
+        process.exit(2);
+      }
+      
+      const valid = validateBriefCLI(target);
+      process.exit(valid ? 0 : 1);
+    }
+    
+    if (subCommand === 'auv') {
+      if (!target) {
+        console.error('Usage: node orchestration/cli.mjs validate auv <AUV-ID>');
+        process.exit(2);
+      }
+      
+      console.log(`[cli] Validating AUV: ${target}`);
+      const validation = validateAuv(target);
+      
+      if (validation.valid) {
+        console.log(`[cli] ✅ ${target} is valid and ready for execution`);
+        if (validation.data) {
+          console.log(`[cli] Title: ${validation.data.title}`);
+          console.log(`[cli] Owner: ${validation.data.owner}`);
+          console.log(`[cli] Complexity: ${validation.data.estimates?.complexity || 'unknown'}`);
+        }
+        process.exit(0);
+      } else {
+        console.error(`[cli] ❌ ${target} validation failed:`);
+        validation.errors.forEach(err => {
+          console.error(`  - ${err}`);
+        });
+        process.exit(1);
+      }
+    }
+    
+    console.error('Usage: node orchestration/cli.mjs validate <brief|auv> <target>');
+    process.exit(2);
+  }
+  
+  // Default: treat as AUV ID for backwards compatibility
+  if (command.startsWith('AUV-')) {
+    const auvId = command;
+    const startTime = Date.now();
+    
+    try {
+      await runAuv(auvId);
+      const duration = Date.now() - startTime;
+      console.log(`[cli] SUCCESS: ${auvId} completed in ${duration}ms`);
+      process.exit(0);
+    } catch (err) {
+      const duration = Date.now() - startTime;
+      console.error('[cli] FAILED:', err?.message || err);
+      
+      // Write failure result card
+      const cardPath = `runs/${auvId}/result-cards/cli-summary.json`;
+      try {
+        fs.mkdirSync(path.dirname(cardPath), { recursive: true });
+        fs.writeFileSync(cardPath, JSON.stringify({
+          version: "1.0",
+          ts: Date.now() / 1000,
+          event: 'CliFailed',
+          auv: auvId,
+          duration_ms: duration,
+          error: err?.message || String(err),
+          error_step: err?.step || 'unknown',
+          env: {
+            STAGING_URL: process.env.STAGING_URL,
+            API_BASE: process.env.API_BASE,
+            NODE_ENV: process.env.NODE_ENV
+          },
+          ok: false,
+        }, null, 2));
+      } catch (cardErr) {
+        console.error('[cli] Failed to write error card:', cardErr.message);
+      }
+      
+      // Return typed exit codes based on error type
+      if (err instanceof RunbookError) {
+        process.exit(err.exitCode);
+      }
+      
+      process.exit(1);
+    }
+  }
+  
+  // Unknown command
+  console.error(`Unknown command: ${command}`);
+  console.error('Run "node orchestration/cli.mjs help" for usage information');
   process.exit(2);
 }
 
-const startTime = Date.now();
-
-runAuv(auvId).then(() => {
-  const duration = Date.now() - startTime;
-  console.log(`[cli] SUCCESS: ${auvId} completed in ${duration}ms`);
-  process.exit(0);
-}).catch(err => {
-  const duration = Date.now() - startTime;
-  console.error('[cli] FAILED:', err?.message || err);
-  
-  // Write failure result card
-  const cardPath = `runs/${auvId}/result-cards/cli-summary.json`;
-  try {
-    fs.mkdirSync(path.dirname(cardPath), { recursive: true });
-    fs.writeFileSync(cardPath, JSON.stringify({
-      version: "1.0",
-      ts: Date.now() / 1000,
-      event: 'CliFailed',
-      auv: auvId,
-      duration_ms: duration,
-      error: err?.message || String(err),
-      error_step: err?.step || 'unknown',
-      env: {
-        STAGING_URL: process.env.STAGING_URL,
-        API_BASE: process.env.API_BASE,
-        NODE_ENV: process.env.NODE_ENV
-      },
-      ok: false,
-    }, null, 2));
-  } catch (cardErr) {
-    console.error('[cli] Failed to write error card:', cardErr.message);
-  }
-
-  // Return typed exit codes based on error type
-  if (err instanceof RunbookError) {
-    process.exit(err.exitCode);
-  }
-  
+// Run main function
+main().catch(err => {
+  console.error('[cli] Unexpected error:', err);
   process.exit(1);
 });

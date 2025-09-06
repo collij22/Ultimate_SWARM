@@ -1,0 +1,50 @@
+id: AUV-0101
+title: Product Catalog
+owner: web
+status: pending
+tags:
+  - web
+  - products
+acceptance:
+  summary: Display and browse products
+  criteria:
+    - Products displayed in grid/list view
+    - Product details accessible
+    - Responsive design for mobile/desktop
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0101.spec.ts
+  api:
+    - tests/robot/playwright/api/auv-0101.spec.ts
+artifacts:
+  required:
+    - runs/AUV-0101/ui/products_search.png
+    - runs/AUV-0101/perf/lighthouse.json
+authoring_hints:
+  ui:
+    page: /products.html
+    search_input: "#q"
+    min_price_input: "#minPrice"
+    max_price_input: "#maxPrice"
+    apply_button_text: Apply
+    card_selector: '[data-testid="product-card"]'
+    title_selector: '[data-testid="product-title"]'
+    price_selector: '[data-testid="product-price"]'
+    screenshot: products_search.png
+  api:
+    base_path: /products
+    cases:
+      - name: list products
+        method: GET
+        path: /
+        expect: array
+      - name: search products
+        method: GET
+        path: /?q=3
+        expect: filtered
+dependencies: []
+estimates:
+  complexity: 4
+  tokens: 72000
+  mcp_usd: 0.14
+  time_hours: 15

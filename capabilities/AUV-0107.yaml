@@ -1,0 +1,28 @@
+id: AUV-0107
+title: Data Ingestion
+owner: data
+status: pending
+tags:
+  - data
+acceptance:
+  summary: Import data from sources
+  criteria:
+    - Multiple format support
+    - Validation and cleaning
+    - Error handling
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0107.spec.ts
+artifacts:
+  required:
+    - runs/AUV-0107/ui/screenshot.png
+    - runs/AUV-0107/perf/lighthouse.json
+authoring_hints:
+  ui: {}
+  api: {}
+dependencies: []
+estimates:
+  complexity: 5
+  tokens: 90000
+  mcp_usd: 0.18
+  time_hours: 18

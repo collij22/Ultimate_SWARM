@@ -1,0 +1,131 @@
+# Swarm1 AUV Template
+# This template defines the structure for auto-generated AUVs
+# Variables are denoted with {{VARIABLE}} syntax (for documentation purposes)
+# The actual compiler uses programmatic generation, not template substitution
+
+id: AUV-{{ID}}                  # e.g., AUV-0101
+title: {{TITLE}}                # Brief, descriptive title (max 50 chars)
+owner: {{DOMAIN}}               # web|api|data|ai
+status: pending                 # pending|active|completed|blocked
+tags: {{TAGS}}                  # Array of relevant tags [ui, api, search, products, etc.]
+
+acceptance:
+  summary: {{SUMMARY}}          # One-line description of what this AUV delivers
+  criteria:                     # Testable acceptance criteria (3-5 items)
+    {{#each CRITERIA}}
+    - {{this}}
+    {{/each}}
+
+# Test specifications that will be auto-authored
+tests:
+  playwright:
+    - tests/robot/playwright/{{FEATURE}}.spec.ts
+  {{#if HAS_API}}
+  api:
+    - tests/robot/playwright/api/{{FEATURE}}.spec.ts
+  {{/if}}
+
+# Required artifacts for CVF validation
+artifacts:
+  required:
+    - runs/{{ID}}/ui/{{SCREENSHOT}}.png
+    - runs/{{ID}}/perf/lighthouse.json
+    {{#if HAS_API}}
+    - runs/{{ID}}/api/trace.json
+    {{/if}}
+    {{#if HAS_DATA}}
+    - runs/{{ID}}/data/validation.json
+    {{/if}}
+
+# Hints for test auto-authoring (compatible with test_authoring.mjs)
+authoring_hints:
+  ui:
+    page: {{PAGE_URL}}                        # e.g., /products.html
+    
+    # Product/search-style hints (enables genUiSpec)
+    {{#if IS_PRODUCT}}
+    search_input: "{{SEARCH_SELECTOR}}"       # e.g., "#q"
+    min_price_input: "{{MIN_PRICE_SELECTOR}}" # e.g., "#minPrice"
+    max_price_input: "{{MAX_PRICE_SELECTOR}}" # e.g., "#maxPrice"
+    apply_button_text: "{{APPLY_BUTTON_TEXT}}" # e.g., "Apply"
+    card_selector: "{{CARD_SELECTOR}}"        # e.g., "[data-testid='product-card']"
+    title_selector: "{{TITLE_SELECTOR}}"      # e.g., "[data-testid='product-title']"
+    price_selector: "{{PRICE_SELECTOR}}"      # e.g., "[data-testid='product-price']"
+    {{/if}}
+    
+    # Cart-style hints (enables genUiCartSpec)
+    {{#if IS_CART}}
+    row_selector: "{{CART_ROW_SELECTOR}}"     # e.g., "[data-testid='cart-item']"
+    subtotal_selector: "{{SUBTOTAL_SELECTOR}}" # e.g., "[data-testid='subtotal']"
+    tax_selector: "{{TAX_SELECTOR}}"          # e.g., "[data-testid='tax']"
+    total_selector: "{{TOTAL_SELECTOR}}"      # e.g., "[data-testid='total']"
+    {{/if}}
+    
+    # Checkout-style hints (enables genUiCheckoutSpec)
+    {{#if IS_CHECKOUT}}
+    name_selector: "{{NAME_SELECTOR}}"        # e.g., "#name"
+    email_selector: "{{EMAIL_SELECTOR}}"      # e.g., "#email"
+    address_selector: "{{ADDRESS_SELECTOR}}"  # e.g., "#address"
+    card_selector_checkout: "{{CARD_SELECTOR_CHECKOUT}}" # e.g., "#card-number"
+    submit_selector: "{{SUBMIT_SELECTOR}}"    # e.g., "[data-testid='place-order']"
+    success_selector: "{{SUCCESS_SELECTOR}}"  # e.g., "[data-testid='order-success']"
+    {{/if}}
+    
+    screenshot: "{{SCREENSHOT}}.png"          # Screenshot filename for CVF
+
+  {{#if HAS_API}}
+  api:
+    base_path: {{API_BASE}}                   # e.g., "/products" (leading /api stripped by generator)
+    cases:
+      {{#each API_CASES}}
+      - name: {{name}}                        # Test case name
+        method: {{method}}                    # GET|POST|PUT|PATCH|DELETE
+        path: {{path}}                        # e.g., "/?q=term" or "/summary"
+        {{#if body}}
+        body: {{body}}                        # Request body (optional)
+        {{/if}}
+        {{#if expect_status}}
+        expect_status: {{status}}             # Expected HTTP status (default 200/201)
+        {{/if}}
+        {{#if setup}}
+        setup: {{setup}}                      # Setup steps for stateful tests
+        {{/if}}
+        {{#if summary_path}}
+        summary_path: {{summary}}             # For cart summary validation
+        {{/if}}
+        expect: {{expect}}                    # Expected result pattern
+      {{/each}}
+  {{/if}}
+
+# Dependencies on other AUVs
+dependencies:
+  {{#each DEPENDENCIES}}
+  - {{this}}                                  # e.g., AUV-0100
+  {{/each}}
+
+# Resource estimates for planning and budgeting
+estimates:
+  complexity: {{COMPLEXITY}}                  # 1-10 scale
+  tokens: {{TOKEN_ESTIMATE}}                  # Estimated LLM tokens
+  mcp_usd: {{MCP_COST}}                       # Estimated MCP tool costs
+  time_hours: {{TIME_ESTIMATE}}               # Estimated implementation time
+
+# Metadata (optional, for traceability)
+metadata:
+  source_brief: {{BRIEF_ID}}                  # Reference to originating brief
+  requirement_id: {{REQUIREMENT_ID}}          # Reference to requirement
+  created_at: {{TIMESTAMP}}                   # ISO 8601 timestamp
+  created_by: auv_compiler                    # Generation source
+
+# Notes for implementation (optional)
+notes: |
+  {{#if IMPLEMENTATION_NOTES}}
+  {{IMPLEMENTATION_NOTES}}
+  {{/if}}
+
+# Risk factors (optional)
+risks:
+  {{#each RISKS}}
+  - description: {{description}}
+    mitigation: {{mitigation}}
+  {{/each}}

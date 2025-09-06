@@ -19,7 +19,14 @@
       "Bash(else echo \"No hooks log found\")",
       "Bash(fi)",
       "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0003)",
-      "Bash(then echo \"Hooks log exists\")"
+      "Bash(then echo \"Hooks log exists\")",
+      "Bash(npm install)",
+      "Bash(npm run validate:cards:*)",
+      "Bash(npx ajv-cli:*)",
+      "Bash(npm ci:*)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0101)",
+      "Bash(npm run test:unit:*)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0102)"
     ],
     "deny": [
       "Read(./.env)",

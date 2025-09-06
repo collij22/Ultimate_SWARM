@@ -1,0 +1,48 @@
+id: AUV-0105
+title: Dashboard
+owner: web
+status: pending
+tags:
+  - web
+  - ui
+  - dashboard
+acceptance:
+  summary: Main user interface
+  criteria:
+    - Overview metrics displayed
+    - Navigation to features
+    - Responsive layout
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0105.spec.ts
+  api:
+    - tests/robot/playwright/api/auv-0105.spec.ts
+artifacts:
+  required:
+    - runs/AUV-0105/ui/dashboard_overview.png
+    - runs/AUV-0105/perf/lighthouse.json
+authoring_hints:
+  ui:
+    page: /dashboard.html
+    card_selector: '[data-testid="metric-card"]'
+    title_selector: '[data-testid="metric-title"]'
+    value_selector: '[data-testid="metric-value"]'
+    screenshot: dashboard_overview.png
+  api:
+    base_path: /dashboard
+    cases:
+      - name: get metrics
+        method: GET
+        path: /metrics
+        expect: metrics
+      - name: get charts
+        method: GET
+        path: /charts
+        expect: chart_data
+dependencies:
+  - AUV-0104
+estimates:
+  complexity: 6
+  tokens: 108000
+  mcp_usd: 0.22
+  time_hours: 22

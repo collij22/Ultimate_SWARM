@@ -1,0 +1,33 @@
+id: AUV-0106
+title: Analytics & Reports
+owner: web
+status: pending
+tags:
+  - web
+  - data
+acceptance:
+  summary: Data visualization and insights
+  criteria:
+    - Generate reports
+    - Export data
+    - Interactive charts
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0106.spec.ts
+artifacts:
+  required:
+    - runs/AUV-0106/ui/analytics___reports.png
+    - runs/AUV-0106/perf/lighthouse.json
+authoring_hints:
+  ui:
+    page: /analytics___reports.html
+    card_selector: '[data-testid="item"]'
+    title_selector: '[data-testid="title"]'
+    screenshot: analytics___reports.png
+  api: {}
+dependencies: []
+estimates:
+  complexity: 5
+  tokens: 90000
+  mcp_usd: 0.18
+  time_hours: 18

@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarm1/contracts/brief.schema.json",
+  "title": "Swarm1 Brief",
+  "description": "Schema for Upwork-style project briefs that feed the AUV compiler",
+  "type": "object",
+  "required": ["business_goals", "must_have"],
+  "properties": {
+    "business_goals": {
+      "type": "array",
+      "description": "High-level business objectives the project aims to achieve",
+      "items": {
+        "type": "string",
+        "minLength": 10
+      },
+      "minItems": 1,
+      "maxItems": 10
+    },
+    "must_have": {
+      "type": "array",
+      "description": "Essential features that must be delivered",
+      "items": {
+        "type": "string",
+        "minLength": 5
+      },
+      "minItems": 1,
+      "maxItems": 20
+    },
+    "nice_to_have": {
+      "type": "array",
+      "description": "Optional features that add value but aren't critical",
+      "items": {
+        "type": "string",
+        "minLength": 5
+      },
+      "maxItems": 10
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Project constraints and limitations",
+      "properties": {
+        "budget_usd": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000000,
+          "description": "Maximum budget in USD"
+        },
+        "timeline_days": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 365,
+          "description": "Expected project duration in days"
+        },
+        "tech_stack": {
+          "type": "array",
+          "description": "Preferred or required technologies",
+          "items": {
+            "type": "string",
+            "minLength": 2
+          },
+          "maxItems": 20
+        },
+        "environments": {
+          "type": "array",
+          "description": "Target deployment environments",
+          "items": {
+            "type": "string",
+            "enum": ["development", "staging", "production", "local", "cloud", "edge", "mobile", "web"]
+          },
+          "maxItems": 5
+        }
+      },
+      "additionalProperties": true
+    },
+    "sample_urls": {
+      "type": "array",
+      "description": "Reference URLs for similar products or inspiration",
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "pattern": "^https?://"
+      },
+      "maxItems": 10
+    },
+    "project_context": {
+      "type": "string",
+      "description": "Additional context about the project background and motivations",
+      "maxLength": 5000
+    }
+  },
+  "additionalProperties": true
+}

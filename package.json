@@ -6,17 +6,25 @@
     "@playwright/test": "^1.55.0",
     "chrome-launcher": "^1.2.0",
     "lighthouse": "^12.8.2",
-    "ajv-cli": "^5.0.0"
+    "ajv-cli": "^5.0.0",
+    "mocha": "^10.2.0"
   },
   "dependencies": {
     "express": "^5.1.0",
-    "yaml": "^2.8.1"
+    "yaml": "^2.8.1",
+    "ajv": "^8.12.0",
+    "ajv-formats": "^2.1.1"
   },
   "scripts": {
     "mock:staging": "node mock/server.js",
     "deliver": "node orchestration/cli.mjs",
     "deliver:0003": "node orchestration/cli.mjs AUV-0003",
     "deliver:0002": "node orchestration/cli.mjs AUV-0002",
-    "validate:cards": "npx ajv validate -s schemas/runbook-summary.schema.json -d \"runs/**/result-cards/runbook-summary.json\" --verbose"
+    "validate:cards": "npx ajv validate -s schemas/runbook-summary.schema.json -d \"runs/**/result-cards/runbook-summary.json\" --verbose",
+    "validate:brief": "npx ajv validate -s contracts/brief.schema.json --spec=draft7 --verbose -d",
+    "plan": "node orchestration/cli.mjs plan",
+    "plan:demo": "node orchestration/cli.mjs plan briefs/demo-01/brief.md",
+    "plan:demo:dry": "node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run",
+    "test:unit": "mocha tests/unit/*.test.mjs"
   }
 }

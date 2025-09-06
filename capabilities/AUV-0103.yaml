@@ -1,0 +1,46 @@
+id: AUV-0103
+title: Checkout Flow
+owner: web
+status: pending
+tags:
+  - web
+  - checkout
+acceptance:
+  summary: Complete purchase process
+  criteria:
+    - Guest checkout option
+    - Payment processing
+    - Order confirmation
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0103.spec.ts
+  api:
+    - tests/robot/playwright/api/auv-0103.spec.ts
+artifacts:
+  required:
+    - runs/AUV-0103/ui/checkout_flow.png
+    - runs/AUV-0103/perf/lighthouse.json
+authoring_hints:
+  ui:
+    page: /checkout.html
+    name_selector: "#name"
+    email_selector: "#email"
+    address_selector: "#address"
+    card_selector: "#card"
+    submit_selector: '[data-testid="submit-order"]'
+    success_selector: '[data-testid="order-success"]'
+    screenshot: checkout_flow.png
+  api:
+    base_path: /checkout
+    cases:
+      - name: submit order
+        method: POST
+        path: /
+        expect_status: 201
+dependencies:
+  - AUV-0102
+estimates:
+  complexity: 7
+  tokens: 126000
+  mcp_usd: 0.25
+  time_hours: 26

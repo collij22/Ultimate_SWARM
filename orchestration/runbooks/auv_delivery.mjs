@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
+import YAML from 'yaml';
 import { ensureTests } from '../lib/test_authoring.mjs';
 import { expectedArtifacts } from '../lib/expected_artifacts.mjs';
 
@@ -37,10 +38,52 @@ export class RunbookError extends Error {
   }
 }
 
-// Minimal per-AUV config; perf and CVF details stay here.
-const AUV_MAP = {
+// Dynamic AUV loading from capabilities directory
+function loadAuvConfig(auvId) {
+  // First check if there's a capability file
+  const capPath = path.resolve(process.cwd(), 'capabilities', `${auvId}.yaml`);
+  if (!fs.existsSync(capPath)) {
+    return null;
+  }
+
+  try {
+    const capYaml = fs.readFileSync(capPath, 'utf8');
+    const cap = YAML.parse(capYaml);
+    
+    // Build config from capability file
+    const config = {
+      specs: cap.tests?.playwright || null,
+      cvfId: auvId,
+      perfOut: `runs/${auvId}/perf/lighthouse.json`
+    };
+
+    // Determine perfUrl from authoring hints
+    if (cap.authoring_hints?.ui?.page) {
+      const page = cap.authoring_hints.ui.page;
+      config.perfUrl = (base) => `${base}${page}`;
+    } else {
+      // Default fallback based on common patterns
+      if (auvId.includes('0101') || cap.title?.toLowerCase().includes('product')) {
+        config.perfUrl = (base) => `${base}/products.html`;
+      } else if (auvId.includes('0102') || cap.title?.toLowerCase().includes('cart')) {
+        config.perfUrl = (base) => `${base}/cart.html`;
+      } else if (auvId.includes('0103') || cap.title?.toLowerCase().includes('checkout')) {
+        config.perfUrl = (base) => `${base}/checkout.html`;
+      } else {
+        config.perfUrl = (base) => `${base}/`;
+      }
+    }
+
+    return config;
+  } catch (e) {
+    console.error(`Failed to load AUV config for ${auvId}:`, e.message);
+    return null;
+  }
+}
+
+// Legacy hardcoded configs for backward compatibility
+const LEGACY_AUV_MAP = {
   'AUV-0002': {
-    // Product listing & detail specs that generate required artifacts
     specs: [
       'tests/robot/playwright/products.spec.ts',
       'tests/robot/playwright/api/products.spec.ts',
@@ -50,24 +93,36 @@ const AUV_MAP = {
     cvfId: 'AUV-0002',
   },
   'AUV-0003': {
-    specs: ['tests/robot/playwright/products-filter.spec.ts'], // skip separate API spec
+    specs: ['tests/robot/playwright/products-filter.spec.ts'],
     perfUrl: (base) => `${base}/products.html`,
     perfOut: 'runs/AUV-0003/perf/lighthouse.json',
     cvfId: 'AUV-0003',
   },
   'AUV-0004': {
-    specs: null, // let auto-authoring create tests from capability + hints
+    specs: null,
     perfUrl: (base) => `${base}/cart.html`,
     perfOut: 'runs/AUV-0004/perf/lighthouse.json',
     cvfId: 'AUV-0004',
   },
   'AUV-0005': {
-  specs: null, // let auto-authoring create tests from hints
-  perfUrl: (base) => `${base}/checkout.html`,
-  perfOut: 'runs/AUV-0005/perf/lighthouse.json', // optional; add to CVF later if you want perf
-  cvfId: 'AUV-0005',
+    specs: null,
+    perfUrl: (base) => `${base}/checkout.html`,
+    perfOut: 'runs/AUV-0005/perf/lighthouse.json',
+    cvfId: 'AUV-0005',
   }
 };
+
+// Get AUV config with dynamic loading fallback
+function getAuvConfig(auvId) {
+  // Try dynamic loading first
+  const dynamicConfig = loadAuvConfig(auvId);
+  if (dynamicConfig) {
+    return dynamicConfig;
+  }
+  
+  // Fall back to legacy hardcoded configs
+  return LEGACY_AUV_MAP[auvId] || null;
+}
 
 function log(...args) { console.log('[runbook]', ...args); }
 
@@ -179,7 +234,7 @@ async function maybeRepair(auvId, err) {
 export { expectedArtifacts };
 
 export async function runAuv(auvId, { stagingUrl, apiBase } = {}) {
-  const cfg = AUV_MAP[auvId];
+  const cfg = getAuvConfig(auvId);
   if (!cfg) throw new RunbookError(`Unknown AUV id: ${auvId}`, 'config', 1);
 
   const STAGING_URL = stagingUrl || process.env.STAGING_URL || 'http://127.0.0.1:3000';

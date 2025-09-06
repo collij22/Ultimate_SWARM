@@ -1,0 +1,103 @@
+# Swarm1 AUV Backlog
+# Generated from brief: demo-01
+# Hash: 7643a096ea30a5da003606a8e292abd5d9749dbdcca605ed98402eb987a6ea86
+
+version: "1.0"
+generated: 2025-09-06
+brief_id: demo-01
+total_estimates:
+  tokens: 756000
+  mcp_usd: 1.51
+  time_hours: 154
+backlog:
+  - id: AUV-0101
+    title: Product Catalog
+    priority: 1
+    depends_on: []
+    status: pending
+    owner: web
+    estimates:
+      complexity: 4
+      tokens: 72000
+      mcp_usd: 0.14
+      time_hours: 15
+  - id: AUV-0102
+    title: Shopping Cart
+    priority: 1
+    depends_on:
+      - AUV-0101
+    status: pending
+    owner: web
+    estimates:
+      complexity: 4
+      tokens: 72000
+      mcp_usd: 0.14
+      time_hours: 15
+  - id: AUV-0103
+    title: Checkout Flow
+    priority: 1
+    depends_on:
+      - AUV-0102
+    status: pending
+    owner: web
+    estimates:
+      complexity: 7
+      tokens: 126000
+      mcp_usd: 0.25
+      time_hours: 26
+  - id: AUV-0104
+    title: User Authentication
+    priority: 2
+    depends_on: []
+    status: pending
+    owner: api
+    estimates:
+      complexity: 6
+      tokens: 108000
+      mcp_usd: 0.22
+      time_hours: 22
+  - id: AUV-0105
+    title: Dashboard
+    priority: 2
+    depends_on:
+      - AUV-0104
+    status: pending
+    owner: web
+    estimates:
+      complexity: 6
+      tokens: 108000
+      mcp_usd: 0.22
+      time_hours: 22
+  - id: AUV-0106
+    title: Analytics & Reports
+    priority: 2
+    depends_on: []
+    status: pending
+    owner: web
+    estimates:
+      complexity: 5
+      tokens: 90000
+      mcp_usd: 0.18
+      time_hours: 18
+  - id: AUV-0107
+    title: Data Ingestion
+    priority: 2
+    depends_on: []
+    status: pending
+    owner: data
+    estimates:
+      complexity: 5
+      tokens: 90000
+      mcp_usd: 0.18
+      time_hours: 18
+  - id: AUV-0108
+    title: Data Processing
+    priority: 2
+    depends_on: []
+    status: pending
+    owner: data
+    estimates:
+      complexity: 5
+      tokens: 90000
+      mcp_usd: 0.18
+      time_hours: 18

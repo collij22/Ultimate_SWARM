@@ -1,0 +1,49 @@
+id: AUV-0102
+title: Shopping Cart
+owner: web
+status: pending
+tags:
+  - web
+  - cart
+acceptance:
+  summary: Manage items for purchase
+  criteria:
+    - Add/remove items from cart
+    - Update quantities
+    - Calculate totals with tax
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0102.spec.ts
+  api:
+    - tests/robot/playwright/api/auv-0102.spec.ts
+artifacts:
+  required:
+    - runs/AUV-0102/ui/cart_summary.png
+    - runs/AUV-0102/perf/lighthouse.json
+authoring_hints:
+  ui:
+    page: /cart.html
+    row_selector: '[data-testid="cart-row"]'
+    subtotal_selector: '[data-testid="cart-subtotal"]'
+    tax_selector: '[data-testid="cart-tax"]'
+    total_selector: '[data-testid="cart-total"]'
+    screenshot: cart_summary.png
+  api:
+    base_path: /cart
+    cases:
+      - name: summary after setup
+        method: GET
+        summary_path: /cart/summary
+        setup:
+          - method: POST
+            path: /api/cart
+            body:
+              productId: demo-1
+              qty: 1
+dependencies:
+  - AUV-0101
+estimates:
+  complexity: 4
+  tokens: 72000
+  mcp_usd: 0.14
+  time_hours: 15

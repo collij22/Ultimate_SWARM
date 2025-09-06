@@ -1,14 +1,42 @@
 # Orchestration — AUV Lifecycle & Scheduling
 
+## Brief → Backlog (Phase 2 - Completed)
+
+### Convert Brief to AUVs
+
+```bash
+# Generate AUVs from an Upwork-style brief
+node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run
+
+# Without --dry-run, uses Requirements Analyst agent
+node orchestration/cli.mjs plan briefs/demo-01/brief.md
+```
+
+This generates:
+- `capabilities/AUV-01xx.yaml` files with acceptance criteria and authoring hints
+- `capabilities/backlog.yaml` with dependencies and estimates
+- `reports/requirements/<RUN-ID>.json` with extracted requirements
+
+### Validate Generated AUVs
+
+```bash
+# Validate a specific AUV
+node orchestration/cli.mjs validate auv AUV-0101
+
+# Validate brief format
+node orchestration/cli.mjs validate brief briefs/demo-01/brief.md
+```
+
 ## AUV Lifecycle
 
-1. **Define** AUV (`capabilities/AUV-*.yaml`): goals, acceptance, proofs, level target (L3)
-2. **Design**: Requirements Analyst + Architect clarify scope, risks, contracts
-3. **Build**: Rapid Builder, Frontend, Backend, Database, AI (as needed)
-4. **Robot**: Playwright/UI + API prove acceptance; artifacts under `runs/<AUV-ID>/...`
-5. **Gates**: CVF → QA → Security — all must be green to proceed
-6. **Finalize**: docs/runbooks, changelog, readiness checklist
-7. **DevOps**: staging deploy, observability, rollback rehearsal; optional promotion
+1. **Brief** → Compile to AUVs using NLP extraction and Requirements Analyst
+2. **Define** AUV (`capabilities/AUV-*.yaml`): goals, acceptance, proofs, level target (L3)
+3. **Design**: Requirements Analyst + Architect clarify scope, risks, contracts
+4. **Build**: Rapid Builder, Frontend, Backend, Database, AI (as needed)
+5. **Robot**: Playwright/UI + API prove acceptance; artifacts under `runs/<AUV-ID>/...`
+6. **Gates**: CVF → QA → Security — all must be green to proceed
+7. **Finalize**: docs/runbooks, changelog, readiness checklist
+8. **DevOps**: staging deploy, observability, rollback rehearsal; optional promotion
 
 ## Parallelization
 
@@ -112,3 +140,159 @@ See `orchestration/lib/test_authoring.mjs` for supported hints (cart summary, li
 ---
 
 CI runs autopilot for AUV-0002, AUV-0003, AUV-0004, and AUV-0005 with full artifact validation
+
+---
+
+## Brief → Backlog (Phase 2)
+
+### Overview
+
+The Brief Intake & AUV Compiler transforms unstructured project briefs (Upwork-style) into executable AUVs with complete specifications, dependencies, and resource estimates.
+
+### Process Flow
+
+```
+Brief (MD/YAML/JSON) → Validation → Requirements Extraction → Capability Mapping → AUV Generation → Backlog
+```
+
+### Commands
+
+```bash
+# Plan from a brief (full analysis)
+node orchestration/cli.mjs plan briefs/demo-01/brief.md
+
+# Plan with dry-run (heuristic extraction)
+node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run
+
+# Validate brief structure
+node orchestration/cli.mjs validate brief briefs/demo-01/brief.md
+
+# Validate generated AUV
+node orchestration/cli.mjs validate auv AUV-0101
+```
+
+### Brief Structure
+
+Required sections:
+- **business_goals**: High-level objectives (1-10 items)
+- **must_have**: Essential features (1-20 items)
+
+Optional sections:
+- **nice_to_have**: Enhancement features
+- **constraints**: Budget, timeline, tech stack
+- **technical_requirements**: Performance, scale, security
+- **sample_urls**: Reference sites
+
+### Compilation Pipeline
+
+1. **Parse & Validate** (`orchestration/lib/validate_brief.mjs`)
+   - Load brief file (MD/YAML/JSON)
+   - Validate against `contracts/brief.schema.json`
+   - Extract structured data from markdown
+
+2. **Requirements Analysis** (`orchestration/lib/call_agent.mjs`)
+   - Invoke A2 Requirements Analyst (or heuristic in dry-run)
+   - Extract capabilities, risks, dependencies
+   - Persist to `reports/requirements/<RUN-ID>.json`
+
+3. **AUV Generation** (`orchestration/lib/auv_compiler.mjs`)
+   - Map capabilities to AUV specs
+   - Generate authoring hints for test generation
+   - Calculate complexity and resource estimates
+   - Detect dependencies (UI→API, cart→checkout, etc.)
+
+4. **Output Generation**
+   - Individual AUVs: `capabilities/AUV-01xx.yaml`
+   - Backlog: `capabilities/backlog.yaml`
+   - Requirements report: `reports/requirements/*.json`
+
+### Authoring Hints
+
+Generated AUVs include hints compatible with `test_authoring.mjs`:
+
+```yaml
+authoring_hints:
+  ui:
+    page: /products.html
+    search_input: '#q'
+    card_selector: '[data-testid="product-card"]'
+    screenshot: 'products_catalog.png'
+  api:
+    base_path: /products
+    cases:
+      - name: list products
+        method: GET
+        path: /
+        expect: array
+```
+
+### Dependency Detection
+
+Automatic dependency inference:
+- UI components depend on corresponding APIs
+- Checkout depends on cart
+- Cart depends on product catalog
+- All authenticated features depend on auth
+- Data consumers depend on data providers
+
+### Resource Estimation
+
+Each AUV includes estimates:
+- **complexity**: 1-10 scale based on feature analysis
+- **tokens**: Estimated LLM tokens (complexity × 15000 × 1.2)
+- **mcp_usd**: Estimated MCP tool costs (complexity × 0.03 × 1.2)
+- **time_hours**: Implementation time (complexity × 3 × 1.2)
+
+20% buffer included for conservative estimation.
+
+### Example Output
+
+From `briefs/demo-01/brief.md` (e-commerce marketplace):
+
+```bash
+[cli] Generated 8 AUVs
+[cli] Summary:
+  - Total complexity: 42
+  - Total hours: 154
+  - Total cost: $1.51
+  - Backlog: capabilities/backlog.yaml
+
+Generated AUVs:
+  - AUV-0101: Product Catalog (depends on: AUV-0104)
+  - AUV-0102: Shopping Cart (depends on: AUV-0101, AUV-0104)
+  - AUV-0103: Checkout Flow (depends on: AUV-0102, AUV-0104)
+  - AUV-0104: User Authentication
+  ...
+```
+
+### Integration with Autopilot
+
+Generated AUVs are immediately executable:
+
+```bash
+# Run first generated AUV
+node orchestration/cli.mjs AUV-0101
+```
+
+The autopilot will:
+1. Auto-generate tests from authoring hints
+2. Run Playwright UI/API tests
+3. Run Lighthouse performance checks
+4. Validate CVF gates
+5. Produce artifacts in `runs/AUV-0101/`
+
+### Observability
+
+All compilation events logged to `runs/observability/hooks.jsonl`:
+- BriefValidated / BriefValidationFailed
+- RequirementsAnalysisStart / RequirementsAnalysisComplete
+- CompilationStart / CompilationComplete
+- AuvSpecWritten
+- BacklogWritten
+
+### Next Phase Integration
+
+The generated `backlog.yaml` feeds Phase 3 (DAG Runner):
+- Provides dependency graph for parallel execution
+- Includes resource estimates for scheduling
+- Tracks status for incremental delivery
