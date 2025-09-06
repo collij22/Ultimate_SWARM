@@ -26,7 +26,9 @@
       "Bash(npm ci:*)",
       "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0101)",
       "Bash(npm run test:unit:*)",
-      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0102)"
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0102)",
+      "Bash(npm pkg:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [
       "Read(./.env)",

@@ -1,4 +1,5 @@
-import assert from 'assert';
+import assert from 'node:assert/strict';
+import { describe, it, before } from 'node:test';
 import { extractCapabilities, generateAuvSpec, computeDependencies } from '../../orchestration/lib/auv_compiler.mjs';
 import fs from 'fs';
 import path from 'path';
