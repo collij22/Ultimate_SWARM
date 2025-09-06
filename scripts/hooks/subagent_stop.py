@@ -24,6 +24,12 @@ OBS_DIR = os.path.join(PROJECT_DIR, "runs", "observability")
 LOG_PATH = os.path.join(OBS_DIR, "hooks.jsonl")
 
 def _read_stdin_json() -> dict:
+    try:
+        # If stdin is a TTY (no pipe), don't read or we'll block the terminal.
+        if getattr(sys.stdin, "isatty", lambda: False)():
+            return {}
+    except Exception:
+        return {}
     data = sys.stdin.read()
     try:
         return json.loads(data) if data else {}

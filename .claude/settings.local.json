@@ -28,7 +28,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/hooks/session_start.py"
+            "command": "python scripts/hooks/session_start.py",
+            "timeout": 2
           }
         ]
       }
@@ -39,7 +40,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/hooks/pre_tool.py"
+            "command": "python scripts/hooks/pre_tool.py",
+            "timeout": 2
           }
         ]
       }
@@ -50,7 +52,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/hooks/post_tool.py"
+            "command": "python scripts/hooks/post_tool.py",
+            "timeout": 2
           }
         ]
       }
@@ -60,7 +63,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/hooks/subagent_stop.py"
+            "command": "python scripts/hooks/subagent_stop.py",
+            "timeout": 2
           }
         ]
       }
@@ -70,7 +74,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python scripts/hooks/session_end.py"
+            "command": "python scripts/hooks/session_end.py",
+            "timeout": 2
           }
         ]
       }
