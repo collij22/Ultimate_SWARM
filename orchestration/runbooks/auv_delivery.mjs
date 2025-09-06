@@ -8,35 +8,7 @@ import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 import { ensureTests } from '../lib/test_authoring.mjs';
-
-export function expectedArtifacts(auvId) {
-  switch (auvId) {
-    case 'AUV-0002':
-      return [
-        'runs/AUV-0002/api/get_products_200.json',
-        'runs/AUV-0002/ui/products_grid.png',
-        'runs/AUV-0002/ui/product_detail.png',
-        'runs/AUV-0002/perf/lighthouse.json'
-      ];
-    case 'AUV-0003':
-      return [
-        'runs/AUV-0003/ui/products_search.png',
-        'runs/AUV-0003/perf/lighthouse.json'
-      ];
-    case 'AUV-0004':
-      return [
-        'runs/AUV-0004/ui/cart_summary.png',
-        'runs/AUV-0004/perf/lighthouse.json'
-      ];
-    case 'AUV-0005':
-      return [
-        'runs/AUV-0005/ui/checkout_success.png',
-        'runs/AUV-0005/perf/lighthouse.json'
-      ];
-    default:
-      return [];
-  }
-}
+import { expectedArtifacts } from '../lib/expected_artifacts.mjs';
 
 function readLighthouseMetrics(file) {
   try {
@@ -202,6 +174,9 @@ async function maybeRepair(auvId, err) {
   console.warn(`[repair] ${auvId}: no auto-retry (error_type=${errorType})`);
   return false;
 }
+
+// Re-export for backward compatibility (if needed)
+export { expectedArtifacts };
 
 export async function runAuv(auvId, { stagingUrl, apiBase } = {}) {
   const cfg = AUV_MAP[auvId];

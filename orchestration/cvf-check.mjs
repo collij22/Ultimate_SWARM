@@ -16,6 +16,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { expectedArtifacts } from './lib/expected_artifacts.mjs';
 
 function statNonEmpty(p) {
   try {
@@ -34,36 +35,8 @@ function readJsonSafe(p) {
   }
 }
 
-export function expectedArtifacts(auvId) {
-  // Add a case per AUV. Keep paths stable so CI & agents can rely on them.
-  if (auvId === "AUV-0002") {
-    return [
-      "runs/AUV-0002/api/get_products_200.json",
-      "runs/AUV-0002/ui/products_grid.png",
-      "runs/AUV-0002/ui/product_detail.png",
-      "runs/AUV-0002/perf/lighthouse.json"
-    ];
-  }
-  if (auvId === "AUV-0003") {
-    return [
-      "runs/AUV-0003/ui/products_search.png",
-      "runs/AUV-0003/perf/lighthouse.json"
-    ];
-  }
-  if (auvId === "AUV-0004") {
-    return [
-      "runs/AUV-0004/ui/cart_summary.png",
-      "runs/AUV-0004/perf/lighthouse.json"
-    ];
-  }
-  if (auvId === "AUV-0005") {
-    return [ 
-      "runs/AUV-0005/ui/checkout_success.png",
-      "runs/AUV-0005/perf/lighthouse.json"
-    ];
-  }    
-  return null; // unknown AUV
-}
+// Re-export for backward compatibility if other files import from here
+export { expectedArtifacts };
 
 function validateSpecial(file) {
   // Minimal sanity checks for certain artifact types

@@ -65,6 +65,10 @@ The autopilot uses [typed exit codes](QUALITY-GATES.md) for precise error report
 - **104**: Test authoring failed
 - **105**: Server startup failed
 
+### Artifact Expectations
+
+Both the runbook (`orchestration/runbooks/auv_delivery.mjs`) and CVF checker (`orchestration/cvf-check.mjs`) source their expected artifact definitions from a shared module (`orchestration/lib/expected_artifacts.mjs`). This ensures consistency and provides a single source of truth for artifact requirements across the system.
+
 ### Repair Loop Behavior
 
 When transient failures are detected (timeouts, network issues, browser crashes), the system:

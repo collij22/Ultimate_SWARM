@@ -1,25 +1,27 @@
+#!/usr/bin/env node
+/**
+ * Artifact Consistency Check
+ * Verifies alignment between expected artifacts definitions
+ * Now uses shared module as single source of truth
+ */
+
 import assert from 'node:assert/strict';
-import { expectedArtifacts as rbExpected } from '../runbooks/auv_delivery.mjs';
-import { expectedArtifacts as cvfExpected } from '../cvf-check.mjs';
+import { expectedArtifacts, getAuvsWithArtifacts } from './expected_artifacts.mjs';
 
-console.log('Checking artifact consistency between runbook and CVF...');
+console.log('Checking artifact consistency (using shared module)...');
 
-for (const id of ['AUV-0002','AUV-0003','AUV-0004','AUV-0005']) {
-  const a = new Set(rbExpected(id));
-  const b = new Set(cvfExpected(id));
+// Get all AUVs that have expected artifacts defined
+const auvs = getAuvsWithArtifacts();
+
+for (const id of auvs) {
+  const artifacts = expectedArtifacts(id);
+  
+  // Ensure each AUV has at least one artifact defined
+  assert(artifacts.length > 0, `${id}: no artifacts defined`);
   
   console.log(`\n${id}:`);
-  console.log(`  Runbook expects: ${Array.from(a).join(', ')}`);
-  console.log(`  CVF expects:     ${Array.from(b).join(', ')}`);
-  
-  assert.equal(a.size, b.size, `${id}: artifact counts differ (runbook: ${a.size}, CVF: ${b.size})`);
-  for (const x of a) {
-    assert.ok(b.has(x), `${id}: missing in CVF: ${x}`);
-  }
-  for (const x of b) {
-    assert.ok(a.has(x), `${id}: missing in runbook: ${x}`);
-  }
-  console.log(`  ✅ Consistent (${a.size} artifacts)`);
+  console.log(`  Expected artifacts: ${artifacts.join(', ')}`);
+  console.log(`  ✅ ${artifacts.length} artifacts defined`);
 }
 
-console.log('\n✅ Artifact maps are consistent between runbook and CVF');
+console.log('\n✅ All artifact definitions loaded from shared module successfully');

@@ -14,6 +14,7 @@
 - **Script**: `node orchestration/cvf-check.mjs <AUV-ID>`
 - **Artifacts**: Screenshots, videos, API traces, performance reports per `capabilities/<AUV>.yaml`
 - **Validation**: File existence + format validation (JSON parsing, performance scores)
+- **Source of Truth**: Expected artifacts defined in `orchestration/lib/expected_artifacts.mjs`
 
 ### 3. Functional Gate (Playwright)
 - **Requirement**: All UI and API tests pass for current AUV.
@@ -34,6 +35,7 @@
 
 ### Error Handling & Observability
 - **Result Cards**: All runs produce structured JSON summary in `runs/<AUV>/result-cards/`
+- **Validation**: Cards validated against `schemas/runbook-summary.schema.json` using ajv-cli
 - **Timing Data**: Per-step duration tracking for performance analysis
 - **Failure Classification**: Transient vs. persistent error detection
 - **Repair Loop**: Automatic retry for network/browser/server transients only

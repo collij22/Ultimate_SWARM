@@ -11,8 +11,10 @@
 - **Hooks & Observability**: `scripts/hooks/*.py` emit to `runs/observability/hooks.jsonl` and result-cards per session/subagent
 - **MCP**: `mcp/registry.yaml` + `mcp/policies.yaml` define capability → tool mapping & allowlist; runtime router not built yet
 - **CI Pipeline**: Simplified to use autopilot as single source of truth for AUV-0002..0005 with full artifact validation
-- **Validation**: Result cards validated with ajv-cli against schemas
+- **Validation**: Result cards validated with ajv-cli against `schemas/runbook-summary.schema.json`
 - **Error Handling**: Typed exit codes (101-105), structured failure cards, transient failure retry logic
+- **Shared Artifacts Module**: `orchestration/lib/expected_artifacts.mjs` provides single source of truth for artifact expectations across runbook and CVF
+- **Node Version Constraint**: Package.json enforces Node.js v20.x for consistency
 
 ### ❌ Gaps (to Full Autonomy)
 
@@ -73,6 +75,7 @@ Bulletproof the current pipeline and codify "definition of done" (DoD) per AUV.
 
 #### `orchestration/cvf-check.mjs`
 - Ensure AUV-0004 (`ui/cart_summary.png`, `perf/lighthouse.json`) and AUV-0005 (`ui/checkout_success.png`, `perf/lighthouse.json`) are recognized
+- Now imports from shared `orchestration/lib/expected_artifacts.mjs` module
 
 #### `.github/workflows/ci.yml`
 - Duplicate the 0003 block for 0004 and 0005 (ensure `mkdir -p runs/AUV-000X/perf` before Lighthouse)
@@ -85,7 +88,8 @@ Bulletproof the current pipeline and codify "definition of done" (DoD) per AUV.
   - `runs/<AUV>/ui/*.png` as defined by CVF ✓
   - `runs/<AUV>/result-cards/runbook-summary.json` with `ok: true` and version field ✓
 - Result cards validated with `npm run validate:cards` using ajv-cli ✓
-- Artifact consistency verified with `orchestration/lib/artifact_consistency.mjs` ✓
+- Artifact consistency verified with `orchestration/lib/artifact_consistency.mjs` (now using shared module) ✓
+- Shared artifact definitions prevent runbook/CVF drift ✓
 
 ---
 
@@ -351,6 +355,9 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 - ✅ Ensured `cvf-check.mjs` includes 0004/0005 and fixed AUV-0002 spec mapping
 - ✅ Added validation pipeline with ajv-cli
 - ✅ Fixed ENV propagation and server health checks
+- ✅ Extracted shared `expected_artifacts.mjs` module to prevent drift
+- ✅ Added Node.js v20.x engine constraint for consistency
+- ✅ Added artifact validation assertions in consistency check
 
 ### 🚀 Kick Off Phase-2 (NEXT)
 - Add `contracts/brief.schema.json` (initial minimal schema)

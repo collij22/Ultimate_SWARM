@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": ">=20 <21"
+  },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "chrome-launcher": "^1.2.0",
