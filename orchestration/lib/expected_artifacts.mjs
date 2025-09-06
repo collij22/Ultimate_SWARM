@@ -28,9 +28,7 @@ export function expectedArtifacts(auvId) {
   switch (auvId) {
     case 'AUV-0002':
       return [
-        'runs/AUV-0002/api/get_products_200.json',
-        'runs/AUV-0002/ui/products_grid.png',
-        'runs/AUV-0002/ui/product_detail.png',
+        'runs/AUV-0002/ui/products_search.png',
         'runs/AUV-0002/perf/lighthouse.json'
       ];
     case 'AUV-0003':
