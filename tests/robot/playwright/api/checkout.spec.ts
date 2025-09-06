@@ -26,3 +26,20 @@ import { test, expect } from '@playwright/test';
     });
   });
   
+  test('rejects bad email with 400 and fields list', async ({ request }) => {
+    const res = await request.post(`${process.env.API_BASE}/checkout`, {
+      data: { name: 'X', email: 'nope', address: '1 Test St', card: '4242424242424242' }
+    });
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(Array.isArray(body.error?.fields)).toBeTruthy();
+    expect(body.error.fields).toContain('email');
+  });
+  
+  test('rejects short card with 400', async ({ request }) => {
+    const res = await request.post(`${process.env.API_BASE}/checkout`, {
+      data: { name: 'Jane', email: 'jane@example.com', address: '1 Test St', card: '1234' }
+    });
+    expect(res.status()).toBe(400);
+  });
+  

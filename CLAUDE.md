@@ -12,6 +12,14 @@
 - **Working at Every Commit:** If regression tests fail, the merge is blocked.
 - **Micro-iterations:** Plan → implement the smallest AUV → prove → regress → deploy to staging → repeat.
 
+## Current Operating Picture (as of 2025-09-06)
+- **Autopilot:** `node orchestration/cli.mjs AUV-00xx` runs: mock server → Playwright → Lighthouse → CVF → result card.
+- **Auto-authoring:** Missing UI/API specs are generated from `capabilities/<AUV>.yaml` by `orchestration/lib/test_authoring.mjs`.
+- **Gates:** Functional (Playwright), Perf (Lighthouse), plus optional Security (Semgrep – planned).
+- **MCP Policy:** Agents request **capabilities**; **Primary** tools preferred; **Secondary** only with budget/consent. Enforced by hooks + `mcp/policies.yaml` (`agents.allowlist` is source of truth).
+- **Artifacts:** All proofs under `runs/<AUV-ID>/...`; CI uploads them.
+
+
 ## 2) Roles & Responsibilities
 
 ### 2.1 Orchestrator (Brain)
@@ -25,6 +33,23 @@
 - **Proof obligations:** attach required artifacts (screenshots, videos, traces, logs, reports) defined by the AUV/CVF.
 - If a needed capability lacks an allowed tool, request **escalation** (name the tool, reason, expected cost/impact).
 - Keep outputs minimal, composable, and aligned with the AUV’s acceptance criteria.
+
+## Output Formats for Code Changes (agents)
+When producing changes, output **one of**:
+1) **Unified diff** blocks:
+   ```diff
+   --- a/mock/server.js
+   +++ b/mock/server.js
+   @@
+   - // old
+   + // new
+
+## Write plan (machine-readable):
+[
+  {"path": "mock/server.js", "content": "<file contents>"},
+  {"path": "public/products.html", "content": "<file contents>"}
+]
+IMPORTANT: Never write outside the repo; prefer small, reversible diffs; attach proof artifacts to runs/<AUV-ID>/....
 
 ## 3) Definition of Done (DoD) — Gates
 An AUV is **Done** only if all gates pass:
@@ -125,6 +150,13 @@ An AUV is **Done** only if all gates pass:
 - **User Robot:** Automated user/test agent (UI/API/Data modes) producing evidence.
 - **Deliverable Level-3:** Runnable, independently usable increment.
 - **Primary/Secondary MCP:** Free/core vs. paid/provider-specific tools governed by policy.
+
+**(today vs planned)**
+
+```md
+## Today vs Planned
+**Today:** Autopilot runbook, auto-authoring, hooks/observability, CVF/Lighthouse, Primary/Secondary MCP policy.
+**Planned:** Brief→AUV compiler, DAG runner for parallel sub-agents, MCP runtime router library (policy-aware), packaging/report generator, security gate in CI.
 
 ## Appendix A — Minimal AUV Template (YAML)
 ```yaml

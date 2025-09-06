@@ -1,10 +1,281 @@
 openapi: 3.1.0
-info: { title: Swarm1 Service, version: 0.1.0 }
-servers: [{ url: https://staging.example.com/api }]
+info:
+  title: Swarm1 Service
+  version: 0.3.0
+  description: >
+    Contract for Swarm1 mock/staging service used by runbooks, Playwright,
+    and CVF gates. Health lives at the **root**; functional API lives under **/api**.
+
+servers:
+  # Local mock (root and API)
+  - url: http://127.0.0.1:3000
+    description: Local mock root (for /health)
+  - url: http://127.0.0.1:3000/api
+    description: Local mock API base
+  # Staging (root and API)
+  - url: https://staging.example.com
+    description: Staging root (for /health)
+  - url: https://staging.example.com/api
+    description: Staging API base
+
+tags:
+  - name: Health
+  - name: Products
+  - name: Cart
+  - name: Checkout
+
 paths:
   /health:
+    # health is served at the root (no /api prefix)
+    servers:
+      - url: http://127.0.0.1:3000
+      - url: https://staging.example.com
     get:
-      summary: Health
-      responses: {'200': { description: OK, content: { application/json: { schema: { type: object, properties: { status: { type: string }}}}}}}
+      tags: [Health]
+      summary: Service health
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+
+  /products:
+    # With an API server base of .../api this resolves to /api/products
+    get:
+      tags: [Products]
+      summary: List products with optional search, price bounds, and sorting
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Case-insensitive substring match on product title.
+        - in: query
+          name: minPrice
+          schema: { type: number, minimum: 0 }
+          description: Minimum unit price (inclusive).
+        - in: query
+          name: maxPrice
+          schema: { type: number, minimum: 0 }
+          description: Maximum unit price (inclusive).
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [price_asc, price_desc, title_asc]
+          description: Optional sort order.
+      responses:
+        '200':
+          description: Array of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Product' }
+
+  /products/{id}:
+    get:
+      tags: [Products]
+      summary: Get a single product by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
+  /cart:
+    post:
+      tags: [Cart]
+      summary: Add an item to cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CartItemInput'
+      responses:
+        '200':
+          description: Updated cart state (count and items)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartState'
+        '400':
+          description: Invalid input (qty < 1, missing fields)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    get:
+      tags: [Cart]
+      summary: Get raw cart items (testing/diagnostic)
+      responses:
+        '200':
+          description: Array of raw cart entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CartEntry'
+
+  /cart/summary:
+    get:
+      tags: [Cart]
+      summary: Get priced cart summary with totals
+      responses:
+        '200':
+          description: Priced items and computed totals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CartSummary'
+
+  /checkout:
+    post:
+      tags: [Checkout]
+      summary: Submit a simple checkout request (mock)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '201':
+          description: Order accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderAccepted'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+
 components:
-  schemas: {}
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+      required: [status]
+
+    Product:
+      type: object
+      properties:
+        id: { type: string, example: demo-3 }
+        title: { type: string, example: Demo Product 3 }
+        price: { type: number, example: 29.0 }
+        imageUrl: { type: string, example: /img/demo3.png }
+      required: [id, title, price, imageUrl]
+
+    CartItemInput:
+      type: object
+      properties:
+        productId: { type: string, example: demo-1 }
+        qty:
+          type: integer
+          minimum: 1
+          example: 2
+      required: [productId, qty]
+
+    CartEntry:
+      type: object
+      description: Raw cart entry as stored in the mock
+      properties:
+        productId: { type: string, example: demo-1 }
+        qty:
+          type: integer
+          minimum: 1
+          example: 2
+      required: [productId, qty]
+
+    CartState:
+      type: object
+      description: Aggregate cart state returned after mutations
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CartEntry' }
+        count:
+          type: integer
+          minimum: 0
+          example: 2
+      required: [items, count]
+
+    CartSummaryItem:
+      type: object
+      properties:
+        id: { type: string, example: demo-1 }
+        title: { type: string, example: Demo Product 1 }
+        price: { type: number, example: 9.99 }
+        qty:
+          type: integer
+          minimum: 1
+          example: 2
+        lineTotal:
+          type: number
+          example: 19.98
+      required: [id, title, price, qty, lineTotal]
+
+    CartSummary:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/CartSummaryItem' }
+        subtotal: { type: number, example: 19.98 }
+        tax: { type: number, example: 2.0 }
+        total: { type: number, example: 21.98 }
+      required: [items, subtotal, tax, total]
+
+    CheckoutRequest:
+      type: object
+      properties:
+        name: { type: string, example: Jane Doe }
+        email: { type: string, format: email, example: jane@example.com }
+        address: { type: string, example: 1 Test St }
+        card:
+          type: string
+          description: Mock card number (no real processing)
+          example: "4242424242424242"
+      required: [name, email, address, card]
+
+    OrderAccepted:
+      type: object
+      properties:
+        orderId:
+          type: string
+          description: Mock order identifier
+          example: ord_p2odqxq3
+      required: [orderId]
+
+    ErrorEnvelope:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, example: BAD_REQUEST }
+            message: { type: string, example: qty must be >= 1 }
+          required: [code, message]
+      required: [error]

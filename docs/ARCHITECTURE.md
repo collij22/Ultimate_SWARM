@@ -79,3 +79,29 @@ tests/robot/{api, data, playwright, visual/__snapshots__}
 ## Change control & versioning
 - Version **paths** and **events** (`.vN`) when breaking changes are unavoidable.
 - Schema migrations are additive and reversible; rollbacks tested by DevOps.
+
+## As-Is Architecture
+1. **Runbook (Autopilot)**: `orchestration/cli.mjs` → `runbooks/auv_delivery.mjs`
+   - Starts **mock server** (`mock/server.js`)
+   - Ensures/creates **tests** (`orchestration/lib/test_authoring.mjs`)
+   - Runs **Playwright** (UI/API)
+   - Runs **Lighthouse** (perf proof)
+   - Runs **CVF** (`orchestration/cvf-check.mjs`)
+   - Emits **result cards** under `runs/<AUV-ID>/result-cards/`
+
+2. **Policy & Tools**
+   - **Policies:** `mcp/policies.yaml` (capability_map, agents.allowlist)
+   - **Registry:** `mcp/registry.yaml` (Primary/Secondary metadata)
+   - **Hooks:** `scripts/hooks/*.py` (PreToolUse enforces allowlist; session/tool events → `runs/observability/hooks.jsonl`)
+
+3. **Artifacts**
+   - Test outputs & screenshots: `runs/<AUV-ID>/ui/*`, `runs/<AUV-ID>/api/*`
+   - Perf: `runs/<AUV-ID>/perf/lighthouse.json`
+   - Observability: `runs/observability/*.jsonl`, `runs/<AUV-ID>/result-cards/*.json`
+
+## Planned Additions
+- **Brief→AUV compiler:** `orchestration/lib/auv_compiler.mjs`
+- **DAG runner:** `orchestration/graph/runner.mjs` + `orchestration/graph/projects/<id>.yaml`
+- **MCP runtime router library:** `mcp/router.mjs` (policy-aware selection & budgets)
+- **Security gate:** Semgrep in CI + `CVF-SEC`
+- **Packaging & report:** `orchestration/package.mjs`, `orchestration/report.mjs`

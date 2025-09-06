@@ -24,4 +24,6 @@
 - **API**: p95 ≤ 200ms for hot endpoints.
 - **DB**: hot query ≤ 50ms; rows scanned ≤ 1k.
 
+CI mirrors autopilot for 0003; others can be added progressively
+
 > All thresholds are defaults; adjust per AUV in `mcp/policies.yaml` or a per‑AUV override.

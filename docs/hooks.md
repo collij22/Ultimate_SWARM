@@ -4,22 +4,25 @@ Swarm1 uses **Claude Code hooks** to make runs observable, auditable, and budget
 
 ---
 
-## Events we use
+## Installed Hooks
+- `scripts/hooks/pre_tool.py` — enforces `agents.allowlist` from `mcp/policies.yaml`
+- `scripts/hooks/post_tool.py` — logs tool outcomes to `runs/observability/hooks.jsonl`
+- `scripts/hooks/session_start.py` — begins per-session ledgers
+- `scripts/hooks/subagent_stop.py` — writes per-agent result cards to `runs/<AUV>/result-cards/*`
+- `scripts/hooks/session_end.py` — session summary card
 
-- **SessionStart** → `scripts/hooks/session_start.py`  
-  Initializes a session ledger and logs environment basics.
-- **PreToolUse** → `scripts/hooks/pre_tool.py`  
-  Enforces safety (HTTP host, file writes, shell patterns), **secondary-tool consent**, and budgets. Can block.
-- **PostToolUse** → `scripts/hooks/post_tool.py`  
-  Logs outcome + sizes; sanitizes secrets in a short response snippet.
-- **SubagentStop** → `scripts/hooks/subagent_stop.py`  
-  Writes a **Result Card** summarizing the sub-agent’s tool usage for this session.
-- **SessionEnd** → `scripts/hooks/session_end.py`  
-  Rolls up session tool stats; writes a **session Result Card** (if `AUV_ID` set).
+**Logs:** `runs/observability/hooks.jsonl`  
+**Result Cards:** `runs/<AUV-ID>/result-cards/*.json`
 
-> Exit codes: `0` = continue; `2` = block (Claude Code displays stderr to the agent and skips the call).
+> **Exit codes:** `0` = continue; `2` = block (Claude Code displays stderr to the agent and skips the call)
 
 ---
+
+### Where the data goes
+- Stream: `runs/observability/hooks.jsonl`
+- Result Cards: `runs/<AUV-ID>/result-cards/*.json` (e.g., `session-<ID>.json`, `subagent-<name>-<session>.json`)
+
+----
 
 ## Where artifacts go
 
@@ -28,8 +31,8 @@ Swarm1 uses **Claude Code hooks** to make runs observable, auditable, and budget
   One line per event, with fields like `event`, `session_id`, `agent`, `tool`, `ok`, `reason`, etc.
 
 - **Result Cards (per AUV):**  
-  `runs/<AUV-ID>/result-cards/*.json`  
-  - `subagent-<agent>-<session>.json` (SubagentStop)  
+  `runs/<AUV-ID>/result-cards/*.json`
+  - `subagent-<agent>-<session>.json` (SubagentStop)
   - `session-<session>.json` (SessionEnd)
 
 Both are **evidence sources** for the CVF/QA gates and for troubleshooting.
@@ -68,6 +71,23 @@ Both are **evidence sources** for the CVF/QA gates and for troubleshooting.
 
 ## Reading the logs (examples)
 
-**Show last 20 events**  
+**Show last 20 events:**
 ```bash
 tail -n 20 runs/observability/hooks.jsonl
+```
+
+**Filter by agent:**
+```bash
+jq 'select(.agent == "rapid-builder")' runs/observability/hooks.jsonl
+```
+
+**Show tool usage summary:**
+```bash
+jq -r '[.tool] | @csv' runs/observability/hooks.jsonl | sort | uniq -c
+```
+
+**Check result cards for an AUV:**
+```bash
+ls runs/AUV-0003/result-cards/
+cat runs/AUV-0003/result-cards/session-*.json | jq .
+```
