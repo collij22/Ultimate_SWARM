@@ -23,12 +23,12 @@ node orchestration/cli.mjs AUV-0005
 
 ## What it does
 
-1. **Starts** `mock/server.js` and waits for `/health`
+1. **Checks for healthy server** (or starts `mock/server.js`) and waits for `/health`
 2. **Ensures tests exist** (or generates them) per `capabilities/<AUV>.yaml`
-3. **Runs Playwright specs** (UI/API)
+3. **Runs Playwright specs** (UI/API) with retry logic for transient failures
 4. **Runs Lighthouse perf** → `runs/<AUV>/perf/lighthouse.json`
-5. **Runs CVF gate** → `orchestration/cvf-check.mjs <AUV>`
-6. **Writes a result card** → `runs/<AUV>/result-cards/runbook-summary.json`
+5. **Runs CVF gate** → `orchestration/cvf-check.mjs <AUV>` with proper ENV propagation
+6. **Writes a versioned result card** → `runs/<AUV>/result-cards/runbook-summary.json`
 
 ## Outputs
 
@@ -44,4 +44,13 @@ node orchestration/cli.mjs AUV-0005
 
 ## CI Integration
 
-CI mirrors autopilot for AUV-0003; others can be added progressively to `.github/workflows/ci.yml`
+CI runs autopilot for AUV-0002, AUV-0003, AUV-0004, and AUV-0005 with full artifact validation.
+
+## Validation
+
+After running AUVs, validate result cards:
+```bash
+npm run validate:cards
+```
+
+This uses ajv-cli to validate all result cards against `schemas/runbook-summary.schema.json`

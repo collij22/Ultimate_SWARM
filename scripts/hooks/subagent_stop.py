@@ -54,6 +54,12 @@ def main() -> int:
     session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
     agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
     auv = os.getenv("AUV_ID") or "AUV-unknown"
+    
+    # SWARM MODE GATE: Only create result cards during orchestration workflows
+    swarm_active = bool(os.getenv("AUV_ID")) or os.getenv("SWARM_ACTIVE", "").lower() in ("1", "true", "yes")
+    if not swarm_active:
+        # Skip result card creation for regular Claude Code usage to avoid file I/O overhead
+        return 0
 
     per_tool = {}
     failures = 0

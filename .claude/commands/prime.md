@@ -5,8 +5,8 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 ## Load these references (skim, don't paraphrase them back)
 
 - `@CLAUDE.md`
-- `@exec_summary_06sep2025.md` (current summary at 06-Sep-2025)
-- `@deep_technical_plan_06sep2025.md` (proposed technical plan at 06-Sep-2025)
+- `@docs/exec_summary_06sep2025.md` (current summary at 06-Sep-2025)
+- `@docs/deep_technical_plan_06sep2025.md` (proposed technical plan at 06-Sep-2025)
 IMPORTANT: other core documents
 - `@docs/ARCHITECTURE.md`
 - `@docs/ORCHESTRATION.md`

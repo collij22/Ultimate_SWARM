@@ -17,6 +17,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - N/A
 
+## [0.4.0] - 2025-09-06 — Phase 1 Complete
+### Added
+- **Result Card Validation**: Integrated ajv-cli for schema validation via `npm run validate:cards`
+- **Artifact Consistency Check**: `orchestration/lib/artifact_consistency.mjs` verifies CVF expectations match runbook
+- **Server Health Check**: Runbook checks for existing healthy server before starting to prevent double starts
+- **Typed Exit Codes**: Standardized exit codes (101-105) for precise error reporting
+- **Structured Failure Cards**: Version field added to all result cards for consistency
+
+### Changed
+- **CI Simplified**: All AUV-0002..0005 now use autopilot as single source of truth
+- **ENV Propagation**: CVF step now receives proper environment variables including AUV_ID and SWARM_ACTIVE
+- **AUV-0002 Specs**: Corrected to run products tests instead of cart tests to generate required artifacts
+- **CI Resilience**: Added `if: always()` to artifact consistency and validation steps
+
+### Fixed
+- **Double Server Start**: Health check prevents duplicate server instances in CI and local runs
+- **Validation Schema Path**: Uses correct `schemas/runbook-summary.schema.json` path
+- **AUV-0002 Artifacts**: Now generates correct products UI screenshots and API JSONs per CVF requirements
+
+### Documentation
+- Marked Phase 1 as complete in roadmap
+- Updated orchestration docs to reflect server health check behavior
+- Removed obsolete `phase1_correction.md` as changes are now applied
+
 ## [0.2.0] - 2025-09-05
 ### Added
 - **AUV capabilities & flows**

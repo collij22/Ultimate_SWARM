@@ -240,6 +240,14 @@ def main() -> int:
     session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
     agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
     auv = os.getenv("AUV_ID")
+    
+    # SWARM MODE GATE: Only do full processing during orchestration workflows
+    # Exit early for regular Claude Code interactions to avoid performance overhead
+    swarm_env = os.getenv("SWARM_ACTIVE", "")
+    swarm_active = bool(auv and auv.strip()) or swarm_env.lower() in ("1", "true", "yes")
+    if not swarm_active:
+        # Allow all tools during regular Claude Code usage (exit 0 = continue)
+        return 0
 
     registry = _read_registry()
     policies = _read_policies()

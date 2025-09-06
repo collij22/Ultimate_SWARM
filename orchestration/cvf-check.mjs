@@ -34,7 +34,7 @@ function readJsonSafe(p) {
   }
 }
 
-function expectedArtifacts(auvId) {
+export function expectedArtifacts(auvId) {
   // Add a case per AUV. Keep paths stable so CI & agents can rely on them.
   if (auvId === "AUV-0002") {
     return [
@@ -57,7 +57,10 @@ function expectedArtifacts(auvId) {
     ];
   }
   if (auvId === "AUV-0005") {
-    return [ "runs/AUV-0005/ui/checkout_success.png" ];
+    return [ 
+      "runs/AUV-0005/ui/checkout_success.png",
+      "runs/AUV-0005/perf/lighthouse.json"
+    ];
   }    
   return null; // unknown AUV
 }
@@ -119,4 +122,7 @@ function main() {
   for (const f of required) console.log(' -', f);
 }
 
-main();
+// Only run main if this script is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

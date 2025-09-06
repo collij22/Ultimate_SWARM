@@ -44,103 +44,32 @@ jobs:
         shell: bash
         run: npx playwright install --with-deps
 
-      - name: Start mock server
+      # ---- Autopilot runs (single source of truth) ----
+      - name: AUV-0002 (autopilot)
         shell: bash
-        run: node mock/server.js &
+        run: node orchestration/cli.mjs AUV-0002
 
-      - name: Wait for mock server
+      - name: AUV-0003 (autopilot)
         shell: bash
-        run: npx wait-on http://127.0.0.1:3000/health
+        run: node orchestration/cli.mjs AUV-0003
 
-      - name: Run Playwright tests
+      - name: AUV-0004 (autopilot)
         shell: bash
-        run: npx playwright test -c tests/robot/playwright/playwright.config.ts
+        run: node orchestration/cli.mjs AUV-0004
 
-      # ----- Lighthouse + CVF for AUV-0002 -----
-      - name: Ensure perf artifact directory (AUV-0002)
+      - name: AUV-0005 (autopilot)
         shell: bash
-        run: mkdir -p runs/AUV-0002/perf
+        run: node orchestration/cli.mjs AUV-0005
 
-      - name: Install Lighthouse deps
+      - name: Validate runbook cards
+        if: always()
         shell: bash
-        run: npm i -D lighthouse chrome-launcher
+        run: npm run validate:cards
 
-      - name: Perf proof (Lighthouse) — AUV-0002
+      - name: Artifact consistency check
+        if: always()
         shell: bash
-        run: |
-          npx lighthouse "$STAGING_URL/products.html" \
-            --only-categories=performance \
-            --quiet \
-            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
-            --output=json \
-            --output-path="runs/AUV-0002/perf/lighthouse.json"
-
-      - name: CVF gate — AUV-0002
-        shell: bash
-        run: node orchestration/cvf-check.mjs AUV-0002
-      # ------------------------------------------
-
-      # ----- Lighthouse + CVF for AUV-0003 -----
-      - name: Ensure perf artifact directory (AUV-0003)
-        shell: bash
-        run: mkdir -p runs/AUV-0003/perf
-
-      - name: Perf proof (Lighthouse) — AUV-0003
-        shell: bash
-        run: |
-          npx lighthouse "$STAGING_URL/products.html" \
-            --only-categories=performance \
-            --quiet \
-            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
-            --output=json \
-            --output-path="runs/AUV-0003/perf/lighthouse.json"
-
-      - name: CVF gate — AUV-0003
-        shell: bash
-        run: node orchestration/cvf-check.mjs AUV-0003
-      # ------------------------------------------
-      # ---- Lighthouse + CVF for AUV-0004 ----
-      - name: Ensure perf artifact directory (AUV-0004)
-        shell: bash
-        run: mkdir -p runs/AUV-0004/perf
-
-      - name: Perf proof (Lighthouse) — AUV-0004
-        shell: bash
-        env:
-          STAGING_URL: http://127.0.0.1:3000   # omit if you already set job-level env
-        run: |
-          npx lighthouse "$STAGING_URL/cart.html" \
-            --only-categories=performance \
-            --quiet \
-            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
-            --output=json \
-            --output-path="runs/AUV-0004/perf/lighthouse.json"
-
-      - name: CVF gate — AUV-0004
-        shell: bash
-        run: node orchestration/cvf-check.mjs AUV-0004
-
-      # ---- Lighthouse + CVF for AUV-0005 ----
-      - name: Ensure perf artifact directory (AUV-0005)
-        shell: bash
-        run: mkdir -p runs/AUV-0005/perf
-
-      - name: Perf proof (Lighthouse) — AUV-0005
-        shell: bash
-        env:
-          STAGING_URL: http://127.0.0.1:3000
-        run: |
-          npx lighthouse "$STAGING_URL/checkout.html" \
-            --only-categories=performance \
-            --quiet \
-            --chrome-flags="--headless=new --disable-gpu --no-sandbox --allow-insecure-localhost --ignore-certificate-errors --disable-features=BlockInsecurePrivateNetworkRequests" \
-            --output=json \
-            --output-path="runs/AUV-0005/perf/lighthouse.json"
-
-      - name: CVF gate — AUV-0005
-        shell: bash
-        run: node orchestration/cvf-check.mjs AUV-0005
-      # ---------------------------------------
+        run: node orchestration/lib/artifact_consistency.mjs
 
       - name: Upload artifacts (always)
         if: always()

@@ -28,6 +28,7 @@ tests:
 artifacts:
   required:
     - runs/AUV-0005/ui/checkout_success.png
+    - runs/AUV-0005/perf/lighthouse.json
 
 authoring_hints:
   ui:

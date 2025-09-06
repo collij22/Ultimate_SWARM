@@ -18,15 +18,22 @@ This is a hands-on, engineering-grade plan to take Swarm1 from today's verified 
 - No long-running production backend with multi-tenant billing yet (we'll add Temporal/BullMQ later)
 - No exotic MCPs until the Primary/Secondary tool discipline is bedded in
 
-## 1) Where we stand (condensed)
+## 1) Where we stand (Post Phase 1 - Completed 2025-09-06)
 
-- **Capabilities proven**: AUV-0001..0005 green locally; 0002–0005 green in CI
-- **Runbook**: `orchestration/cli.mjs` + `runbooks/auv_delivery.mjs` with auto test authoring (`orchestration/lib/test_authoring.mjs`), Lighthouse, CVF, result cards
-- **Observability**: hooks emit JSONL + session/agent result cards
+- **Capabilities proven**: AUV-0001..0005 ALL green locally AND in CI with full validation
+- **Hardened Runbook**: `orchestration/cli.mjs` + `runbooks/auv_delivery.mjs` with:
+  - Auto test authoring (`orchestration/lib/test_authoring.mjs`)
+  - Server health checks (prevents double starts)
+  - Typed exit codes (101-105) and versioned result cards
+  - Transient failure retry logic
+  - Proper ENV propagation to all steps
+- **CI Pipeline**: Simplified to use autopilot as single source of truth for AUV-0002..0005
+- **Validation**: Result cards validated with ajv-cli; artifact consistency verified
+- **Observability**: hooks emit JSONL + session/agent result cards with consistent ENV
 - **MCP**: registry & policies (primary/secondary) + allowlists wired in prompts
-- **Docs**: `CLAUDE.md`, `verify.md`, `ARCHITECTURE.md` (baseline), `Hooks.md`, `runbook.md`, `CHANGELOG.md`
+- **Docs**: All core docs updated with Phase 1 completion status
 
-**Key gaps to autonomy**: brief→AUV compiler, DAG/task-graph runner, autonomous build (PRs), dynamic MCP routing, packaging + client report, durable execution.
+**Key gaps to autonomy** (unchanged): brief→AUV compiler, DAG/task-graph runner, autonomous build (PRs), dynamic MCP routing, packaging + client report, durable execution.
 
 ## 2) Target System (what we're building)
 
@@ -381,7 +388,7 @@ Secrets: CI uses repo/organization secrets; runtime agents never get prod secret
 
 Sandbox: file writes are constrained to workspace; applyDiffs() whitelists known directories.
 
-10) Immediate Execution Plan (do now)
+10) Immediate Execution Plan (Phase 2 Start)
 
 Seed a real brief
 

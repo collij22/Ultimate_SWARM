@@ -56,6 +56,14 @@ def main() -> int:
     session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
     agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
     auv = os.getenv("AUV_ID")
+    
+    # SWARM MODE GATE: Only log during orchestration workflows
+    # Debug: let's see what we're getting
+    swarm_env = os.getenv("SWARM_ACTIVE", "")
+    swarm_active = bool(auv and auv.strip()) or swarm_env.lower() in ("1", "true", "yes")
+    if not swarm_active:
+        # Skip logging for regular Claude Code usage to avoid performance overhead
+        return 0
 
     response = inp.get("tool_response")
     ok = response is not None and str(response).lower().strip()[:5] not in ("error", "fail ")

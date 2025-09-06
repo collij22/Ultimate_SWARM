@@ -55,6 +55,12 @@ def main() -> int:
   session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
   agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
   auv = os.getenv("AUV_ID")
+  
+  # SWARM MODE GATE: Only initialize ledgers during orchestration workflows
+  swarm_active = bool(auv) or os.getenv("SWARM_ACTIVE", "").lower() in ("1", "true", "yes")
+  if not swarm_active:
+    # Skip ledger creation for regular Claude Code usage to avoid file system overhead
+    return 0
 
   # Initialize ledger (reset per session)
   _mkdirs()

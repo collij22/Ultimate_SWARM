@@ -2,7 +2,8 @@
   "devDependencies": {
     "@playwright/test": "^1.55.0",
     "chrome-launcher": "^1.2.0",
-    "lighthouse": "^12.8.2"
+    "lighthouse": "^12.8.2",
+    "ajv-cli": "^5.0.0"
   },
   "dependencies": {
     "express": "^5.1.0",
@@ -12,6 +13,7 @@
     "mock:staging": "node mock/server.js",
     "deliver": "node orchestration/cli.mjs",
     "deliver:0003": "node orchestration/cli.mjs AUV-0003",
-    "deliver:0002": "node orchestration/cli.mjs AUV-0002"
+    "deliver:0002": "node orchestration/cli.mjs AUV-0002",
+    "validate:cards": "npx ajv validate -s schemas/runbook-summary.schema.json -d \"runs/**/result-cards/runbook-summary.json\" --verbose"
   }
 }

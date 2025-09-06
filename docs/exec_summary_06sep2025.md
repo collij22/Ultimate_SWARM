@@ -13,34 +13,43 @@ It combines:
 - **Runbook** that drives automated proof for each capability (Playwright UI/API tests, Lighthouse performance checks, CVF "Definition of Done" gate)
 - **Observability hooks** and MCP policies for safety, traceability, and tool governance
 
-## Where we are today (truth snapshot)
+## Where we are today (truth snapshot — Phase 1 Complete)
 
-### ✅ What we HAVE
+### ✅ What we HAVE (Post Phase 1 - 2025-09-06)
 
 **Working E2E demo stack** (mock server + static UI) and green capabilities:
 
 - **AUV-0001** Add-to-Cart (API+UI)
-- **AUV-0002** Product list & detail (API+UI+perf+CVF)
+- **AUV-0002** Product list & detail (API+UI+perf+CVF) — specs corrected to generate proper artifacts
 - **AUV-0003** Search & filter (API+UI+perf+CVF)
 - **AUV-0004** Cart summary totals (API+UI+perf+CVF)
 - **AUV-0005** Checkout (API+UI+perf+CVF)
 
-**Runbook automation** (`orchestration/cli.mjs`) that:
-1. Starts server 
+**All AUVs (0002-0005) passing in CI with full validation**
+
+**Hardened Runbook automation** (`orchestration/cli.mjs`) that:
+1. Checks for existing healthy server (prevents double starts)
 2. Auto-authors tests from capability hints 
-3. Runs Playwright 
+3. Runs Playwright with retry logic for transients
 4. Runs Lighthouse 
-5. Enforces CVF 
-6. Writes result cards
+5. Enforces CVF with proper ENV propagation
+6. Writes versioned result cards with typed exit codes (101-105)
+
+**Phase 1 Improvements:**
+- **Validation Pipeline**: Result cards validated with ajv-cli against schemas
+- **Artifact Consistency**: Automated verification that CVF expectations match runbook artifacts
+- **CI Simplification**: All AUVs use autopilot as single source of truth
+- **Error Handling**: Structured failure cards, transient retry logic, typed exit codes
+- **Server Management**: Health check prevents duplicate instances
 
 **Additional components:**
 - Auto test authoring (`orchestration/lib/test_authoring.mjs`) from `capabilities/<AUV>.yaml`
 - CVF gate (`orchestration/cvf-check.mjs`) that codifies "done" by checking required artifacts per AUV
-- CI pipeline (Playwright + Lighthouse + CVF + artifact upload) wired for AUV-0002..0005
+- CI pipeline (Playwright + Lighthouse + CVF + artifact upload) for ALL AUV-0002..0005
 - Observability hooks (session start/end, post tool use, subagent stop) emitting JSONL and per-AUV result cards
 - Agent prompts for the 16-agent roster (A/B/C series) plus aux agents (Performance Optimizer, Code Migrator)
 - MCP registry & policies with primary/secondary tools and per-agent allowlists
-- Docs: `CLAUDE.md`, `docs/verify.md`, `docs/ARCHITECTURE.md` (baseline), `docs/Hooks.md`, `runbook.md`, `CHANGELOG.md`
+- Docs: `CLAUDE.md`, `docs/verify.md`, `docs/ARCHITECTURE.md`, `docs/Hooks.md`, `runbook.md`, `CHANGELOG.md`
 
 ### ⛳ What we DON'T have yet (gaps to full autonomy)
 
@@ -104,7 +113,7 @@ CI replicates these steps headlessly on push and uploads artifacts.
 - **Observability**: events → OpenSearch/ELK dashboards; cost ledgers; per-AUV success rates
 - **Policy**: centralized MCP allowlists, budgets, and audit logs
 
-## Immediate path forward (start with a real Upwork-style brief)
+## Immediate path forward (Phase 2: Brief Intake & AUV Compiler)
 
 ### Step 0 — Pick the brief
 

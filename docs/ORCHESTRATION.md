@@ -46,13 +46,32 @@ node orchestration/cli.mjs AUV-0003
 
 This will:
 
-1. **Start mock server**, wait `/health`
+1. **Start mock server** (or reuse existing if healthy), wait `/health`
+   - The runbook checks if a server is already running and healthy before starting a new instance
+   - This prevents double-start issues when running multiple AUVs or in CI environments
 2. **Ensure tests exist** (`orchestration/lib/test_authoring.mjs`; generates from `capabilities/<AUV>.yaml` if missing)
 3. **Run Playwright** (UI/API)
 4. **Run Lighthouse** → `runs/<AUV>/perf/lighthouse.json`
 5. **Run CVF gates** (`orchestration/cvf-check.mjs`)
 
 Artifacts live under `runs/<AUV-ID>/...`. CI replays similar steps and uploads artifacts.
+
+### Typed Exit Codes & Error Handling
+
+The autopilot uses [typed exit codes](QUALITY-GATES.md) for precise error reporting:
+- **101**: Playwright tests failed
+- **102**: Lighthouse performance check failed  
+- **103**: CVF gate failed
+- **104**: Test authoring failed
+- **105**: Server startup failed
+
+### Repair Loop Behavior
+
+When transient failures are detected (timeouts, network issues, browser crashes), the system:
+1. Analyzes the error type in `maybeRepair()` 
+2. Writes failure context to `runs/<AUV>/repair/failure.json`
+3. Automatically retries once for transient failures
+4. Logs repair attempts and outcomes for debugging
 
 ## Test Auto-Authoring
 
@@ -88,4 +107,4 @@ See `orchestration/lib/test_authoring.mjs` for supported hints (cart summary, li
 
 ---
 
-CI mirrors autopilot for 0003; others can be added progressively
+CI runs autopilot for AUV-0002, AUV-0003, AUV-0004, and AUV-0005 with full artifact validation

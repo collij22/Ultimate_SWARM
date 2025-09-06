@@ -12,7 +12,14 @@
       "Bash(git remote add:*)",
       "Bash(git branch:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(node:*)",
+      "Bash(echo:*)",
+      "Bash(if [ -f \"runs/observability/hooks.jsonl\" ])",
+      "Bash(else echo \"No hooks log found\")",
+      "Bash(fi)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0003)",
+      "Bash(then echo \"Hooks log exists\")"
     ],
     "deny": [
       "Read(./.env)",

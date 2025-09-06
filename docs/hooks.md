@@ -1,15 +1,24 @@
 # Hooks (Claude Code) — Swarm1
 
-Swarm1 uses **Claude Code hooks** to make runs observable, auditable, and budget-safe. Hooks receive a JSON payload on **stdin**, and may **allow** (exit `0`) or **block** (exit `2`) a tool call. We log one JSON line per event to `runs/observability/hooks.jsonl` and emit small **Result Cards** to support gates.
+Swarm1 uses **Claude Code hooks** to make runs observable, auditable, and budget-safe **during orchestration workflows only**. Hooks receive a JSON payload on **stdin**, and may **allow** (exit `0`) or **block** (exit `2`) a tool call. We log one JSON line per event to `runs/observability/hooks.jsonl` and emit small **Result Cards** to support gates.
+
+## ⚡ Performance Mode: Swarm-Only Activation
+
+**All hooks now use "Swarm Mode Gates"** - they only perform expensive operations during orchestration workflows, not regular Claude Code interactions:
+
+- **Swarm Mode Active**: When `AUV_ID` is set OR `SWARM_ACTIVE=true`
+- **Regular Claude Code**: Hooks exit immediately (0) without logging/processing
+
+This prevents performance overhead during simple file reads, questions, or general development.
 
 ---
 
 ## Installed Hooks
-- `scripts/hooks/pre_tool.py` — enforces `agents.allowlist` from `mcp/policies.yaml`
-- `scripts/hooks/post_tool.py` — logs tool outcomes to `runs/observability/hooks.jsonl`
-- `scripts/hooks/session_start.py` — begins per-session ledgers
-- `scripts/hooks/subagent_stop.py` — writes per-agent result cards to `runs/<AUV>/result-cards/*`
-- `scripts/hooks/session_end.py` — session summary card
+- `scripts/hooks/pre_tool.py` — enforces `agents.allowlist` from `mcp/policies.yaml` **[Swarm Mode Only]**
+- `scripts/hooks/post_tool.py` — logs tool outcomes to `runs/observability/hooks.jsonl` **[Swarm Mode Only]**
+- `scripts/hooks/session_start.py` — begins per-session ledgers **[Swarm Mode Only]**
+- `scripts/hooks/subagent_stop.py` — writes per-agent result cards to `runs/<AUV>/result-cards/*` **[Swarm Mode Only]**
+- `scripts/hooks/session_end.py` — session summary card **[Swarm Mode Only]**
 
 **Logs:** `runs/observability/hooks.jsonl`  
 **Result Cards:** `runs/<AUV-ID>/result-cards/*.json`
@@ -61,7 +70,8 @@ Both are **evidence sources** for the CVF/QA gates and for troubleshooting.
 
 ## Environment variables recognized
 
-- `AUV_ID` — tag evidence to a specific AUV run (recommended).
+- `AUV_ID` — tag evidence to a specific AUV run; **activates Swarm Mode**.
+- `SWARM_ACTIVE` — `"true"` / `"1"` to **force Swarm Mode** even without AUV_ID.
 - `CLAUDE_AGENT_NAME` — logged with every event.
 - `SECONDARY_CONSENT` — `"true"` / `"1"` to allow secondary tools.
 - `STAGING_URL`, `API_BASE` — define allowed HTTP hosts.
