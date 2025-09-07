@@ -359,26 +359,32 @@ Let agents make changes to the repo in a controlled way, open PRs, and pass gate
 ### 🔧 Critical Fixes Applied
 
 #### ✅ [B1] Diff Safety
+
 - Validates all paths in diff against allowlist before applying
 - `extractFilesFromDiff()` function parses and validates paths
 
 #### ✅ [B2] Dry-run Safety
+
 - No workspace mutations during dry-run
 - Creates placeholder diffs without git operations
 
 #### ✅ [B3] Artifact Bleed Prevention
+
 - `recordDiff()` only stages allowlisted paths
 - Uses `getAllowedGitPathspecs()` to restrict git operations
 
 #### ✅ [B4] Recursive Reject Detection
+
 - `collectRejectsRecursive()` walks all directories
 - Properly handles nested reject files
 
 #### ✅ [B5] CI QA Gates
+
 - Made all QA gates blocking (removed `|| true` from CI)
 - Tests run before autopilot lanes
 
 #### ✅ [T1] ESM Import Fix
+
 - Fixed unit test to use ESM-safe imports
 - Uses `import { randomBytes } from 'node:crypto'`
 
@@ -422,7 +428,7 @@ Bring security/visual to parity and export machine-readable reports with enforce
 - `orchestration/lib/budget_evaluator.mjs` - Budget enforcement integrated with CVF
 - Per-AUV budgets in `capabilities/*.yaml` under `perf_budgets`
 - Metrics: LCP, TTI, CLS, FCP, TBT, SI, size, score
-- >20% over budget = high severity (blocking)
+- > 20% over budget = high severity (blocking)
 
 ### 🔧 File Changes
 

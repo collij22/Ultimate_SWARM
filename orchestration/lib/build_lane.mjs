@@ -529,7 +529,7 @@ async function runAutopilotSmoke(auvId) {
 async function recordDiff(auvId, runId, dryRun = false) {
   const diffPath = path.join('runs', auvId, 'patches', `${Date.now()}-staged.diff`);
   ensureDir(path.dirname(diffPath));
-  
+
   if (dryRun) {
     // In dry-run mode, create a placeholder diff without git operations
     fs.writeFileSync(diffPath, '# Dry-run mode - no actual diff created\n');
@@ -539,7 +539,7 @@ async function recordDiff(auvId, runId, dryRun = false) {
     const diffResult = await execCommand('git', ['diff', '--staged', '--', ...specs]);
     fs.writeFileSync(diffPath, diffResult.stdout);
   }
-  
+
   return diffPath;
 }
 

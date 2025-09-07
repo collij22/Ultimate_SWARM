@@ -1,0 +1,48 @@
+# Prettier ignore file
+
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+dist
+build
+coverage
+.next
+out
+
+# Test artifacts
+runs
+test-results
+reports
+
+# Template files with Handlebars syntax
+capabilities/templates/AUV-TEMPLATE.yaml
+
+# Generated files
+*.min.js
+*.min.css
+
+# IDE
+.vscode
+.idea
+
+# Git
+.git
+
+# Environment
+.env
+.env.*
+
+# Documentation images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+
+# Other binary files
+*.pdf
+*.zip
+*.tar.gz
