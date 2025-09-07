@@ -51,6 +51,7 @@ class VisualCapture {
 
     // Inject CSS to disable animations globally
     await this.context.addInitScript(() => {
+      /* eslint-disable no-undef */
       const style = document.createElement('style');
       style.innerHTML = `
         *, *::before, *::after {
@@ -61,6 +62,7 @@ class VisualCapture {
         }
       `;
       document.head.appendChild(style);
+      /* eslint-enable no-undef */
     });
 
     this.page = await this.context.newPage();
@@ -107,17 +109,27 @@ class VisualCapture {
     if (route.hideSelectors) {
       for (const selector of route.hideSelectors) {
         await this.page.evaluate((sel) => {
+          /* eslint-disable no-undef */
           const elements = document.querySelectorAll(sel);
           elements.forEach((el) => (el.style.visibility = 'hidden'));
+          /* eslint-enable no-undef */
         }, selector);
       }
     }
 
     // Scroll to top for consistent positioning
-    await this.page.evaluate(() => window.scrollTo(0, 0));
+    await this.page.evaluate(() => {
+      /* eslint-disable no-undef */
+      window.scrollTo(0, 0);
+      /* eslint-enable no-undef */
+    });
 
     // Wait for fonts to load
-    await this.page.evaluate(() => document.fonts.ready);
+    await this.page.evaluate(() => {
+      /* eslint-disable no-undef */
+      return document.fonts.ready;
+      /* eslint-enable no-undef */
+    });
 
     // Capture screenshot
     await this.page.screenshot({
@@ -253,7 +265,7 @@ async function main() {
       process.exit(1);
     }
 
-    console.log(`[visual-capture] All captures completed successfully`);
+    console.log('[visual-capture] All captures completed successfully');
     process.exit(0);
   } catch (error) {
     console.error('[visual-capture] Error:', error.message);

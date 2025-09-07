@@ -30,8 +30,6 @@ export function planTools({
   registry,
   policies,
 }) {
-  const startTime = Date.now();
-
   // Normalize inputs
   const capabilities = [...new Set(requestedCapabilities)]; // dedupe
   const policyDefaults = policies?.router?.defaults || {
@@ -165,7 +163,6 @@ export function planTools({
       }
 
       // Check tier preference
-      const isPrimary = tool.tier === 'primary';
       const isSecondary = tool.tier === 'secondary';
 
       // Check secondary consent (unless on_missing_primary allows it)

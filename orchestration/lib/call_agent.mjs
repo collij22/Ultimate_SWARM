@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { spawn } from 'child_process';
 
 /**
  * Invoke the Requirements Analyst agent to analyze a brief
@@ -207,7 +206,7 @@ async function extractRequirementsHeuristic(content, briefPath) {
 
   // Detect project type from keywords
   const contentLower = content.toLowerCase();
-  let detectedTypes = [];
+  const detectedTypes = [];
   let allCapabilities = [];
 
   for (const [type, config] of Object.entries(patterns)) {

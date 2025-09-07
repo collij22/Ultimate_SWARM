@@ -269,7 +269,7 @@ export async function runAuv(auvId, { stagingUrl, apiBase } = {}) {
       const { registry, policies } = loadConfig();
 
       // Derive capabilities from AUV spec
-      const capabilities = deriveCapabilities(cap);
+      const capabilities = deriveCapabilities(cfg);
 
       const routerResult = planTools({
         agentId: 'A1.orchestrator',
@@ -376,7 +376,7 @@ export async function runAuv(auvId, { stagingUrl, apiBase } = {}) {
       } catch (err) {
         const shouldRetry = await maybeRepair(auvId, err);
         if (!shouldRetry)
-          throw new RunbookError(`Playwright tests failed: ${err.message}`, 'playwright', 101);
+        {throw new RunbookError(`Playwright tests failed: ${err.message}`, 'playwright', 101);}
         repaired = true;
         await runPlaywright(specList, ENV);
       }

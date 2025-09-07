@@ -135,7 +135,7 @@ describe('Build Lane - Dry Run Integration', () => {
       },
     };
 
-    const result = await runBuildLane(options);
+    await runBuildLane(options);
 
     // Check for result card
     const cardPattern = path.join(

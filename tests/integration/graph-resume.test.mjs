@@ -62,7 +62,7 @@ const testGraph = {
 const tempGraphPath = path.join(__dirname, 'temp-resume-test.yaml');
 fs.writeFileSync(tempGraphPath, yaml.stringify(testGraph));
 
-async function runGraphWithInterrupt(runId) {
+async function runGraphWithInterrupt() {
   return new Promise((resolve) => {
     console.log('Starting graph execution (will interrupt after 2 nodes)...');
 
@@ -127,7 +127,7 @@ async function main() {
     await runner1.loadGraph(tempGraphPath);
 
     // Start the graph in a separate process that we'll kill
-    const interruptResult = await runGraphWithInterrupt('RESUME-TEST-001');
+    await runGraphWithInterrupt();
 
     // Give it a moment to write state
     await new Promise((resolve) => setTimeout(resolve, 500));

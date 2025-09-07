@@ -126,7 +126,7 @@ class ResourceLockManager {
 
   cleanup() {
     // Release all locks and clean up lock files
-    for (const [resource, holders] of this.locks.entries()) {
+    for (const [resource] of this.locks.entries()) {
       const lockFile = path.join(this.lockDir, `${resource}.lock`);
       if (fs.existsSync(lockFile)) {
         fs.unlinkSync(lockFile);
@@ -363,7 +363,7 @@ class NodeExecutors {
     return await this._runCommand('node', [scriptPath, auv], env, node.timeout_ms || 60000);
   }
 
-  async agent_task(node, env) {
+  async agent_task(node) {
     // Placeholder for future agent task execution
     const agent = node.params?.agent;
     const task = node.params?.task;
@@ -395,13 +395,13 @@ class NodeExecutors {
     return { status: 'success', message: 'Agent task placeholder executed' };
   }
 
-  async package(node, env) {
+  async package(node) {
     // Placeholder for package generation
     console.log(`[package] ${node.id}: Package generation placeholder`);
     return { status: 'success', message: 'Package placeholder executed' };
   }
 
-  async report(node, env) {
+  async report(node) {
     // Placeholder for report generation
     console.log(`[report] ${node.id}: Report generation placeholder`);
     return { status: 'success', message: 'Report placeholder executed' };
@@ -558,7 +558,7 @@ export class GraphRunner {
 
     for (const node of this.graph.nodes) {
       if (!visited.has(node.id) && hasCycle(node.id)) {
-        throw new GraphRunnerError(`Cycle detected in graph`, 'CYCLE_DETECTED');
+        throw new GraphRunnerError('Cycle detected in graph', 'CYCLE_DETECTED');
       }
     }
   }
@@ -713,7 +713,7 @@ export class GraphRunner {
 
       // Execute
       const startTime = Date.now();
-      const result = await this.executors.execute(node, this.runId);
+      await this.executors.execute(node, this.runId);
       const duration = Date.now() - startTime;
 
       // Success

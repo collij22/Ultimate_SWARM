@@ -8,9 +8,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Phase 6 - Security Scanners', () => {
   const testWaiverPath = path.join(process.cwd(), '.security', 'test-waivers.yaml');

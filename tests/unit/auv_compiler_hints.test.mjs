@@ -5,9 +5,7 @@ import {
   generateAuvSpec,
   computeDependencies,
 } from '../../orchestration/lib/auv_compiler.mjs';
-import fs from 'fs';
 import path from 'path';
-import YAML from 'yaml';
 
 describe('auv_compiler authoring hints', () => {
   let compiledAuvs;

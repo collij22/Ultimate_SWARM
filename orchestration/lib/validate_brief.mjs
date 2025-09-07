@@ -126,7 +126,7 @@ function extractFromMarkdown(content) {
   }
 
   // Extract sample URLs
-  const urlMatches = content.match(/https?:\/\/[^\s\)]+/g);
+  const urlMatches = content.match(/https?:\/\/[^\s)]+/g);
   if (urlMatches) {
     brief.sample_urls = [...new Set(urlMatches)]; // Unique URLs
   }

@@ -3,7 +3,7 @@
  * Validates demo graphs against the schema
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll } from '@jest/globals';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'yaml';

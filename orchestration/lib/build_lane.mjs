@@ -255,9 +255,6 @@ async function createOrSelectBranch(auvId, desiredBranch, dryRun) {
     return desiredBranch || `auv/${auvId}/changes-${Date.now()}`;
   }
 
-  // Get current branch
-  const currentBranch = (await execCommand('git', ['branch', '--show-current'])).stdout.trim();
-
   // Generate branch name if not provided
   const targetBranch =
     desiredBranch || `auv/${auvId}/changes-${crypto.randomBytes(4).toString('hex')}`;
@@ -329,8 +326,9 @@ async function applyPatch(auvId, patch, runId, dryRun = false) {
 
     for (const change of changes) {
       const filePath = change.path;
-      if (!isPathAllowed(filePath))
+      if (!isPathAllowed(filePath)) {
         throw new Error(`Path not allowed by write policy: ${filePath}`);
+      }
       const existedBefore = fileExists(filePath);
       if (!dryRun) {
         ensureDir(path.dirname(filePath));

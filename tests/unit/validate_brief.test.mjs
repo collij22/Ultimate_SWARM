@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { validateBrief } from '../../orchestration/lib/validate_brief.mjs';
-import fs from 'fs';
-import path from 'path';
 
 describe('validate_brief', () => {
   it('should validate a correct brief', () => {

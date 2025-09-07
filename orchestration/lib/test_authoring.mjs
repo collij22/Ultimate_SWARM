@@ -62,13 +62,13 @@ export function ensureTests(auvId) {
   const tests = cap.tests || {};
   const force = process.env.FORCE_REGEN === '1';
 
-  let uiSpecs = Array.isArray(tests.playwright) ? [...tests.playwright] : [];
-  let apiSpecs = Array.isArray(tests.api) ? [...tests.api] : [];
+  const uiSpecs = Array.isArray(tests.playwright) ? [...tests.playwright] : [];
+  const apiSpecs = Array.isArray(tests.api) ? [...tests.api] : [];
 
   if (uiSpecs.length === 0)
-    uiSpecs.push(`tests/robot/playwright/${auvId.toLowerCase()}-ui.spec.ts`);
+  {uiSpecs.push(`tests/robot/playwright/${auvId.toLowerCase()}-ui.spec.ts`);}
   if (apiSpecs.length === 0)
-    apiSpecs.push(`tests/robot/playwright/api/${auvId.toLowerCase()}-api.spec.ts`);
+  {apiSpecs.push(`tests/robot/playwright/api/${auvId.toLowerCase()}-api.spec.ts`);}
 
   const maybeGen = (file, gen) => {
     if (!fileExists(file)) {
@@ -117,7 +117,6 @@ function genUiSpec(auvId, cap) {
   const maxSel = hints.max_price_input ?? '#maxPrice';
   const applyText = hints.apply_button_text ?? 'Apply';
   const cardSel = hints.card_selector ?? '[data-testid="product-card"]';
-  const titleSel = hints.title_selector ?? '[data-testid="product-title"]';
   const priceSel = hints.price_selector ?? '[data-testid="product-price"]';
   const screenshot = hints.screenshot ?? 'products_search.png';
 
@@ -378,10 +377,10 @@ function genApiCustomSpec(auvId, basePath, cases) {
     test.skip(!API_BASE, 'API_BASE env var not set');
   
     ${cases
-      .map((c, i) => {
-        // inline JS template for one case
-        const name = esc(c.name || `case #${i + 1}`);
-        return `test('${name}', async ({ request }) => {
+    .map((c, i) => {
+      // inline JS template for one case
+      const name = esc(c.name || `case #${i + 1}`);
+      return `test('${name}', async ({ request }) => {
       const method = '${(c.method || 'GET').toUpperCase()}';
       const rawPath = '${c.path || basePath}';
       const normPath = rawPath.replace(/^\\/api(?=\\/|$)/, '');
@@ -401,8 +400,8 @@ function genApiCustomSpec(auvId, basePath, cases) {
       const expected = ${Number.isInteger(c.expect_status) ? c.expect_status : (c.method || '').toUpperCase() === 'POST' ? 201 : 200};
       expect(res.status()).toBe(expected);
     });`;
-      })
-      .join('\n\n')}
+    })
+    .join('\n\n')}
   });
   `;
 }

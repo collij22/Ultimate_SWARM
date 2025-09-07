@@ -217,7 +217,6 @@ function generateAuthoringHints(capability) {
   };
 
   const nameLower = capability.name.toLowerCase();
-  const descLower = (capability.description || '').toLowerCase();
 
   // UI hints based on capability type
   if (capability.type === 'web' || capability.owner === 'web') {
@@ -430,10 +429,12 @@ function generateTags(capability) {
   // Add feature tags based on name/description
   const text = `${capability.name} ${capability.description || ''}`.toLowerCase();
 
-  if (text.includes('ui') || text.includes('interface') || text.includes('frontend'))
+  if (text.includes('ui') || text.includes('interface') || text.includes('frontend')) {
     tags.push('ui');
-  if (text.includes('api') || text.includes('endpoint') || text.includes('service'))
+  }
+  if (text.includes('api') || text.includes('endpoint') || text.includes('service')) {
     tags.push('api');
+  }
   if (text.includes('product')) tags.push('products');
   if (text.includes('cart')) tags.push('cart');
   if (text.includes('checkout')) tags.push('checkout');

@@ -23,8 +23,9 @@ app.post('/api/checkout', (req, res) => {
   if (!address || String(address).trim().length < 5) bad.push('address');
   if (!card || !/^\d{16}$/.test(String(card))) bad.push('card');
 
-  if (bad.length)
+  if (bad.length) {
     return res.status(400).json({ error: { fields: bad, message: 'Invalid fields' } });
+  }
 
   const orderId = `ord_${Math.random().toString(36).slice(2, 10)}`;
   return res.status(201).json({ orderId });
@@ -118,8 +119,9 @@ app.get('/api/products', (req, res) => {
 // GET /api/products/:id  — LEAVE THIS UNCHANGED
 app.get('/api/products/:id', (req, res) => {
   const p = PRODUCTS.find((x) => x.id === req.params.id);
-  if (!p)
+  if (!p) {
     return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Product not found' } });
+  }
   res.json(p);
 });
 
@@ -132,8 +134,9 @@ app.post('/api/checkout', (req, res) => {
   if (!address || address.length < 5) bad.push('address');
   if (!card || !/^\d{16}$/.test(String(card))) bad.push('card');
 
-  if (bad.length)
+  if (bad.length) {
     return res.status(400).json({ error: { fields: bad, message: 'Invalid fields' } });
+  }
   const orderId = `ord_${Math.random().toString(36).slice(2, 10)}`;
   return res.status(201).json({ orderId });
 });

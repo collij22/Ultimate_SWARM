@@ -72,8 +72,6 @@ export async function parseRemote() {
  * @param {string} [options.auvId] - AUV ID for artifact tracking
  */
 export async function createPullRequest(options) {
-  const { base = 'main', head, title, body, draft = false, labels = [], auvId } = options;
-
   // Check if gh CLI is available
   const hasGhCli = await detectGhCli();
 

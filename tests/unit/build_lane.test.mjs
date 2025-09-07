@@ -2,14 +2,10 @@
  * Unit tests for Build Lane functionality
  */
 
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { randomBytes } from 'node:crypto';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Mock modules for testing
 const mockBuildLane = {
@@ -232,12 +228,12 @@ describe('Build Lane - Branch Naming', () => {
     const branchName = `auv/${auvId}/changes-${Date.now()}`;
 
     assert.ok(branchName.startsWith('auv/AUV-0003/'));
-    assert.ok(/^[a-zA-Z0-9\-\/]+$/.test(branchName));
+    assert.ok(/^[a-zA-Z0-9\-/]+$/.test(branchName));
   });
 
   it('should handle custom branch names', () => {
     const customBranch = 'feature/my-custom-branch';
-    assert.ok(/^[a-zA-Z0-9\-\/]+$/.test(customBranch));
+    assert.ok(/^[a-zA-Z0-9\-/]+$/.test(customBranch));
   });
 });
 

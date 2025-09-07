@@ -85,7 +85,7 @@ async function checkSecurityGates(auvId, strict) {
       results.passed = false;
       results.messages.push(`Security: ${gitleaks.blocked} secret(s) detected`);
     } else if (gitleaks) {
-      results.messages.push(`Security: Gitleaks passed (no secrets found)`);
+      results.messages.push('Security: Gitleaks passed (no secrets found)');
     }
   } else if (strict) {
     results.messages.push('Security: Gitleaks scan not run');
