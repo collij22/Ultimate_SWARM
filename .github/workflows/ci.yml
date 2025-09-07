@@ -165,14 +165,14 @@ jobs:
             kill $MOCK_SERVER_PID 2>/dev/null || true
             sleep 1
           fi
-          
+
           # Ensure port 3000 is free (fallback method)
           if lsof -ti:3000 > /dev/null 2>&1; then
             echo "Killing process on port 3000"
             lsof -ti:3000 | xargs kill -9 2>/dev/null || true
             sleep 1
           fi
-          
+
           echo "Mock server cleanup complete"
 
       # ---- Autopilot runs (single source of truth) ----

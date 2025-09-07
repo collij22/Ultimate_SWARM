@@ -35,7 +35,7 @@
 ### 5. Security Gate (Phase 6)
 
 - **Requirement**: No unwaived high/critical findings or secrets.
-- **Exit Codes**: 
+- **Exit Codes**:
   - 301 (Semgrep high/critical findings)
   - 302 (Gitleaks secrets detected)
 - **Scripts**:

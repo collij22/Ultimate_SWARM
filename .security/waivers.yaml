@@ -21,7 +21,6 @@ waivers:
   #   expires: 2025-10-07T00:00:00Z
   #   issue: SWARM-SEC-002
   #   approved_by: security-team
-
 # Waiver fields:
 # - tool: semgrep | gitleaks (required)
 # - rule: Rule ID that triggered the finding (optional, but recommended)

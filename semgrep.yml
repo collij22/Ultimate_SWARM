@@ -99,10 +99,10 @@ paths:
     - test-results/
     - runs/
     - dist/
-    - "*.test.js"
-    - "*.test.mjs"
-    - "*.spec.js"
-    - "*.spec.ts"
+    - '*.test.js'
+    - '*.test.mjs'
+    - '*.spec.js'
+    - '*.spec.ts'
 
 # Timeout for analysis
 timeout: 120

@@ -58,7 +58,7 @@ function validateSpecial(file) {
 async function checkSecurityGates(auvId, strict) {
   const results = {
     passed: true,
-    messages: []
+    messages: [],
   };
 
   // Check Semgrep results if they exist
@@ -69,7 +69,9 @@ async function checkSecurityGates(auvId, strict) {
       results.passed = false;
       results.messages.push(`Security: ${semgrep.blocked} high/critical finding(s) detected`);
     } else if (semgrep) {
-      results.messages.push(`Security: Semgrep passed (${semgrep.totals.high} high, ${semgrep.totals.medium} medium)`);
+      results.messages.push(
+        `Security: Semgrep passed (${semgrep.totals.high} high, ${semgrep.totals.medium} medium)`,
+      );
     }
   } else if (strict) {
     results.messages.push('Security: Semgrep scan not run');
@@ -95,7 +97,7 @@ async function checkSecurityGates(auvId, strict) {
 async function checkVisualRegression(auvId, strict) {
   const results = {
     passed: true,
-    messages: []
+    messages: [],
   };
 
   const visualPath = path.join(process.cwd(), 'runs', 'visual', auvId, 'visual.json');
@@ -125,7 +127,7 @@ async function checkVisualRegression(auvId, strict) {
 async function checkPerformanceBudgets(auvId) {
   const results = {
     passed: true,
-    messages: []
+    messages: [],
   };
 
   // Try to evaluate budgets
@@ -133,8 +135,10 @@ async function checkPerformanceBudgets(auvId) {
   if (budgetResult && !budgetResult.skipped) {
     if (!budgetResult.passed) {
       results.passed = false;
-      results.messages.push(`Performance: ${budgetResult.violations?.length || 0} budget violation(s)`);
-      budgetResult.violations?.forEach(v => {
+      results.messages.push(
+        `Performance: ${budgetResult.violations?.length || 0} budget violation(s)`,
+      );
+      budgetResult.violations?.forEach((v) => {
         results.messages.push(`  - ${v.metric}: +${v.percentOver}% over budget`);
       });
     } else {
@@ -191,7 +195,7 @@ async function main() {
   }
 
   // Phase 6: Extended quality checks
-  
+
   // Check security gates
   const securityResults = await checkSecurityGates(auvId, strict);
   if (!securityResults.passed) allPassed = false;
@@ -213,11 +217,11 @@ async function main() {
     for (const f of required) console.log(' -', f);
     if (messages.length > 0) {
       console.log('\nQuality checks:');
-      messages.forEach(m => console.log(`  ${m}`));
+      messages.forEach((m) => console.log(`  ${m}`));
     }
   } else {
     console.error('[CVF] FAIL — quality gate violations:');
-    messages.forEach(m => {
+    messages.forEach((m) => {
       if (m.includes('detected') || m.includes('exceeded') || m.includes('violation')) {
         console.error(`  ✗ ${m}`);
       } else {

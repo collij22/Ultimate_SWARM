@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * Swarm1 — Semgrep Security Scanner Wrapper
- * 
+ *
  * Runs Semgrep static analysis, applies waivers, and generates normalized reports.
- * 
+ *
  * Usage:
  *   node orchestration/security/semgrep.mjs [--input <raw.json>] [--output <report.json>]
- *   
+ *
  * Exit codes:
  *   0   - No blocking issues (or all waived)
  *   301 - High/critical findings present (post-waiver)
@@ -21,7 +21,7 @@ import yaml from 'js-yaml';
 const SEVERITY_LEVELS = {
   ERROR: 'high',
   WARNING: 'medium',
-  INFO: 'low'
+  INFO: 'low',
 };
 
 const BLOCKING_SEVERITIES = ['ERROR'];
@@ -38,11 +38,11 @@ class SemgrepScanner {
       totals: {
         high: 0,
         medium: 0,
-        low: 0
+        low: 0,
       },
       waived: 0,
       blocked: 0,
-      findings: []
+      findings: [],
     };
   }
 
@@ -68,13 +68,13 @@ class SemgrepScanner {
     try {
       const content = fs.readFileSync(waiversPath, 'utf-8');
       const data = yaml.load(content);
-      
+
       if (data && data.waivers) {
         const now = new Date();
-        this.waivers = data.waivers.filter(w => {
+        this.waivers = data.waivers.filter((w) => {
           // Filter for Semgrep waivers only
           if (w.tool !== 'semgrep') return false;
-          
+
           // Check if waiver has expired
           if (w.expires) {
             const expiryDate = new Date(w.expires);
@@ -83,10 +83,10 @@ class SemgrepScanner {
               return false;
             }
           }
-          
+
           return true;
         });
-        
+
         console.log(`[semgrep] Loaded ${this.waivers.length} active waivers`);
       }
     } catch (error) {
@@ -95,17 +95,17 @@ class SemgrepScanner {
   }
 
   isWaived(finding) {
-    return this.waivers.some(waiver => {
+    return this.waivers.some((waiver) => {
       // Match by rule ID
       if (waiver.rule && finding.check_id !== waiver.rule) {
         return false;
       }
-      
+
       // Match by path glob (simple contains for now)
       if (waiver.path && !finding.path.includes(waiver.path)) {
         return false;
       }
-      
+
       return true;
     });
   }
@@ -113,7 +113,7 @@ class SemgrepScanner {
   async runSemgrep(configPath) {
     const semgrepConfig = configPath || path.join(process.cwd(), 'semgrep.yml');
     const outputPath = path.join(process.cwd(), 'runs', 'security', 'semgrep-raw.json');
-    
+
     // Ensure output directory exists
     const outputDir = path.dirname(outputPath);
     if (!fs.existsSync(outputDir)) {
@@ -151,16 +151,16 @@ class SemgrepScanner {
       results: [],
       errors: [],
       paths: {
-        scanned: ['orchestration/', 'mcp/', 'tests/']
-      }
+        scanned: ['orchestration/', 'mcp/', 'tests/'],
+      },
     };
-    
+
     fs.writeFileSync(outputPath, JSON.stringify(mockData, null, 2));
   }
 
   async processSemgrepOutput(inputPath) {
     const rawData = JSON.parse(fs.readFileSync(inputPath, 'utf-8'));
-    
+
     if (!rawData.results) {
       console.log('[semgrep] No findings in scan results');
       return;
@@ -169,7 +169,7 @@ class SemgrepScanner {
     for (const finding of rawData.results) {
       const severity = SEVERITY_LEVELS[finding.extra?.severity || 'INFO'];
       const isWaived = this.isWaived(finding);
-      
+
       const processedFinding = {
         id: finding.check_id,
         severity: severity,
@@ -177,15 +177,15 @@ class SemgrepScanner {
         line: finding.start?.line || 0,
         message: finding.extra?.message || finding.message,
         waived: isWaived,
-        waiver_reason: isWaived ? this.getWaiverReason(finding) : null
+        waiver_reason: isWaived ? this.getWaiverReason(finding) : null,
       };
 
       this.findings.push(processedFinding);
-      
+
       // Update totals
       if (!isWaived) {
         this.summary.totals[severity]++;
-        
+
         if (BLOCKING_SEVERITIES.includes(finding.extra?.severity)) {
           this.summary.blocked++;
         }
@@ -198,9 +198,8 @@ class SemgrepScanner {
   }
 
   getWaiverReason(finding) {
-    const waiver = this.waivers.find(w => 
-      (!w.rule || finding.check_id === w.rule) &&
-      (!w.path || finding.path.includes(w.path))
+    const waiver = this.waivers.find(
+      (w) => (!w.rule || finding.check_id === w.rule) && (!w.path || finding.path.includes(w.path)),
     );
     return waiver?.reason || 'Waived by policy';
   }
@@ -214,13 +213,15 @@ class SemgrepScanner {
 
     // Write detailed report
     fs.writeFileSync(outputPath, JSON.stringify(this.summary, null, 2));
-    
+
     // Also write to runs directory for CVF validation
     const runsPath = path.join(process.cwd(), 'runs', 'security', 'semgrep.json');
     fs.writeFileSync(runsPath, JSON.stringify(this.summary, null, 2));
-    
+
     console.log(`[semgrep] Report generated: ${outputPath}`);
-    console.log(`[semgrep] Summary: High=${this.summary.totals.high}, Medium=${this.summary.totals.medium}, Low=${this.summary.totals.low}, Waived=${this.summary.waived}`);
+    console.log(
+      `[semgrep] Summary: High=${this.summary.totals.high}, Medium=${this.summary.totals.medium}, Low=${this.summary.totals.low}, Waived=${this.summary.waived}`,
+    );
   }
 
   shouldBlock() {
@@ -233,7 +234,7 @@ async function main() {
   const args = process.argv.slice(2);
   let inputPath = null;
   let outputPath = path.join(process.cwd(), 'reports', 'security', 'semgrep.json');
-  
+
   // Parse arguments
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--input' && args[i + 1]) {
@@ -246,31 +247,30 @@ async function main() {
   }
 
   const scanner = new SemgrepScanner();
-  
+
   try {
     // Load waivers
     await scanner.loadWaivers();
-    
+
     // Run or load Semgrep results
     if (!inputPath) {
       inputPath = await scanner.runSemgrep();
     }
-    
+
     // Process findings
     await scanner.processSemgrepOutput(inputPath);
-    
+
     // Generate report
     await scanner.generateReport(outputPath);
-    
+
     // Exit with appropriate code
     if (scanner.shouldBlock()) {
       console.error('[semgrep] BLOCKED: High/critical findings detected');
       process.exit(301);
     }
-    
+
     console.log('[semgrep] PASSED: No blocking issues found');
     process.exit(0);
-    
   } catch (error) {
     console.error('[semgrep] Error:', error.message);
     process.exit(1);

@@ -1,6 +1,6 @@
 /**
  * Swarm1 — Phase 6 Unit Tests
- * 
+ *
  * Tests for security scanners, visual regression, and performance budget modules.
  */
 
@@ -14,7 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 describe('Phase 6 - Security Scanners', () => {
   const testWaiverPath = path.join(process.cwd(), '.security', 'test-waivers.yaml');
-  
+
   beforeEach(() => {
     // Create test waiver file
     const testWaivers = `
@@ -47,12 +47,12 @@ waivers:
   it('should validate waiver expiration dates', () => {
     const content = fs.readFileSync(testWaiverPath, 'utf-8');
     assert(content.includes('expires:'), 'Waivers should have expiration dates');
-    
+
     // Parse and check dates
     const lines = content.split('\n');
-    const expiryLines = lines.filter(l => l.includes('expires:'));
-    
-    expiryLines.forEach(line => {
+    const expiryLines = lines.filter((l) => l.includes('expires:'));
+
+    expiryLines.forEach((line) => {
       const dateStr = line.split('expires:')[1].trim();
       const date = new Date(dateStr);
       assert(!isNaN(date.getTime()), `Invalid date format: ${dateStr}`);
@@ -69,11 +69,11 @@ waivers:
       totals: {
         high: 0,
         medium: 2,
-        low: 5
+        low: 5,
       },
       waived: 1,
       blocked: 0,
-      findings: []
+      findings: [],
     };
 
     // Validate required fields
@@ -90,7 +90,7 @@ describe('Phase 6 - Visual Regression', () => {
     const totalPixels = 1920 * 1080;
     const diffPixels = 2073; // ~0.1% difference
     const diffPercent = (diffPixels / totalPixels) * 100;
-    
+
     assert(diffPercent < 0.11, 'Diff should be approximately 0.1%');
     assert(diffPercent > 0.09, 'Diff should be approximately 0.1%');
   });
@@ -100,15 +100,15 @@ describe('Phase 6 - Visual Regression', () => {
       { diffPercent: 0.05, threshold: 0.1, shouldPass: true },
       { diffPercent: 0.1, threshold: 0.1, shouldPass: true },
       { diffPercent: 0.11, threshold: 0.1, shouldPass: false },
-      { diffPercent: 1.0, threshold: 0.1, shouldPass: false }
+      { diffPercent: 1.0, threshold: 0.1, shouldPass: false },
     ];
 
-    testCases.forEach(tc => {
+    testCases.forEach((tc) => {
       const passed = tc.diffPercent <= tc.threshold;
       assert.strictEqual(
-        passed, 
-        tc.shouldPass, 
-        `Diff ${tc.diffPercent}% vs threshold ${tc.threshold}% should ${tc.shouldPass ? 'pass' : 'fail'}`
+        passed,
+        tc.shouldPass,
+        `Diff ${tc.diffPercent}% vs threshold ${tc.threshold}% should ${tc.shouldPass ? 'pass' : 'fail'}`,
       );
     });
   });
@@ -116,8 +116,8 @@ describe('Phase 6 - Visual Regression', () => {
   it('should validate SSIM calculation range', () => {
     // SSIM should always be between 0 and 1
     const testSSIMValues = [0, 0.5, 0.95, 0.99, 1];
-    
-    testSSIMValues.forEach(ssim => {
+
+    testSSIMValues.forEach((ssim) => {
       assert(ssim >= 0 && ssim <= 1, `SSIM ${ssim} should be between 0 and 1`);
     });
   });
@@ -133,22 +133,19 @@ describe('Phase 6 - Performance Budgets', () => {
       'tbt_ms',
       'si_ms',
       'size_kb',
-      'score'
+      'score',
     ];
 
     const testBudget = {
       lcp_ms: 2500,
       tti_ms: 3800,
       cls: 0.1,
-      invalid_metric: 100
+      invalid_metric: 100,
     };
 
-    Object.keys(testBudget).forEach(key => {
+    Object.keys(testBudget).forEach((key) => {
       if (key !== 'invalid_metric') {
-        assert(
-          validMetrics.includes(key),
-          `${key} should be a valid metric`
-        );
+        assert(validMetrics.includes(key), `${key} should be a valid metric`);
       }
     });
   });
@@ -158,18 +155,16 @@ describe('Phase 6 - Performance Budgets', () => {
       { actual: 3000, budget: 2500, expectedPercent: 20 },
       { actual: 2750, budget: 2500, expectedPercent: 10 },
       { actual: 2500, budget: 2500, expectedPercent: 0 },
-      { actual: 2000, budget: 2500, expectedPercent: 0 } // Under budget
+      { actual: 2000, budget: 2500, expectedPercent: 0 }, // Under budget
     ];
 
-    testCases.forEach(tc => {
-      const percentOver = tc.actual > tc.budget 
-        ? ((tc.actual - tc.budget) / tc.budget) * 100
-        : 0;
-      
+    testCases.forEach((tc) => {
+      const percentOver = tc.actual > tc.budget ? ((tc.actual - tc.budget) / tc.budget) * 100 : 0;
+
       assert.strictEqual(
         Math.round(percentOver),
         tc.expectedPercent,
-        `Actual ${tc.actual} vs budget ${tc.budget} should be ${tc.expectedPercent}% over`
+        `Actual ${tc.actual} vs budget ${tc.budget} should be ${tc.expectedPercent}% over`,
       );
     });
   });
@@ -180,15 +175,15 @@ describe('Phase 6 - Performance Budgets', () => {
       { percentOver: 15, expectedSeverity: 'medium' },
       { percentOver: 20, expectedSeverity: 'medium' },
       { percentOver: 21, expectedSeverity: 'high' },
-      { percentOver: 50, expectedSeverity: 'high' }
+      { percentOver: 50, expectedSeverity: 'high' },
     ];
 
-    testCases.forEach(tc => {
+    testCases.forEach((tc) => {
       const severity = tc.percentOver > 20 ? 'high' : 'medium';
       assert.strictEqual(
         severity,
         tc.expectedSeverity,
-        `${tc.percentOver}% over should be ${tc.expectedSeverity} severity`
+        `${tc.percentOver}% over should be ${tc.expectedSeverity} severity`,
       );
     });
   });
@@ -200,20 +195,20 @@ describe('Phase 6 - CVF Integration', () => {
       artifacts: {
         passed: true,
         missing: [],
-        invalid: []
+        invalid: [],
       },
       security: {
         passed: true,
-        messages: ['Security: Semgrep passed', 'Security: Gitleaks passed']
+        messages: ['Security: Semgrep passed', 'Security: Gitleaks passed'],
       },
       visual: {
         passed: true,
-        messages: ['Visual: All routes within threshold']
+        messages: ['Visual: All routes within threshold'],
       },
       performance: {
         passed: true,
-        messages: ['Performance: All budgets met']
-      }
+        messages: ['Performance: All budgets met'],
+      },
     };
 
     // Validate all gates present
@@ -223,7 +218,7 @@ describe('Phase 6 - CVF Integration', () => {
     assert(mockCVFResult.performance, 'CVF must check performance');
 
     // Validate overall pass condition
-    const allPassed = 
+    const allPassed =
       mockCVFResult.artifacts.passed &&
       mockCVFResult.security.passed &&
       mockCVFResult.visual.passed &&
@@ -237,11 +232,11 @@ describe('Phase 6 - CVF Integration', () => {
       security_semgrep: 301,
       security_gitleaks: 302,
       visual_regression: 303,
-      performance_budget: 304 // Reserved for future use
+      performance_budget: 304, // Reserved for future use
     };
 
     // All codes should be in 3xx range for Phase 6
-    Object.values(exitCodes).forEach(code => {
+    Object.values(exitCodes).forEach((code) => {
       assert(code >= 300 && code < 400, `Exit code ${code} should be in 300-399 range`);
     });
 
@@ -250,7 +245,7 @@ describe('Phase 6 - CVF Integration', () => {
     assert.strictEqual(
       uniqueCodes.size,
       Object.values(exitCodes).length,
-      'Exit codes should be unique'
+      'Exit codes should be unique',
     );
   });
 });
@@ -260,7 +255,7 @@ describe('Phase 6 - Configuration Files', () => {
     const semgrepPath = path.join(process.cwd(), 'semgrep.yml');
     if (fs.existsSync(semgrepPath)) {
       const content = fs.readFileSync(semgrepPath, 'utf-8');
-      
+
       // Check for required sections
       assert(content.includes('rules:'), 'Semgrep config must have rules');
       assert(content.includes('severity:'), 'Rules should have severity levels');
@@ -273,7 +268,7 @@ describe('Phase 6 - Configuration Files', () => {
     const gitleaksPath = path.join(process.cwd(), '.gitleaks.toml');
     if (fs.existsSync(gitleaksPath)) {
       const content = fs.readFileSync(gitleaksPath, 'utf-8');
-      
+
       // Check for required sections
       assert(content.includes('[[rules]]'), 'Gitleaks config must have rules');
       assert(content.includes('regex ='), 'Rules should have regex patterns');

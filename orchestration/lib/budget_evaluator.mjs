@@ -1,6 +1,6 @@
 /**
  * Swarm1 — Performance Budget Evaluator
- * 
+ *
  * Evaluates Lighthouse metrics against defined performance budgets.
  */
 
@@ -19,7 +19,7 @@ export class BudgetEvaluator {
    */
   async loadBudgets(auvId) {
     const configPath = path.join(process.cwd(), 'capabilities', `${auvId}.yaml`);
-    
+
     if (!fs.existsSync(configPath)) {
       console.log(`[budget-evaluator] No config found for ${auvId}`);
       return null;
@@ -28,7 +28,7 @@ export class BudgetEvaluator {
     try {
       const content = fs.readFileSync(configPath, 'utf-8');
       const config = yaml.load(content);
-      
+
       if (!config.perf_budgets) {
         console.log(`[budget-evaluator] No performance budgets defined for ${auvId}`);
         return null;
@@ -46,7 +46,7 @@ export class BudgetEvaluator {
    */
   async loadLighthouseResults(auvId) {
     const lighthousePath = path.join(process.cwd(), 'runs', auvId, 'perf', 'lighthouse.json');
-    
+
     if (!fs.existsSync(lighthousePath)) {
       throw new Error(`Lighthouse results not found: ${lighthousePath}`);
     }
@@ -64,14 +64,14 @@ export class BudgetEvaluator {
    */
   extractMetrics(lighthouseData) {
     const audits = lighthouseData.audits || {};
-    
+
     const metrics = {
       lcp_ms: audits['largest-contentful-paint']?.numericValue || 0,
       tti_ms: audits['interactive']?.numericValue || 0,
       cls: audits['cumulative-layout-shift']?.numericValue || 0,
       fcp_ms: audits['first-contentful-paint']?.numericValue || 0,
       tbt_ms: audits['total-blocking-time']?.numericValue || 0,
-      si_ms: audits['speed-index']?.numericValue || 0
+      si_ms: audits['speed-index']?.numericValue || 0,
     };
 
     // Calculate total size from network requests
@@ -96,13 +96,13 @@ export class BudgetEvaluator {
       violations: [],
       warnings: [],
       metrics: {},
-      budgets: {}
+      budgets: {},
     };
 
     // Check each budget constraint
     for (const [key, budget] of Object.entries(budgets)) {
       const actual = metrics[key];
-      
+
       if (actual === undefined) {
         console.log(`[budget-evaluator] Metric '${key}' not found in Lighthouse results`);
         continue;
@@ -136,7 +136,7 @@ export class BudgetEvaluator {
           actual,
           budget,
           percentOver: parseFloat(percentOver.toFixed(2)),
-          severity: percentOver > 20 ? 'high' : 'medium'
+          severity: percentOver > 20 ? 'high' : 'medium',
         };
 
         if (violation.severity === 'high') {
@@ -163,7 +163,7 @@ export class BudgetEvaluator {
       budgets: results.budgets,
       violations: results.violations,
       warnings: results.warnings,
-      summary_text: []
+      summary_text: [],
     };
 
     // Add summary text
@@ -179,7 +179,7 @@ export class BudgetEvaluator {
       const formatted = this.formatMetricValue(violation.metric, violation.actual);
       const budget = this.formatMetricValue(violation.metric, violation.budget);
       summary.summary_text.push(
-        `  - ${metricName}: ${formatted} (budget: ${budget}, +${violation.percentOver}%)`
+        `  - ${metricName}: ${formatted} (budget: ${budget}, +${violation.percentOver}%)`,
       );
     }
 
@@ -191,7 +191,7 @@ export class BudgetEvaluator {
         const formatted = this.formatMetricValue(warning.metric, warning.actual);
         const budget = this.formatMetricValue(warning.metric, warning.budget);
         summary.summary_text.push(
-          `  - ${metricName}: ${formatted} (budget: ${budget}, +${warning.percentOver}%)`
+          `  - ${metricName}: ${formatted} (budget: ${budget}, +${warning.percentOver}%)`,
         );
       }
     }
@@ -211,7 +211,7 @@ export class BudgetEvaluator {
       tbt_ms: 'Total Blocking Time',
       si_ms: 'Speed Index',
       size_kb: 'Total Size',
-      score: 'Performance Score'
+      score: 'Performance Score',
     };
     return names[metric] || metric;
   }
@@ -244,37 +244,36 @@ export class BudgetEvaluator {
         return {
           passed: true,
           message: 'No performance budgets defined',
-          skipped: true
+          skipped: true,
         };
       }
 
       // Load Lighthouse results
       const lighthouseData = await this.loadLighthouseResults(auvId);
-      
+
       // Extract metrics
       const metrics = this.extractMetrics(lighthouseData);
-      
+
       // Evaluate against budgets
       const results = this.evaluate(metrics, budgets);
-      
+
       // Generate summary
       const summary = this.generateSummary(results, auvId);
-      
+
       // Save summary
       const summaryPath = path.join(process.cwd(), 'runs', auvId, 'perf', 'budget-evaluation.json');
       fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
-      
+
       // Log results
       console.log(`[budget-evaluator] ${auvId}:`);
-      summary.summary_text.forEach(line => console.log(`  ${line}`));
-      
+      summary.summary_text.forEach((line) => console.log(`  ${line}`));
+
       return summary;
-      
     } catch (error) {
       console.error(`[budget-evaluator] Error: ${error.message}`);
       return {
         passed: false,
-        error: error.message
+        error: error.message,
       };
     }
   }
