@@ -7,7 +7,7 @@ const STAGING_URL = process.env.STAGING_URL;
 test.describe('AUV-0002 UI', () => {
   test.skip(!STAGING_URL, 'STAGING_URL env var not set');
 
-  test('products grid renders and navigates to detail', async ({ page }, testInfo) => {
+  test('products grid renders and navigates to detail', async ({ page }) => {
     await page.goto(`${STAGING_URL}/products.html`);
 
     const grid = page.locator('[data-testid="product-grid"]');

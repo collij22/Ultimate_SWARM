@@ -32,8 +32,9 @@ test.describe('AUV-0102 UI — cart summary', () => {
     const rows = page.locator('[data-testid="cart-row"]');
     await expect(rows.first()).toBeVisible();
 
-    const subtotalText = await page.locator('[data-testid="cart-subtotal"]').innerText();
-    const taxText = await page.locator('[data-testid="cart-tax"]').innerText();
+    // Verify all cart elements are present
+    await page.locator('[data-testid="cart-subtotal"]').innerText();
+    await page.locator('[data-testid="cart-tax"]').innerText();
     const totalText = await page.locator('[data-testid="cart-total"]').innerText();
     expect(totalText).toMatch(/\$\d/); // some currency
 

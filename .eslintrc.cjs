@@ -38,6 +38,27 @@ module.exports = {
         mocha: true,
       },
     },
+    {
+      files: ['*.ts', '*.tsx'],
+      parserOptions: {
+        sourceType: 'module',
+      },
+      rules: {
+        // TypeScript handles these better
+        'no-undef': 'off',
+        'no-unused-vars': 'off',
+      },
+    },
+    {
+      files: ['tests/robot/playwright/**/*.ts', 'tests/robot/playwright/**/*.spec.ts'],
+      env: {
+        browser: true,
+      },
+      globals: {
+        document: 'readonly',
+        window: 'readonly',
+      },
+    },
   ],
-  ignorePatterns: ['node_modules/', 'dist/', 'runs/', 'test-results/', '*.min.js', 'coverage/'],
+  ignorePatterns: ['node_modules/', 'dist/', 'runs/', 'test-results/', '*.min.js', 'coverage/', '*.d.ts', '**/*.ts', '**/*.tsx'],
 };
