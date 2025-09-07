@@ -20,6 +20,11 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 - `@orchestration/runbooks/auv_delivery.mjs`
 - `@orchestration/lib/test_authoring.mjs`
 - `@orchestration/cvf-check.mjs`
+- `@orchestration/lib/auv_compiler.mjs`
+- `@orchestration/graph/runner.mjs`
+- `@orchestration/lib/build_lane.mjs`
+- `@orchestration/security/semgrep.mjs`
+- `@orchestration/visual/capture.mjs`
 - `@tests/robot/playwright/playwright.config.ts`
 - `@mock/server.js`
 - `@capabilities/AUV-0002.yaml`
@@ -29,11 +34,14 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 
 ## Project TL;DR (internalize)
 
-- **Swarm1 delivers AUV units** with contract-first specs and CVF (functional, perf, security) gates
-- **Proven locally**: AUV-0001..0005; CI green for 0002–0003; 0004–0005 wired to runbook locally
-- **Runbook autopilot** (`orchestration/cli.mjs run auv <ID>`) starts mock server → Playwright → Lighthouse → CVF → result card
+- **Swarm1 delivers AUV units** with contract-first specs and CVF (functional, perf, security, visual) gates
+- **Proven locally**: AUV-0001..0005; CI green for 0002–0005; Brief compiler generates AUVs from requirements
+- **Runbook autopilot** (`orchestration/cli.mjs AUV-<ID>`) starts mock server → Playwright → Lighthouse → CVF → result card
 - **Auto-authoring** creates baseline tests from `capabilities/<AUV>.yaml`
 - **MCP**: agents request capabilities, not tool names. Router enforces Primary first, Secondary by consent+budget per policies
+- **DAG Runner**: Parallel execution with dependencies (`orchestration/graph/runner.mjs`)
+- **Build Lane**: Autonomous pipeline with QA gates and PR creation
+- **Security/Visual Gates**: Semgrep, Gitleaks, visual regression with baselines (Phase 6 complete)
 - **Hooks/Observability**: JSONL logs + result cards under `runs/`; artifacts are the source of truth for "done"
 
 ## House rules
@@ -64,21 +72,27 @@ Reply with exactly this structure:
     STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api
     npx playwright test -c tests/robot/playwright/playwright.config.ts
     node orchestration/cli.mjs AUV-0003
-    node orchestration/cvf-check.mjs AUV-0003
+    node orchestration/cvf-check.mjs AUV-0003 --strict
+    node orchestration/graph/runner.mjs orchestration/graph/projects/demo-validation.yaml
+    node orchestration/security/semgrep.mjs --auv AUV-0003
+    node orchestration/visual/capture.mjs --auv AUV-0003
     tail -n 50 runs/observability/hooks.jsonl
   </quick_commands>
 
   <menus>
     <option id="1">Run a full AUV delivery (autopilot): choose 0003, 0004, or 0005</option>
-    <option id="2">Author a new AUV spec from template (then auto-generate tests)</option>
-    <option id="3">Tighten gates (add Semgrep to CI, expand CVF)</option>
-    <option id="4">Draft/update agents.allowlist + capability_map for a task</option>
-    <option id="5">Package delivery + client report (zip + report HTML)</option>
+    <option id="2">Compile AUVs from brief (node orchestration/cli.mjs plan briefs/demo-01/brief.md)</option>
+    <option id="3">Run DAG with parallel execution (graph runner with concurrency)</option>
+    <option id="4">Execute build lane with QA gates and PR creation</option>
+    <option id="5">Run security/visual regression checks (Phase 6 gates)</option>
+    <option id="6">Package delivery + client report (zip + report HTML)</option>
   </menus>
 
   <notes>
+    - Phases 1-6 complete: Foundation, Brief Compiler, DAG Runner, MCP Router, Build Lane, Security/Visual Gates
     - Auto-authoring will create missing specs from capability hints
     - Use the MCP router by **capability**, not tool name; policies/registry are the source of truth
+    - Security waivers expire after 30 days; visual baselines in tests/robot/visual/baselines/
     - Keep output diffs/patches minimal and reproducible; attach artifacts in runs/
   </notes>
 </ready>
