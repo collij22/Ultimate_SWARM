@@ -11,7 +11,7 @@ import path from 'path';
 import { spawn } from 'child_process';
 import yaml from 'yaml';
 import Ajv from 'ajv';
-import { nanoid } from 'nanoid';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -355,7 +355,9 @@ class NodeExecutors {
 export class GraphRunner {
   constructor(options = {}) {
     this.concurrency = options.concurrency || 3;
-    this.runId = options.runId || `RUN-${nanoid(12)}`;
+    const gen = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+                                          : Math.random().toString(36).slice(2, 14));
+    this.runId = options.runId || `RUN-${gen()}`;
     this.stateFile = options.stateFile || `runs/graph/${this.runId}/state.json`;
     this.lockManager = new ResourceLockManager();
     this.executors = new NodeExecutors(options.env);
