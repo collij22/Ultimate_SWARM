@@ -27,6 +27,7 @@
 - No durable workflow backend (Phase 8)
 
 ### 📝 Note on Documentation
+
 - Deleted `docs/phase1_correction.md` as Phase 1 is now complete and corrections have been applied
 - `docs/phase_chat.md` is a working document for ongoing phase tracking (not part of formal documentation)
 
@@ -35,26 +36,31 @@
 ## Phase 1: Foundation Hardening & Reliability ✅ COMPLETED (2025-09-06)
 
 ### Objective
+
 Bulletproof the current pipeline and codify "definition of done" (DoD) per AUV.
 
 ### 🎯 Deliverables (All Completed)
 
 #### ✅ DoD Contract (`docs/QUALITY-GATES.md` updated)
+
 - Green Playwright with retry logic for transient failures
 - Lighthouse ≥ 0.9 perf score (AUV-specific budgets)
 - CVF PASS with proper artifact validation
 - Zero hook errors with consistent ENV propagation
 
 #### ✅ Error-Hardened Autopilot
+
 - Wrapped `orchestration/cli.mjs` and `runbooks/auv_delivery.mjs` with typed exit codes (101-105)
 - Structured failure cards with version field for consistency
 - Server health check to prevent double starts
 
 #### ✅ Test Authoring Stability
+
 - Deterministic generation and idempotent writes in `orchestration/lib/test_authoring.mjs`
 - Fixed AUV-0002 spec configuration to generate correct artifacts
 
 #### ✅ CI Parity
+
 - Added AUV-0002, 0004 & AUV-0005 to CI using autopilot as single source of truth
 - Simplified CI workflow eliminating duplication
 - Added resilient artifact validation with `if: always()` safeguards
@@ -62,26 +68,32 @@ Bulletproof the current pipeline and codify "definition of done" (DoD) per AUV.
 ### 🔧 File Changes
 
 #### `orchestration/cli.mjs`
+
 - Write `runs/<AUV>/result-cards/runbook-summary.json` with `{ ok, steps, durations, env }`
 - Return 10x series exit codes: 101 Playwright, 102 Lighthouse, 103 CVF, etc.
 
 #### `orchestration/runbooks/auv_delivery.mjs`
+
 - Guard spawn errors; Windows-safe shell quoting (already partially fixed)
 - Retry policy: single retry on transient failures (HTTP 5xx, browser crash)
 
 #### `orchestration/lib/test_authoring.mjs`
+
 - Ensure `ensureTests()` is pure & deterministic (no nondeterministic timestamps)
 - Add `authoring_hints.api.base_path` normalization (already added)
 
 #### `orchestration/cvf-check.mjs`
+
 - Ensure AUV-0004 (`ui/cart_summary.png`, `perf/lighthouse.json`) and AUV-0005 (`ui/checkout_success.png`, `perf/lighthouse.json`) are recognized
 - Now imports from shared `orchestration/lib/expected_artifacts.mjs` module
 
 #### `.github/workflows/ci.yml`
+
 - Duplicate the 0003 block for 0004 and 0005 (ensure `mkdir -p runs/AUV-000X/perf` before Lighthouse)
 - Upload `runs/**` and `test-results/**` always
 
 ### ✅ Acceptance & Proofs (Verified)
+
 - All 0002–0005 pass locally and in CI consistently
 - For each AUV run:
   - `runs/<AUV>/perf/lighthouse.json` (score and LCP logged) ✓
@@ -96,14 +108,17 @@ Bulletproof the current pipeline and codify "definition of done" (DoD) per AUV.
 ## Phase 2: Brief Intake & AUV Compiler ✅ COMPLETED (2025-09-06)
 
 ### Objective
+
 Convert an Upwork-style brief into a backlog of AUVs (capabilities + hints), with estimates and acceptance criteria.
 
 ### 🎯 Deliverables (All Completed)
 
 #### ✅ Brief Schema
+
 - `contracts/brief.schema.json` (JSON Schema draft-07) with `business_goals[]`, `must_have[]`, `nice_to_have[]`, `constraints{budget_usd, timeline_days}`
 
 #### ✅ Compiler
+
 - `orchestration/lib/auv_compiler.mjs`:
   - NLP-based capability extraction for e-commerce, SaaS, API, and data domains
   - Smart dependency inference (cart→checkout, UI→API relationships)
@@ -111,34 +126,41 @@ Convert an Upwork-style brief into a backlog of AUVs (capabilities + hints), wit
   - Budget estimation based on complexity scoring
 
 #### ✅ Brief Validation
+
 - `orchestration/lib/validate_brief.mjs`:
   - Parses MD/YAML/JSON brief formats
   - Validates against schema with human-friendly errors
   - Extracts structured data from markdown sections
 
 #### ✅ Backlog & Status
+
 - `capabilities/backlog.yaml`: ordered list with dependencies, estimates{tokens,mcp_usd,time_hours}
 - Generated from demo brief with 8 AUVs and correct dependency graph
 
 #### ✅ Requirements Integration
+
 - `orchestration/lib/call_agent.mjs` invokes Requirements Analyst or uses heuristic extraction
 - Outputs to `reports/requirements/<RUN-ID>.json`
 
 ### 🔧 File Changes
 
 #### `capabilities/templates/AUV-TEMPLATE.yaml`
+
 - Template with acceptance criteria, artifacts.required[], authoring_hints (ui/api)
 
 #### CLI Integration
+
 - `node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run`
 - `node orchestration/cli.mjs validate auv AUV-0101`
 - `node orchestration/cli.mjs AUV-0101` (executes generated AUVs)
 
 #### Dynamic Loading
+
 - `orchestration/runbooks/auv_delivery.mjs` - loads AUV configs from capabilities directory
 - `orchestration/lib/expected_artifacts.mjs` - dynamic artifact lookup from capability YAMLs
 
 ### ✅ Acceptance & Proofs (Verified)
+
 - Sample brief in `briefs/demo-01/brief.md` generates 8 AUVs with correct dependencies ✓
 - Generated AUVs execute successfully: AUV-0101 and AUV-0102 both pass with 100% Lighthouse ✓
 - Tests auto-authored and pass locally with green CVF ✓
@@ -149,14 +171,17 @@ Convert an Upwork-style brief into a backlog of AUVs (capabilities + hints), wit
 ## Phase 3: DAG Runner & Parallel Orchestration ✅ COMPLETED (2025-09-06)
 
 ### Objective
+
 Execute multiple AUVs and their internal steps in parallel with dependency, retries, and repair.
 
 ### 🎯 Deliverables (All Completed with Hardening)
 
 #### ✅ Graph Spec
+
 - `orchestration/graph/spec.schema.yaml`: JSON Schema for DAG specification with nodes, edges, resources, retries
 
 #### ✅ Runner (Production-Hardened)
+
 - `orchestration/graph/runner.mjs`:
   - Executes nodes (server, playwright, lighthouse, cvf, agent_task, package, report)
   - Resource locks with deadlock prevention (sorted acquisition)
@@ -168,11 +193,13 @@ Execute multiple AUVs and their internal steps in parallel with dependency, retr
   - Emits events to `runs/observability/hooks.jsonl`
 
 #### ✅ State & Resume
+
 - `runs/graph/<RUN-ID>/state.json` with per-node status
 - Resume capability with `--resume <RUN-ID>` flag
 - Crashed nodes marked as failed on resume
 
 #### ✅ Backlog Compiler
+
 - `orchestration/graph/compile_from_backlog.mjs`:
   - Transforms `capabilities/backlog.yaml` to executable graph
   - Generates 3 nodes per AUV (ui, perf, cvf)
@@ -181,22 +208,26 @@ Execute multiple AUVs and their internal steps in parallel with dependency, retr
 ### 🔧 Critical Fixes & Hardening Applied
 
 #### ✅ AUV_ID Environment Variable Fix
+
 - **Problem**: Node IDs like "AUV-0101-ui" incorrectly used as AUV_ID
 - **Solution**: Extract base AUV ID using regex `/^AUV-\d{4}/`
 - **Result**: Artifacts now written to correct directories
 
 #### ✅ Server Lifecycle Management
+
 - Added `serverProc` and `serverStartedByRunner` tracking
 - Implemented `stopServer()` method with cleanup logic
 - Cleanup in finally block ensures no orphaned processes
 - 250ms delay for graceful port release
 
 #### ✅ Unix Process Group Termination
+
 - Spawn with `detached: true` on Unix systems
 - Call `proc.unref()` to prevent blocking parent exit
 - Use `process.kill(-pid)` for reliable group termination
 
 ### ✅ Acceptance & Proofs (Verified)
+
 - Demo graph with 8 AUVs (25 nodes, 27 edges) executes in parallel ✓
 - Concurrency=3 reduces execution time by 60%+ ✓
 - Resource locks prevent server conflicts ✓
@@ -209,11 +240,13 @@ Execute multiple AUVs and their internal steps in parallel with dependency, retr
 ## Phase 4: MCP Router (Runtime) & Dynamic Tooling ✅ COMPLETED (2025-09-07)
 
 ### Objective
+
 Agents request capabilities; router decides tools under budget and policy at runtime.
 
 ### 🎯 Deliverables (All Completed with Enhancements)
 
 #### ✅ Router (Production-Hardened)
+
 - `mcp/router.mjs`:
   - Pure `planTools()` function: `{ agent, capabilities[], budget_usd }` → `tool_plan[]`
   - `deriveCapabilities()` extracts from AUV specs based on authoring_hints
@@ -223,16 +256,19 @@ Agents request capabilities; router decides tools under budget and policy at run
   - Sources: `mcp/policies.yaml` (capability_map, agents.allowlist), `mcp/registry.yaml` (tool metadata)
 
 #### ✅ Configuration Enhancements
+
 - `mcp/schemas/` - JSON schemas for registry and policies validation
 - `mcp/router-report.mjs` - Coverage analysis tool
 - Enhanced policies with `router.on_missing_primary`, budget overrides, safety rules
 - Registry with `api_key_env` support and complete cost models
 
 #### ✅ Dry-run & Fixtures
+
 - `mcp/router-fixtures/*.json` + `npm run router:dry` to verify mappings
 - CLI: `--validate` flag, `--session` for ledger tracking
 
 #### ✅ Telemetry & Observability
+
 - Hooks events in `runs/observability/hooks.jsonl` with epoch timestamps
 - Spend ledgers in `runs/observability/ledgers/<session>.jsonl`
 - Router preview integration in graph runner and runbooks
@@ -240,24 +276,29 @@ Agents request capabilities; router decides tools under budget and policy at run
 ### 🔧 File Changes
 
 #### `mcp/policies.yaml`
+
 - ✅ Added `router.defaults` (budget ceilings, preferred tiers)
 - ✅ Added `router.on_missing_primary` policy
 - ✅ Added `tiers.secondary.budget_overrides` for per-tool budgets
 - ✅ Added `safety` policies for production restrictions
 
 #### `mcp/registry.yaml`
+
 - ✅ All 30 tools with complete cost models
 - ✅ Added `api_key_env` field support (e.g., VERCEL_TOKEN)
 
 #### `docs/SWARM1-GUIDE.md`
+
 - ✅ Added capability derivation section
 - ✅ Updated MCP strategy with new features
 
 #### CI Integration
+
 - ✅ Added router validation and tests to CI workflow
 - ✅ Created comprehensive test suites (12 router tests + schema validation)
 
 ### ✅ Acceptance & Proofs (Verified)
+
 - Configuration validation: 30 tools, 27 capabilities, 16 agents ✓
 - Primary tools chosen first, Secondary only with consent and budget ✓
 - Safety policies block risky tools in production unless overridden ✓
@@ -268,73 +309,126 @@ Agents request capabilities; router decides tools under budget and policy at run
 
 ---
 
-## Phase 5: Autonomous Build Lane (4–5 weeks)
+## Phase 5: Autonomous Build Lane ✅ COMPLETED (2025-09-07)
 
 ### Objective
+
 Let agents make changes to the repo in a controlled way, open PRs, and pass gates automatically.
 
-### 🎯 Deliverables
+### 🎯 Deliverables (All Completed)
 
-#### Build Lane
+#### ✅ Build Lane (Production-Hardened)
+
 - `orchestration/lib/build_lane.mjs`:
-  - Steps: branch → workspace → apply patches → lint/format → unit tests → record diff → commit → push → open PR
-  - Idempotent; safe on Windows
+  - Steps: branch → workspace → apply patches → QA gates → record diff → commit → push → open PR
+  - Write-allowlist enforcement for safety
+  - Dry-run mode for testing without mutations
+  - Comprehensive artifact generation
+  - Typed exit codes (201-209)
+  - Windows-safe implementation
 
-#### PR Template & Metadata
-- `.github/pull_request_template.md` with AUV ID, artifacts, checklists
-- Commit message convention: `AUV-xxxx: <short>`
+#### ✅ GitHub Integration
 
-#### Patch Representation
-- `runs/<AUV>/patches/*.diff` + `changeset.json` (file list and rationales)
+- `orchestration/lib/gh.mjs`:
+  - `gh` CLI detection and usage
+  - REST API fallback for PR creation
+  - Repository info parsing
+  - PR body formatting with artifacts
+  - Result card generation
 
-#### Specialist Agents Integration
-- Orchestrator invokes B7 Rapid Builder, B8 Frontend Specialist, B9 Backend Specialist with explicit tool_allowlist injected by the router
+#### ✅ QA Configuration
 
-### 🔧 File Changes
+- `.prettierrc.json` - Code formatting rules
+- `.eslintrc.cjs` - Linting configuration
+- `tsconfig.json` - TypeScript checking configuration
+- `.github/PULL_REQUEST_TEMPLATE.md` - Standardized PR template
 
-#### `package.json`
-- Scripts: lint, format, typecheck
+#### ✅ CLI Integration
 
-#### Linting & Formatting
-- `.eslintrc`, `.prettierrc`, optional `tsconfig.json` (if adding TS to orchestration libs)
+- Extended `orchestration/cli.mjs` with `build-lane` command
+- Options: `--patch`, `--branch`, `--open-pr`, `--dry-run`, QA gate flags
 
-#### `docs/QUALITY-GATES.md`
-- Add lint and typecheck as QA gates before CVF
+#### ✅ Safety Features
 
-### ✅ Acceptance & Proofs
-- A trivial AUV that adds a route or UI change is auto-implemented on a branch, PR opened with:
-  - Diff, artifacts, and a green CI (Playwright + Lighthouse + CVF + QA)
+- **Write Allowlist**: Only allows modifications to safe directories
+- **Path Traversal Defense**: Prevents directory escape attempts
+- **Sensitive File Protection**: Blocks writes to .env, .git, node_modules
+- **Artifact Isolation**: No `runs/**` files staged or committed
+- **Redacted Logs**: Sensitive information removed from observability
+
+### 🔧 Critical Fixes Applied
+
+#### ✅ [B1] Diff Safety
+- Validates all paths in diff against allowlist before applying
+- `extractFilesFromDiff()` function parses and validates paths
+
+#### ✅ [B2] Dry-run Safety
+- No workspace mutations during dry-run
+- Creates placeholder diffs without git operations
+
+#### ✅ [B3] Artifact Bleed Prevention
+- `recordDiff()` only stages allowlisted paths
+- Uses `getAllowedGitPathspecs()` to restrict git operations
+
+#### ✅ [B4] Recursive Reject Detection
+- `collectRejectsRecursive()` walks all directories
+- Properly handles nested reject files
+
+#### ✅ [B5] CI QA Gates
+- Made all QA gates blocking (removed `|| true` from CI)
+- Tests run before autopilot lanes
+
+#### ✅ [T1] ESM Import Fix
+- Fixed unit test to use ESM-safe imports
+- Uses `import { randomBytes } from 'node:crypto'`
+
+### ✅ Acceptance & Proofs (Verified)
+
+- **Dry-run test**: Successfully creates placeholder diff without mutations ✓
+- **Path validation**: Correctly rejects disallowed paths (e.g., test.js) ✓
+- **Artifact isolation**: No `runs/**` files staged/committed ✓
+- **Result cards**: Generated correctly with success status ✓
+- **Build lane unit tests**: All 20 tests passing ✓
+- **Integration tests**: Dry-run scenarios validated ✓
+- **CI Integration**: QA gates blocking as expected ✓
 
 ---
 
 ## Phase 6: Advanced Verification & Security Gates (2–3 weeks)
 
 ### Objective
+
 Bring security/visual to parity and export machine-readable reports.
 
 ### 🎯 Deliverables
 
 #### Security
+
 - Semgrep + Gitleaks
 - Fail CI on Semgrep P0/P1 and any secret; publish JSON findings
 
 #### Visual Regression
+
 - Visual lane using Playwright snapshots (or visual-compare MCP)
 - Thresholds per route; artifacts in `runs/visual/*`
 
 #### Performance Budgets
+
 - Enforce budgets by route; fail on regressions beyond delta
 
 ### 🔧 File Changes
 
 #### `.github/workflows/ci.yml`
+
 - Add jobs: `security:semgrep`, `security:gitleaks`, `visual:compare`
 - `reports/security/*.json` and `reports/visual/*.json` written on every PR
 
 #### `docs/QUALITY-GATES.md`
+
 - Budget table and failure policies
 
 ### ✅ Acceptance & Proofs
+
 - CI fails if you introduce a P0 Semgrep finding or a secret
 - Visual diff artifacts uploaded; budgets enforced
 
@@ -343,31 +437,38 @@ Bring security/visual to parity and export machine-readable reports.
 ## Phase 7: Packaging & Client Delivery (2–3 weeks)
 
 ### Objective
+
 Produce a polished, self-contained deliverable with provenance and a human-readable report.
 
 ### 🎯 Deliverables
 
 #### Packager
+
 - `orchestration/package.mjs`:
   - Creates `/dist/<AUV>/package.zip` containing `/runs/<AUV>/`, relevant source diffs, and `/docs/*` slices
   - Includes `manifest.json` (checksums, timings, versions, CI run ID)
 
 #### Report
+
 - `orchestration/report.mjs`:
   - HTML report from templates in `orchestration/report-templates/*`, embedding CVF results and screenshots
 
 #### Client Handover
+
 - `docs/operate.md` (operational runbook), `docs/verify.md` slice, CHANGELOG excerpt
 
 ### 🔧 File Changes
 
 #### `docs/ORCHESTRATION.md`
+
 - Add "Packaging & Report" section with `node orchestration/package.mjs AUV-xxxx`
 
 #### `.github/workflows/ci.yml`
+
 - Optional job to upload `/dist` as release artifact
 
 ### ✅ Acceptance & Proofs
+
 - For AUV-0005, `dist/AUV-0005/package.zip` contains artifacts and an HTML report; checksums recorded
 
 ---
@@ -375,32 +476,40 @@ Produce a polished, self-contained deliverable with provenance and a human-reada
 ## Phase 8: Durable Workflows & Production Hardening (3–4 weeks)
 
 ### Objective
+
 Move beyond CLI runs to durable, multi-tenant, observable execution.
 
 ### 🎯 Deliverables
 
 #### Durable Engine (Choose One)
+
 - Temporal (Node SDK) or BullMQ + Redis
 - Queue "run AUV graph" jobs; support pause/resume/cancel
 
 #### Auth & Multi-tenant
+
 - SSO (OIDC) and per-tenant namespaces for artifacts and budgets
 
 #### Observability
+
 - `reports/status.json` + Grafana dashboards sourced from `runs/observability/hooks.jsonl`
 
 #### DR & Backups
+
 - Snapshot `runs/` & `/dist/` to object storage with retention policies
 
 ### 🔧 File Changes
 
 #### `orchestration/services/worker.mjs`
+
 - Queue consumer
 
 #### `docs/ARCHITECTURE.md`
+
 - Production section updated with sequence diagrams & SLOs
 
 ### ✅ Acceptance & Proofs
+
 - A multi-AUV brief executes non-interactively via a queue
 - Can recover after a worker restart; reports accessible
 
@@ -418,6 +527,7 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 ## Immediate Next Actions (This Week)
 
 ### ✅ Phase-1 Closeout (COMPLETED)
+
 - ✅ Added AUV-0002/0004/0005 to CI using autopilot approach
 - ✅ Hardened `cli.mjs` exit codes (101-105) + summary card fields (version, durations, env, steps)
 - ✅ Ensured `cvf-check.mjs` includes 0004/0005 and fixed AUV-0002 spec mapping
@@ -428,6 +538,7 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 - ✅ Added artifact validation assertions in consistency check
 
 ### ✅ Phase-2 Closeout (COMPLETED)
+
 - ✅ Added `contracts/brief.schema.json` with JSON Schema draft-07 validation
 - ✅ Built `orchestration/lib/auv_compiler.mjs` with NLP capability extraction
 - ✅ Created `orchestration/lib/validate_brief.mjs` for MD/YAML/JSON parsing
@@ -438,6 +549,7 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 - ✅ Added comprehensive unit tests (14 passing)
 
 ### ✅ Phase-3 Closeout (COMPLETED with Hardening)
+
 - ✅ Created `orchestration/graph/spec.schema.yaml` with full JSON Schema validation
 - ✅ Built `orchestration/graph/runner.mjs` with parallel execution, retries, and resource locks
 - ✅ Implemented state persistence and resume capability
@@ -451,6 +563,7 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 - ✅ Verified 60%+ performance improvement with parallel execution
 
 ### ✅ Phase-4 Closeout (COMPLETED)
+
 - ✅ Built `mcp/router.mjs` with pure, deterministic routing engine
 - ✅ Added JSON schemas for registry and policies validation
 - ✅ Implemented safety policies and budget management
@@ -460,13 +573,26 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 - ✅ Built coverage report tool for configuration health
 - ✅ Added observability with hooks and spend ledgers
 
-### 🚀 Kick Off Phase-5 (NEXT)
-- Design `orchestration/lib/build_lane.mjs` for autonomous code changes
-- Implement branch → patch → test → commit → PR workflow
-- Add specialist agent integration with router-provided tool allowlists
-- Create lint/format/typecheck gates for code quality
+### ✅ Phase-5 Closeout (COMPLETED)
+
+- ✅ Built `orchestration/lib/build_lane.mjs` with full autonomous pipeline
+- ✅ Implemented branch → patch → QA → commit → PR workflow
+- ✅ Created `orchestration/lib/gh.mjs` for GitHub integration
+- ✅ Added comprehensive safety features (write-allowlist, dry-run mode)
+- ✅ Implemented all QA gates (format, lint, typecheck, tests)
+- ✅ Fixed all critical blockers from phase_chat.md audit
+- ✅ Created test suites (20 unit tests + integration tests)
+- ✅ Integrated with CI pipeline (blocking QA gates)
+
+### 🚀 Kick Off Phase-6 (NEXT)
+
+- Implement Semgrep security scanning
+- Add Gitleaks for secret detection
+- Create visual regression testing with Playwright snapshots
+- Establish performance budget enforcement
 
 ### Docs
+
 - Update `docs/ORCHESTRATION.md` with Brief→Backlog quickstart and the CLI snippet
 - Append the new AUV CVF examples (0004/0005) if not already present
 
@@ -506,22 +632,22 @@ id: AUV-XXXX
 title: Short capability title
 depends_on: []
 acceptance:
-  - "User can …"
-  - "API … returns …"
+  - 'User can …'
+  - 'API … returns …'
 artifacts_required:
   cvf:
-    - "runs/${AUV}/ui/<proof>.png"
-    - "runs/${AUV}/perf/lighthouse.json"
+    - 'runs/${AUV}/ui/<proof>.png'
+    - 'runs/${AUV}/perf/lighthouse.json'
 authoring_hints:
   ui:
     page: /products.html
-    search_input: "#q"
-    apply_button_text: "Apply"
+    search_input: '#q'
+    apply_button_text: 'Apply'
   api:
     base_path: /products
     cases:
       - name: list returns 200 and array
-        query: ""
+        query: ''
         expect: list_ok
 ```
 
@@ -531,14 +657,14 @@ authoring_hints:
 nodes:
   - id: auv-0003-ui
     type: playwright
-    specs: ["tests/robot/playwright/products-filter.spec.ts"]
+    specs: ['tests/robot/playwright/products-filter.spec.ts']
     retries: { max: 1, backoff_ms: 1000 }
   - id: auv-0003-perf
     type: lighthouse
-    url: "${STAGING_URL}/products.html"
+    url: '${STAGING_URL}/products.html'
   - id: auv-0003-cvf
     type: cvf
-    auv: "AUV-0003"
+    auv: 'AUV-0003'
 edges:
   - [auv-0003-ui, auv-0003-perf]
   - [auv-0003-perf, auv-0003-cvf]
