@@ -657,7 +657,7 @@ function execCommand(command, args = [], options = {}) {
           `Command failed: ${command} ${args.join(' ')}`,
           code,
           stdout,
-          stderr
+          stderr,
         );
         reject(error);
       }
