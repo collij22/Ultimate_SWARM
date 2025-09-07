@@ -1,0 +1,33 @@
+# Swarm1 Security Waivers
+# Time-bound exceptions for security findings
+# All waivers expire after 30 days by default and must be re-evaluated
+
+waivers:
+  # Example waiver for Semgrep finding
+  # - tool: semgrep
+  #   rule: hardcoded-secret
+  #   path: mock/server.js
+  #   reason: Mock server uses hardcoded test credentials that are not production secrets
+  #   expires: 2025-10-07T00:00:00Z
+  #   issue: SWARM-SEC-001
+  #   approved_by: security-team
+
+  # Example waiver for Gitleaks finding
+  # - tool: gitleaks
+  #   rule: generic-api-key
+  #   path: tests/fixtures/mock-keys.js
+  #   fingerprint: abc123def456
+  #   reason: Test fixtures contain fake API keys for testing purposes
+  #   expires: 2025-10-07T00:00:00Z
+  #   issue: SWARM-SEC-002
+  #   approved_by: security-team
+
+# Waiver fields:
+# - tool: semgrep | gitleaks (required)
+# - rule: Rule ID that triggered the finding (optional, but recommended)
+# - path: File path or pattern to match (optional)
+# - fingerprint: Specific finding fingerprint for Gitleaks (optional)
+# - reason: Explanation for the waiver (required)
+# - expires: ISO 8601 date when waiver expires (required)
+# - issue: Tracking issue for remediation (optional)
+# - approved_by: Who approved this waiver (optional)

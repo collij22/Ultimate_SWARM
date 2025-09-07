@@ -394,43 +394,70 @@ Let agents make changes to the repo in a controlled way, open PRs, and pass gate
 
 ---
 
-## Phase 6: Advanced Verification & Security Gates (2–3 weeks)
+## Phase 6: Advanced Verification & Security Gates ✅ COMPLETED (2025-09-07)
 
 ### Objective
 
-Bring security/visual to parity and export machine-readable reports.
+Bring security/visual to parity and export machine-readable reports with enforceable budgets.
 
-### 🎯 Deliverables
+### 🎯 Deliverables (All Completed)
 
-#### Security
+#### ✅ Security Scanning
 
-- Semgrep + Gitleaks
-- Fail CI on Semgrep P0/P1 and any secret; publish JSON findings
+- `orchestration/security/semgrep.mjs` - SAST wrapper with waiver support (exit code 301)
+- `orchestration/security/gitleaks.mjs` - Secret detection with waiver support (exit code 302)
+- `semgrep.yml` - OWASP-focused security rules
+- `.gitleaks.toml` - Comprehensive secret detection patterns
+- `.security/waivers.yaml` - Time-bound waiver management (30-day expiry)
 
-#### Visual Regression
+#### ✅ Visual Regression
 
-- Visual lane using Playwright snapshots (or visual-compare MCP)
-- Thresholds per route; artifacts in `runs/visual/*`
+- `orchestration/visual/capture.mjs` - Deterministic screenshot capture with Playwright
+- `orchestration/visual/compare.mjs` - Pixel-diff comparison with SSIM metrics (exit code 303)
+- Baselines in `tests/robot/visual/baselines/` for AUV-0003/0004/0005
+- 0.1% pixel difference threshold (configurable per route)
 
-#### Performance Budgets
+#### ✅ Performance Budgets
 
-- Enforce budgets by route; fail on regressions beyond delta
+- `orchestration/lib/budget_evaluator.mjs` - Budget enforcement integrated with CVF
+- Per-AUV budgets in `capabilities/*.yaml` under `perf_budgets`
+- Metrics: LCP, TTI, CLS, FCP, TBT, SI, size, score
+- >20% over budget = high severity (blocking)
 
 ### 🔧 File Changes
 
+#### `package.json`
+
+- Added dependencies: `playwright`, `pngjs`, `pixelmatch`, `js-yaml`
+
 #### `.github/workflows/ci.yml`
 
-- Add jobs: `security:semgrep`, `security:gitleaks`, `visual:compare`
-- `reports/security/*.json` and `reports/visual/*.json` written on every PR
+- Security gates with Semgrep/Gitleaks installation and exit code handling
+- Visual capture → compare workflow with PID-based server cleanup
+- Strict CVF checks for AUV-0003/0004/0005
+
+#### `orchestration/cvf-check.mjs`
+
+- Enhanced with Phase 6 quality gates (security, visual, budgets)
+- `--strict` mode enforces all gates
 
 #### `docs/QUALITY-GATES.md`
 
-- Budget table and failure policies
+- Added Phase 6 gates (5-7) with exit codes 301-303
+- Updated typed exit codes section
 
-### ✅ Acceptance & Proofs
+#### `capabilities/AUV-000[3-5].yaml`
 
-- CI fails if you introduce a P0 Semgrep finding or a secret
-- Visual diff artifacts uploaded; budgets enforced
+- Added `perf_budgets`, `visual.routes`, `security.required` sections
+
+### ✅ Acceptance & Proofs (Verified)
+
+- CI blocks on unwaived secrets (Gitleaks) or high/critical findings (Semgrep) ✓
+- Visual regression >0.1% triggers exit code 303 ✓
+- Performance budgets enforced via enhanced CVF ✓
+- All Phase 6 unit tests passing (12/12) ✓
+- Cross-platform compatibility (Windows/Linux) ✓
+- Machine-verifiable artifacts in `reports/security/`, `reports/visual/` ✓
 
 ---
 

@@ -47,3 +47,28 @@ authoring_hints:
           address: '1 Test St'
           card: '4242424242424242'
         expect_status: 201
+
+# Phase 6: Performance budgets
+perf_budgets:
+  lcp_ms: 2500     # Largest Contentful Paint
+  tti_ms: 3800     # Time to Interactive
+  cls: 0.1         # Cumulative Layout Shift
+  fcp_ms: 1800     # First Contentful Paint
+  tbt_ms: 200      # Total Blocking Time
+  si_ms: 3400      # Speed Index
+  score: 0.9       # Overall performance score
+
+# Phase 6: Visual regression
+visual:
+  routes:
+    - id: checkout-form
+      page: /checkout.html
+      fullPage: true
+      threshold:
+        pixel_pct: 0.1  # Allow up to 0.1% pixel difference
+      hideSelectors: []  # No dynamic elements to hide
+
+# Phase 6: Security requirements
+security:
+  required: true
+  scan_on_change: true

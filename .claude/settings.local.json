@@ -48,7 +48,19 @@
       "Bash(npx eslint:*)",
       "Bash(npx prettier:*)",
       "Bash(git stash:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cvf-check.mjs AUV-0003 --strict)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 node orchestration/visual/capture.mjs --auv AUV-0003 --update-baseline)",
+      "Bash(cd:*)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 node --trace-uncaught orchestration/visual/capture.mjs --auv AUV-0003 --update-baseline)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 node orchestration/visual/capture.mjs --auv AUV-0004 --update-baseline)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 node orchestration/visual/capture.mjs --auv AUV-0005 --update-baseline)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 node orchestration/visual/compare.mjs --auv AUV-0003)",
+      "Bash(./test_server_cleanup.sh:*)",
+      "Bash(pkill:*)",
+      "Bash(tasklist)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [
       "Read(./.env)",

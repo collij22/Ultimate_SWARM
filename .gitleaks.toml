@@ -1,0 +1,99 @@
+# Swarm1 Gitleaks Configuration
+# Detects secrets and sensitive information in code
+
+title = "Swarm1 Gitleaks Config"
+
+# Paths to exclude from scanning
+[allowlist]
+paths = [
+  '''node_modules''',
+  '''test-results''',
+  '''runs''',
+  '''dist''',
+  '''\.git''',
+  '''package-lock\.json''',
+  '''yarn\.lock'''
+]
+
+# Files to exclude
+files = [
+  '''(.*?)\.test\.(js|mjs|ts)$''',
+  '''(.*?)\.spec\.(js|mjs|ts)$''',
+  '''(.*?)\.mock\.(js|mjs|ts)$'''
+]
+
+# Extend the base rules with custom patterns
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key"
+regex = '''(?i)(aws[_\-\s]?)?access[_\-\s]?key[_\-\s]?(id)?[^\S\r\n]*[=:][^\S\r\n]*["']?[A-Z0-9]{20}["']?'''
+tags = ["aws", "key"]
+
+[[rules]]
+id = "aws-secret-key"
+description = "AWS Secret Key"
+regex = '''(?i)(aws[_\-\s]?)?secret[_\-\s]?access[_\-\s]?key[^\S\r\n]*[=:][^\S\r\n]*["']?[A-Za-z0-9/+=]{40}["']?'''
+tags = ["aws", "secret"]
+
+[[rules]]
+id = "github-token"
+description = "GitHub Personal Access Token"
+regex = '''ghp_[0-9a-zA-Z]{36}'''
+tags = ["github", "token"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key"
+regex = '''(?i)api[_\-\s]?key[^\S\r\n]*[=:][^\S\r\n]*["']?[a-zA-Z0-9]{32,}["']?'''
+tags = ["api", "key"]
+
+[[rules]]
+id = "generic-secret"
+description = "Generic Secret"
+regex = '''(?i)secret[^\S\r\n]*[=:][^\S\r\n]*["']?[a-zA-Z0-9]{16,}["']?'''
+tags = ["secret"]
+entropy = 3.5
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (RSA|DSA|EC|PGP) PRIVATE KEY-----'''
+tags = ["key", "private"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[A-Za-z0-9-_]+\.eyJ[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+'''
+tags = ["jwt", "token"]
+
+[[rules]]
+id = "npm-token"
+description = "NPM Token"
+regex = '''//registry\.npmjs\.org/:_authToken=[a-f0-9-]+'''
+tags = ["npm", "token"]
+
+[[rules]]
+id = "slack-token"
+description = "Slack Token"
+regex = '''xox[baprs]-[0-9]{10,}-[0-9]{10,}-[a-zA-Z0-9]{24,}'''
+tags = ["slack", "token"]
+
+[[rules]]
+id = "postgres-connection"
+description = "PostgreSQL Connection String"
+regex = '''postgres(ql)?://[^:]+:[^@]+@[^/]+/[^\s]+'''
+tags = ["database", "postgres"]
+
+[[rules]]
+id = "mongodb-connection"
+description = "MongoDB Connection String"
+regex = '''mongodb(\+srv)?://[^:]+:[^@]+@[^\s]+'''
+tags = ["database", "mongodb"]
+
+# Custom entropy settings
+[entropy]
+enabled = true
+# Minimum entropy threshold for detecting high-entropy strings
+threshold = 4.5
+# Maximum line length to consider for entropy checks
+max_line_length = 500

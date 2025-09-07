@@ -294,28 +294,71 @@ runs/
 
 ---
 
-## Phase 6 — Advanced Verification: Security, Visual, Budgets (Weeks 5–6)
+## Phase 6 — Advanced Verification: Security, Visual, Budgets ✅ COMPLETED (2025-09-07)
 
 ### Objective
 
 Add security and visual parity with machine-readable reports and enforceable budgets.
 
-### Deliverables
+### Deliverables (all completed)
 
-- CI jobs:
-  - `security:semgrep` (fail on P0/P1)
-  - `security:gitleaks` (fail on any secret)
-  - `visual:compare` (Playwright snapshots or visual MCP with thresholds)
-- Reports:
-  - `reports/security/*.json`, `reports/visual/*.json` uploaded on every PR
-- CVF extensions:
-  - `CVF-SEC`: require `runs/security/semgrep.json` with 0 High
-  - Performance budgets per route (LCP/TTI/CLS) configurable per AUV
+- ✅ Security Scanning:
+  - `orchestration/security/semgrep.mjs` - SAST scanner with waiver support (exit code 301)
+  - `orchestration/security/gitleaks.mjs` - Secret detection with waiver support (exit code 302)
+  - `.security/waivers.yaml` - Time-bound security finding waivers (30-day expiry)
+  - `semgrep.yml` - Security rules configuration
+  - `.gitleaks.toml` - Secret detection configuration
 
-### Acceptance & Proofs
+- ✅ Visual Regression Testing:
+  - `orchestration/visual/capture.mjs` - Deterministic screenshot capture with Playwright
+  - `orchestration/visual/compare.mjs` - Image comparison with pixelmatch and SSIM (exit code 303)
+  - `tests/robot/visual/baselines/` - Visual regression baselines for AUV-0003/0004/0005
 
-- CI blocks merges for security violations or critical visual diffs.
-- Budget regressions fail and are visible in report artifacts.
+- ✅ Performance Budget Enforcement:
+  - `orchestration/lib/budget_evaluator.mjs` - Evaluates Lighthouse metrics against budgets
+  - Enhanced capability YAMLs with `perf_budgets` (LCP, TTI, CLS, FCP, TBT, SI)
+  - Budget validation integrated into CVF gate
+
+- ✅ CVF Extensions:
+  - Enhanced `orchestration/cvf-check.mjs` with Phase 6 gates
+  - `--strict` mode for comprehensive security/visual/performance checks
+  - Security gate: checks for high/critical findings in Semgrep/Gitleaks reports
+  - Visual gate: compares screenshots against baselines (0.1% pixel threshold)
+  - Performance gate: validates metrics against defined budgets
+
+- ✅ CI Integration:
+  - `.github/workflows/ci.yml` updated with security scanning steps
+  - Visual capture and comparison workflow
+  - Mock server cleanup with PID tracking and port-based fallback
+  - Tool installation (Semgrep, Gitleaks) in CI environment
+  - Artifact upload for security and visual reports
+
+### Implementation Highlights
+
+- **Security Waivers**: 30-day expiry, automatic cleanup of expired waivers
+- **Deterministic Visual Testing**: Fixed viewport (1920x1080), disabled animations, UTC timezone
+- **Cross-platform Compatibility**: Windows-safe module execution with fileURLToPath
+- **Typed Exit Codes**: 301 (security), 302 (secrets), 303 (visual regression)
+- **Smart Server Cleanup**: PID tracking with lsof fallback for port 3000
+
+### Critical Fixes Applied
+
+1. **Runtime Dependencies**: Added playwright, pngjs, pixelmatch, js-yaml to package.json
+2. **Module Execution**: Fixed Windows compatibility with fileURLToPath for all Phase 6 modules
+3. **Capability YAML Updates**: Added perf_budgets, visual.routes, security.required to AUV-0003/0004/0005
+4. **Visual Baselines**: Generated initial baselines for all visual routes
+5. **CI Mock Server**: Implemented proper cleanup with PID tracking and fallback
+
+### Acceptance & Proofs ✅
+
+- Security scanning blocks on high/critical findings (exit code 301) ✓
+- Secret detection blocks on any detected secrets (exit code 302) ✓
+- Visual regression blocks on >0.1% pixel difference (exit code 303) ✓
+- Performance budgets enforced with clear pass/fail reporting ✓
+- All gates integrated into CVF with --strict mode ✓
+- CI properly installs tools and runs all Phase 6 gates ✓
+- Mock server cleanup prevents port conflicts ✓
+- Documentation updated (QUALITY-GATES.md) with Phase 6 gates ✓
 
 ---
 

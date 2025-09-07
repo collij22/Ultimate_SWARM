@@ -32,7 +32,37 @@
 - **Scope**: Full test suite across all implemented AUVs
 - **Failure Mode**: Block merge immediately
 
-### 5. Deliverable Level-3 Gate
+### 5. Security Gate (Phase 6)
+
+- **Requirement**: No unwaived high/critical findings or secrets.
+- **Exit Codes**: 
+  - 301 (Semgrep high/critical findings)
+  - 302 (Gitleaks secrets detected)
+- **Scripts**:
+  - `node orchestration/security/semgrep.mjs`
+  - `node orchestration/security/gitleaks.mjs`
+- **Waivers**: Time-bound (30 days) in `.security/waivers.yaml`
+- **Reports**: `reports/security/*.json` with scan results
+
+### 6. Visual Regression Gate (Phase 6)
+
+- **Requirement**: Visual changes within configured thresholds.
+- **Exit Code**: 303 (Visual regression exceeded)
+- **Scripts**:
+  - `node orchestration/visual/capture.mjs --auv <ID>`
+  - `node orchestration/visual/compare.mjs --auv <ID>`
+- **Threshold**: Default 0.1% pixel difference (configurable per route)
+- **Baselines**: Version-controlled in `tests/robot/visual/baselines/`
+
+### 7. Performance Budget Gate (Phase 6)
+
+- **Requirement**: Metrics within defined budgets.
+- **Script**: Integrated in CVF via `orchestration/lib/budget_evaluator.mjs`
+- **Metrics**: LCP, TTI, CLS, FCP, TBT, SI, size, score
+- **Budgets**: Defined in `capabilities/<AUV>.yaml` under `perf_budgets`
+- **Enforcement**: >20% over = high severity (blocking)
+
+### 8. Deliverable Level-3 Gate
 
 - **Requirement**: The increment is runnable by a user (or robot) end-to-end.
 - **Validation**: Manual verification or robot journey completion
@@ -46,17 +76,36 @@
 - **Failure Classification**: Transient vs. persistent error detection
 - **Repair Loop**: Automatic retry for network/browser/server transients only
 
-### Typed Exit Codes
+### Typed Exit Codes (Updated for Phase 6)
 
 ```
 0   - Success
 1   - General error
 2   - Usage error
+
+# Phase 1-5 Exit Codes
 101 - Playwright tests failed
 102 - Lighthouse performance check failed
 103 - CVF gate failed
 104 - Test authoring failed
 105 - Server startup failed
+
+# Phase 5 Build Lane Exit Codes
+201 - Format failed
+202 - Lint failed
+203 - Typecheck failed
+204 - Unit tests failed
+205 - Integration tests failed
+206 - Autopilot smoke failed
+207 - Git push failed
+208 - PR creation failed
+209 - Patch apply failed
+
+# Phase 6 Security & Quality Exit Codes
+301 - Semgrep high/critical findings
+302 - Gitleaks secrets detected
+303 - Visual regression exceeded threshold
+304 - Performance budget violation (reserved)
 ```
 
 ### Quality Standards (Additional Gates)

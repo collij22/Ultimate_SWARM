@@ -44,6 +44,39 @@ jobs:
         shell: bash
         run: npx playwright install --with-deps
 
+      # ---- Security Gates (Phase 6) ----
+      - name: Install Semgrep
+        shell: bash
+        run: |
+          python3 -m pip install semgrep
+          semgrep --version
+
+      - name: Run Semgrep security scan
+        shell: bash
+        run: |
+          node orchestration/security/semgrep.mjs || exit_code=$?
+          if [ "$exit_code" = "301" ]; then
+            echo "::error::Security scan failed - high/critical findings detected"
+            exit 1
+          fi
+
+      - name: Install Gitleaks
+        shell: bash
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.0/gitleaks_8.18.0_linux_x64.tar.gz
+          tar -xzf gitleaks_8.18.0_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks version
+
+      - name: Run Gitleaks secret scan
+        shell: bash
+        run: |
+          node orchestration/security/gitleaks.mjs || exit_code=$?
+          if [ "$exit_code" = "302" ]; then
+            echo "::error::Secret scan failed - secrets detected in code"
+            exit 1
+          fi
+
       # ---- QA Gates (Phase 5) ----
       - name: Format check
         shell: bash
@@ -74,20 +107,88 @@ jobs:
         shell: bash
         run: npm run test:router
 
+      # ---- Visual Regression Capture (Phase 6) ----
+      - name: Start mock server for visual tests
+        shell: bash
+        run: |
+          node mock/server.js &
+          echo "MOCK_SERVER_PID=$!" >> $GITHUB_ENV
+          sleep 2
+          curl -s http://127.0.0.1:3000/health || exit 1
+
+      - name: Capture AUV-0003 screenshots
+        shell: bash
+        run: node orchestration/visual/capture.mjs --auv AUV-0003
+
+      - name: Capture AUV-0004 screenshots
+        shell: bash
+        run: node orchestration/visual/capture.mjs --auv AUV-0004
+
+      - name: Capture AUV-0005 screenshots
+        shell: bash
+        run: node orchestration/visual/capture.mjs --auv AUV-0005
+
+      - name: Compare AUV-0003 visual regression
+        shell: bash
+        run: |
+          node orchestration/visual/compare.mjs --auv AUV-0003 || exit_code=$?
+          if [ "$exit_code" = "303" ]; then
+            echo "::error::Visual regression detected for AUV-0003"
+            exit 1
+          fi
+
+      - name: Compare AUV-0004 visual regression
+        shell: bash
+        run: |
+          node orchestration/visual/compare.mjs --auv AUV-0004 || exit_code=$?
+          if [ "$exit_code" = "303" ]; then
+            echo "::error::Visual regression detected for AUV-0004"
+            exit 1
+          fi
+
+      - name: Compare AUV-0005 visual regression
+        shell: bash
+        run: |
+          node orchestration/visual/compare.mjs --auv AUV-0005 || exit_code=$?
+          if [ "$exit_code" = "303" ]; then
+            echo "::error::Visual regression detected for AUV-0005"
+            exit 1
+          fi
+
+      - name: Stop mock server for visual tests
+        if: always()
+        shell: bash
+        run: |
+          # Try to kill using saved PID first
+          if [ ! -z "$MOCK_SERVER_PID" ]; then
+            echo "Stopping mock server (PID: $MOCK_SERVER_PID)"
+            kill $MOCK_SERVER_PID 2>/dev/null || true
+            sleep 1
+          fi
+          
+          # Ensure port 3000 is free (fallback method)
+          if lsof -ti:3000 > /dev/null 2>&1; then
+            echo "Killing process on port 3000"
+            lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+            sleep 1
+          fi
+          
+          echo "Mock server cleanup complete"
+
       # ---- Autopilot runs (single source of truth) ----
       - name: AUV-0002 (autopilot)
         shell: bash
         run: node orchestration/cli.mjs AUV-0002
 
-      - name: AUV-0003 (autopilot)
+      - name: AUV-0003 (autopilot with strict CVF)
         shell: bash
         run: node orchestration/cli.mjs AUV-0003
 
-      - name: AUV-0004 (autopilot)
+      - name: AUV-0004 (autopilot with strict CVF)
         shell: bash
         run: node orchestration/cli.mjs AUV-0004
 
-      - name: AUV-0005 (autopilot)
+      - name: AUV-0005 (autopilot with strict CVF)
         shell: bash
         run: node orchestration/cli.mjs AUV-0005
 
@@ -101,6 +202,19 @@ jobs:
         shell: bash
         run: node orchestration/lib/artifact_consistency.mjs
 
+      # ---- Strict CVF Checks (Phase 6) ----
+      - name: Strict CVF for AUV-0003
+        shell: bash
+        run: node orchestration/cvf-check.mjs AUV-0003 --strict
+
+      - name: Strict CVF for AUV-0004
+        shell: bash
+        run: node orchestration/cvf-check.mjs AUV-0004 --strict
+
+      - name: Strict CVF for AUV-0005
+        shell: bash
+        run: node orchestration/cvf-check.mjs AUV-0005 --strict
+
       - name: Upload artifacts (always)
         if: always()
         uses: actions/upload-artifact@v4
@@ -109,3 +223,4 @@ jobs:
           path: |
             runs/**
             test-results/**
+            reports/**

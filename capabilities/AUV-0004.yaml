@@ -30,11 +30,30 @@ artifacts:
     - runs/AUV-0004/ui/cart_summary.png
     - runs/AUV-0004/perf/lighthouse.json
 
-perf_budget:
-  lighthouse:
-    pages:
-      - url: /cart.html
-        min_performance_score: 0.9
+# Phase 6: Performance budgets
+perf_budgets:
+  lcp_ms: 2500     # Largest Contentful Paint
+  tti_ms: 3800     # Time to Interactive
+  cls: 0.1         # Cumulative Layout Shift
+  fcp_ms: 1800     # First Contentful Paint
+  tbt_ms: 200      # Total Blocking Time
+  si_ms: 3400      # Speed Index
+  score: 0.9       # Overall performance score
+
+# Phase 6: Visual regression
+visual:
+  routes:
+    - id: cart-summary
+      page: /cart.html
+      fullPage: true
+      threshold:
+        pixel_pct: 0.1  # Allow up to 0.1% pixel difference
+      hideSelectors: []  # No dynamic elements to hide
+
+# Phase 6: Security requirements
+security:
+  required: true
+  scan_on_change: true
 
 authoring_hints:
   ui:

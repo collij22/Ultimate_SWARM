@@ -1,0 +1,108 @@
+# Swarm1 Semgrep Security Configuration
+# Focuses on OWASP Top 10 and common vulnerabilities
+
+rules:
+  - id: hardcoded-secret
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $KEY = "..."
+          - pattern: |
+              $KEY = '...'
+    pattern-where:
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i)(password|secret|token|api[_-]?key|access[_-]?key|private[_-]?key)
+    message: Potential hardcoded secret detected
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+
+  - id: sql-injection
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $DB.query(`... ${$VAR} ...`)
+          - pattern: |
+              $DB.query("..." + $VAR)
+    message: Potential SQL injection vulnerability
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+
+  - id: command-injection
+    patterns:
+      - pattern-either:
+          - pattern: exec($CMD + $USER_INPUT)
+          - pattern: execSync(`... ${$USER_INPUT} ...`)
+          - pattern: spawn($CMD, [..., $USER_INPUT, ...])
+    message: Potential command injection vulnerability
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+
+  - id: path-traversal
+    patterns:
+      - pattern-either:
+          - pattern: fs.readFile($PATH + $USER_INPUT, ...)
+          - pattern: fs.readFileSync($PATH + $USER_INPUT)
+          - pattern: path.join(..., $USER_INPUT, ...)
+    pattern-where:
+      - metavariable-regex:
+          metavariable: $USER_INPUT
+          regex: .*\.\./.*
+    message: Potential path traversal vulnerability
+    severity: ERROR
+    languages:
+      - javascript
+      - typescript
+
+  - id: eval-usage
+    pattern: eval(...)
+    message: Dangerous use of eval()
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+
+  - id: weak-crypto
+    patterns:
+      - pattern-either:
+          - pattern: crypto.createHash("md5")
+          - pattern: crypto.createHash("sha1")
+    message: Weak cryptographic algorithm detected
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+
+  - id: missing-await
+    patterns:
+      - pattern: $PROMISE = $ASYNC_FUNC(...)
+      - pattern-not: await $ASYNC_FUNC(...)
+      - metavariable-regex:
+          metavariable: $ASYNC_FUNC
+          regex: .*Async$
+    message: Missing await for async function
+    severity: INFO
+    languages:
+      - javascript
+      - typescript
+
+# Exclude patterns
+paths:
+  exclude:
+    - node_modules/
+    - test-results/
+    - runs/
+    - dist/
+    - "*.test.js"
+    - "*.test.mjs"
+    - "*.spec.js"
+    - "*.spec.ts"
+
+# Timeout for analysis
+timeout: 120
