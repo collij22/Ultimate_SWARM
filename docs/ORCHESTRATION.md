@@ -125,6 +125,13 @@ With dependency-aware parallel execution:
 - Resource locks prevent conflicts
 - Failed nodes don't block independent lanes
 
+#### Technical Implementation Notes
+
+- **Run ID Generation**: Uses `crypto.randomUUID()` (no external dependencies)
+- **Process Management**: Unix systems use process groups (`detached: true`, `unref()`)
+- **AUV_ID Extraction**: Base ID extracted from node IDs (e.g., AUV-0101 from AUV-0101-ui)
+- **Server Cleanup**: Automatic cleanup in finally block prevents orphaned processes
+
 ## Parallelization
 
 - **Default parallel** across independent lanes in DAG

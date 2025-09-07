@@ -54,5 +54,25 @@ Phase 3 has been successfully completed with all critical fixes and optional har
 - **Platform Aware**: Handles Unix/Windows process differences
 - **Observable**: Events logged to runs/observability/hooks.jsonl
 
+## Post-Completion CI Fix (2025-09-06)
+
+### Issue
+GitHub Actions CI failed with `ERR_MODULE_NOT_FOUND: Cannot find package 'nanoid'`
+
+### Solution Applied
+- Replaced nanoid dependency with Node's built-in `crypto.randomUUID()`
+- Changed in `orchestration/graph/runner.mjs`:
+  ```javascript
+  const gen = () => (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+                                        : Math.random().toString(36).slice(2, 14));
+  this.runId = options.runId || `RUN-${gen()}`;
+  ```
+- Removed nanoid from package.json dependencies
+- Regenerated package-lock.json
+
+### Verification
+- Local tests pass: AUV-0002 ✅, Graph runner ✅
+- Pushed to main: commit e6175de
+
 ## Next Phase
 Phase 4: MCP Router & Dynamic Tooling - Ready to begin implementation
