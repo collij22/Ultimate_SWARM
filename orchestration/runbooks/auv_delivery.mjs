@@ -375,8 +375,9 @@ export async function runAuv(auvId, { stagingUrl, apiBase } = {}) {
         await runPlaywright(specList, ENV);
       } catch (err) {
         const shouldRetry = await maybeRepair(auvId, err);
-        if (!shouldRetry)
-        {throw new RunbookError(`Playwright tests failed: ${err.message}`, 'playwright', 101);}
+        if (!shouldRetry) {
+          throw new RunbookError(`Playwright tests failed: ${err.message}`, 'playwright', 101);
+        }
         repaired = true;
         await runPlaywright(specList, ENV);
       }

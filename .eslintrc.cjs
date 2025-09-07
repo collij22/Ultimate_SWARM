@@ -60,5 +60,15 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['node_modules/', 'dist/', 'runs/', 'test-results/', '*.min.js', 'coverage/', '*.d.ts', '**/*.ts', '**/*.tsx'],
+  ignorePatterns: [
+    'node_modules/',
+    'dist/',
+    'runs/',
+    'test-results/',
+    '*.min.js',
+    'coverage/',
+    '*.d.ts',
+    '**/*.ts',
+    '**/*.tsx',
+  ],
 };

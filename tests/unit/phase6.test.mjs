@@ -9,7 +9,6 @@ import assert from 'node:assert';
 import fs from 'fs';
 import path from 'path';
 
-
 describe('Phase 6 - Security Scanners', () => {
   const testWaiverPath = path.join(process.cwd(), '.security', 'test-waivers.yaml');
 
