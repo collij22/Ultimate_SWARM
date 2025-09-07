@@ -1,0 +1,224 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Policies Configuration",
+  "description": "Schema for MCP policies and routing configuration",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "description": "Policy version number"
+    },
+    "router": {
+      "type": "object",
+      "description": "Router configuration",
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "required": ["prefer_tier", "budget_usd", "require_secondary_consent"],
+          "properties": {
+            "prefer_tier": {
+              "type": "string",
+              "enum": ["primary", "secondary"],
+              "description": "Preferred tool tier"
+            },
+            "budget_usd": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Default budget in USD"
+            },
+            "require_secondary_consent": {
+              "type": "boolean",
+              "description": "Whether secondary tools require explicit consent"
+            }
+          },
+          "additionalProperties": false
+        },
+        "on_missing_primary": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": ["fail", "propose_secondary_with_budget", "escalate"],
+              "description": "Action when no primary tool is available"
+            },
+            "default_budget_usd": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Budget to use when proposing secondary tools"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "tiers": {
+      "type": "object",
+      "description": "Tool tier configurations",
+      "properties": {
+        "primary": {
+          "type": "object",
+          "properties": {
+            "require_consent": {
+              "type": "boolean",
+              "description": "Whether primary tools require consent"
+            }
+          },
+          "additionalProperties": false
+        },
+        "secondary": {
+          "type": "object",
+          "properties": {
+            "require_consent": {
+              "type": "boolean",
+              "description": "Whether secondary tools require consent"
+            },
+            "default_budget_usd": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Default budget for secondary tools"
+            },
+            "budget_overrides": {
+              "type": "object",
+              "description": "Per-tool budget overrides",
+              "patternProperties": {
+                "^[a-z][a-z0-9-]*$": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "capability_map": {
+      "type": "object",
+      "description": "Maps capabilities to candidate tools",
+      "patternProperties": {
+        "^[a-z][a-z0-9._-]*$": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "agents": {
+      "type": "object",
+      "description": "Agent-specific configurations",
+      "properties": {
+        "allowlist": {
+          "type": "object",
+          "description": "Per-agent tool allowlists",
+          "patternProperties": {
+            "^[A-Z][0-9]+\\.[a-z_]+$|^[a-z][a-z0-9-]*$": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "description": "Additional agent configurations",
+        "properties": {
+          "capabilities": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "allowlist": {
+            "type": "object",
+            "properties": {
+              "primary": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "secondary": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "serialized_files": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "description": "Safety and security settings",
+      "properties": {
+        "allow_production_mutations": {
+          "type": "boolean",
+          "description": "Whether to allow production mutations"
+        },
+        "require_test_mode_for": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Operations requiring test mode"
+        },
+        "redact_logs": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields to redact in logs"
+        }
+      },
+      "additionalProperties": false
+    },
+    "headers_csp": {
+      "type": "object",
+      "description": "Header and CSP requirements",
+      "properties": {
+        "require_https": { "type": "boolean" },
+        "require_hsts": { "type": "boolean" },
+        "require_csp": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "performance": {
+      "type": "object",
+      "description": "Performance thresholds",
+      "properties": {
+        "web": {
+          "type": "object",
+          "properties": {
+            "lcp_ms": { "type": "number", "minimum": 0 },
+            "tti_ms": { "type": "number", "minimum": 0 },
+            "cls": { "type": "number", "minimum": 0 },
+            "transfer_kb": { "type": "number", "minimum": 0 }
+          }
+        },
+        "api": {
+          "type": "object",
+          "properties": {
+            "p95_ms": { "type": "number", "minimum": 0 }
+          }
+        },
+        "db": {
+          "type": "object",
+          "properties": {
+            "query_ms": { "type": "number", "minimum": 0 }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["version", "router", "tiers", "capability_map", "agents"],
+  "additionalProperties": false
+}

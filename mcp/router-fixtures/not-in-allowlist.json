@@ -1,0 +1,11 @@
+{
+  "description": "Request for tools not in agent's allowlist",
+  "agentId": "B12.documentation_writer",
+  "requestedCapabilities": [
+    "browser.automation",
+    "security.scan"
+  ],
+  "budgetUsd": 0.25,
+  "secondaryConsent": false,
+  "env": {}
+}

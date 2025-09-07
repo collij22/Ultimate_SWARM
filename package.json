@@ -25,6 +25,11 @@
     "plan:demo": "node orchestration/cli.mjs plan briefs/demo-01/brief.md",
     "plan:demo:dry": "node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run",
     "test:unit": "node --test tests/unit",
-    "test:integration": "node --test tests/integration"
+    "test:integration": "node --test tests/integration",
+    "test:router": "node tests/router.test.mjs",
+    "router:dry": "node mcp/router.mjs --dry --input mcp/router-fixtures/primary-only.json",
+    "router:dry:security": "node mcp/router.mjs --dry --input mcp/router-fixtures/security-request.json",
+    "router:dry:secondary": "node mcp/router.mjs --dry --input mcp/router-fixtures/secondary-with-consent.json",
+    "router:test": "node mcp/router.mjs --dry --agent B7.rapid_builder --capabilities browser.automation,web.perf_audit --budget 0.25"
   }
 }

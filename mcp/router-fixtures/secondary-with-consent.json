@@ -1,0 +1,13 @@
+{
+  "description": "Secondary tool request with consent - deployment and load testing",
+  "agentId": "C16.devops_engineer",
+  "requestedCapabilities": [
+    "deploy.preview",
+    "perf.load"
+  ],
+  "budgetUsd": 0.50,
+  "secondaryConsent": true,
+  "env": {
+    "VERCEL_API_KEY": "xxx-masked-xxx"
+  }
+}

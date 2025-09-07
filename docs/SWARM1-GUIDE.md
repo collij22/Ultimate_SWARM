@@ -20,9 +20,10 @@ We optimize for **reliability**, **repeatability**, and **low-risk promotion**.
 - Agents declare **capabilities**, not tools; Router grants allowlisted tools.
 
 ### 5) MCP Strategy & Tool Routing
-- `mcp/registry.yaml` (v2) — tool metadata (`capabilities`, `requires_api_key`, `side_effects`).  
+- `mcp/registry.yaml` (v2) — tool metadata (`capabilities`, `requires_api_key`, `side_effects`, `api_key_env`).  
 - `mcp/policies.yaml` — **capability_map** + **agents.allowlist** + **tiers/budgets** + **routing**.  
 - Primary tools first; propose Secondary with budget when needed.
+- **Capability derivation**: Router automatically derives capabilities from AUV specs via `deriveCapabilities()` function based on `authoring_hints` (UI→browser.automation, API→api.test, etc.)
 
 ### 6) Contracts First (HTTP & Events)
 - **OpenAPI** in `contracts/openapi.yaml`.  

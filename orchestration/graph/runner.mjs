@@ -159,6 +159,71 @@ class NodeExecutors {
     const auvFromId = (node.id.match(/^AUV-\d{4}/) || [])[0];
     const AUV_ID = auvFromParams || auvFromId || this.baseEnv.AUV_ID;
     const nodeEnv = { ...this.baseEnv, ...node.env, ...(AUV_ID ? { AUV_ID } : {}) };
+    
+    // Router preview (read-only for Phase 4)
+    if (process.env.ROUTER_DRY === 'true' && AUV_ID && ['playwright', 'lighthouse', 'cvf'].includes(node.type)) {
+      try {
+        const { planTools, loadConfig, deriveCapabilities } = await import('../../mcp/router.mjs');
+        const { registry, policies } = loadConfig();
+        
+        // Try to load AUV spec for better capability derivation
+        let capabilities = [];
+        try {
+          const auvPath = path.resolve('capabilities', `${AUV_ID}.yaml`);
+          if (fs.existsSync(auvPath)) {
+            const yaml = await import('yaml');
+            const auvSpec = yaml.parse(fs.readFileSync(auvPath, 'utf8'));
+            capabilities = deriveCapabilities(auvSpec);
+          } else {
+            // Fallback to basic capabilities based on node type
+            capabilities = node.type === 'playwright' ? ['browser.automation'] :
+                         node.type === 'lighthouse' ? ['web.perf_audit'] :
+                         node.type === 'cvf' ? ['browser.automation', 'web.perf_audit'] :
+                         [];
+          }
+        } catch (err) {
+          // Fallback to basic capabilities
+          capabilities = node.type === 'playwright' ? ['browser.automation'] :
+                       node.type === 'lighthouse' ? ['web.perf_audit'] :
+                       node.type === 'cvf' ? ['browser.automation', 'web.perf_audit'] :
+                       [];
+        }
+        
+        const routerResult = planTools({
+          agentId: 'A1.orchestrator',
+          requestedCapabilities: capabilities,
+          budgetUsd: 0.25,
+          secondaryConsent: false,
+          env: nodeEnv,
+          registry,
+          policies
+        });
+        
+        // Write preview
+        const previewPath = path.resolve('runs', AUV_ID, `router_preview_${node.type}.json`);
+        fs.mkdirSync(path.dirname(previewPath), { recursive: true });
+        fs.writeFileSync(previewPath, JSON.stringify(routerResult.decision, null, 2));
+        
+        console.log(`[router:preview] ${node.type} decision written to ${previewPath}`);
+        
+        // Emit to hooks log and update ledger
+        const { appendToHooks, updateLedger } = await import('../../mcp/router.mjs');
+        appendToHooks({
+          event: 'RouterPreview',
+          auv_id: AUV_ID,
+          node_type: node.type,
+          tool_count: routerResult.toolPlan.length,
+          total_cost_usd: routerResult.budget
+        });
+        
+        // Update spend ledger
+        const sessionId = process.env.SESSION_ID || this.runId;
+        updateLedger(sessionId, routerResult.toolPlan);
+      } catch (err) {
+        console.warn(`[router:preview] Failed for ${node.type}:`, err.message);
+      }
+    }
+    
     return await executor.call(this, node, nodeEnv, runId);
   }
 

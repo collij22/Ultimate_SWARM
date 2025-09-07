@@ -44,6 +44,15 @@ jobs:
         shell: bash
         run: npx playwright install --with-deps
 
+      # ---- Router validation and tests ----
+      - name: Validate router configuration
+        shell: bash
+        run: node mcp/router.mjs --validate
+      
+      - name: Run router tests
+        shell: bash
+        run: npm run test:router
+
       # ---- Autopilot runs (single source of truth) ----
       - name: AUV-0002 (autopilot)
         shell: bash

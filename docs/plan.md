@@ -19,12 +19,12 @@
 ### ❌ Gaps (to Full Autonomy)
 
 - ✅ ~~No brief→AUV compiler~~ (Phase 2 completed)
-- No DAG runner
-- No runtime MCP router
-- No autonomous code build lane/PR flow
-- Partial CI gates (security/visual)
-- No packaging/report module
-- No durable workflow backend
+- ✅ ~~No DAG runner~~ (Phase 3 completed)
+- ✅ ~~No runtime MCP router~~ (Phase 4 completed with full schema validation)
+- No autonomous code build lane/PR flow (Phase 5 - next)
+- Partial CI gates (security/visual) (Phase 6)
+- No packaging/report module (Phase 7)
+- No durable workflow backend (Phase 8)
 
 ### 📝 Note on Documentation
 - Deleted `docs/phase1_correction.md` as Phase 1 is now complete and corrections have been applied
@@ -206,36 +206,65 @@ Execute multiple AUVs and their internal steps in parallel with dependency, retr
 
 ---
 
-## Phase 4: MCP Router (Runtime) & Dynamic Tooling (2–3 weeks)
+## Phase 4: MCP Router (Runtime) & Dynamic Tooling ✅ COMPLETED (2025-09-07)
 
 ### Objective
 Agents request capabilities; router decides tools under budget and policy at runtime.
 
-### 🎯 Deliverables
+### 🎯 Deliverables (All Completed with Enhancements)
 
-#### Router
+#### ✅ Router (Production-Hardened)
 - `mcp/router.mjs`:
-  - Input: `{ agent, capabilities[], budget_usd }`
+  - Pure `planTools()` function: `{ agent, capabilities[], budget_usd }` → `tool_plan[]`
+  - `deriveCapabilities()` extracts from AUV specs based on authoring_hints
+  - Schema validation with cross-reference checks
+  - Safety policy enforcement for production environments
+  - Enriched decision tracking with alternatives
   - Sources: `mcp/policies.yaml` (capability_map, agents.allowlist), `mcp/registry.yaml` (tool metadata)
-  - Output: resolved `tool_plan[]` with budgets and side-effects notes
 
-#### Dry-run & Fixtures
+#### ✅ Configuration Enhancements
+- `mcp/schemas/` - JSON schemas for registry and policies validation
+- `mcp/router-report.mjs` - Coverage analysis tool
+- Enhanced policies with `router.on_missing_primary`, budget overrides, safety rules
+- Registry with `api_key_env` support and complete cost models
+
+#### ✅ Dry-run & Fixtures
 - `mcp/router-fixtures/*.json` + `npm run router:dry` to verify mappings
+- CLI: `--validate` flag, `--session` for ledger tracking
 
-#### Telemetry
-- Append to `runs/observability/hooks.jsonl` tool selections with chosen vs rejected
+#### ✅ Telemetry & Observability
+- Hooks events in `runs/observability/hooks.jsonl` with epoch timestamps
+- Spend ledgers in `runs/observability/ledgers/<session>.jsonl`
+- Router preview integration in graph runner and runbooks
 
 ### 🔧 File Changes
 
 #### `mcp/policies.yaml`
-- Add `router.defaults` (global budget ceilings, preferred tiers)
+- ✅ Added `router.defaults` (budget ceilings, preferred tiers)
+- ✅ Added `router.on_missing_primary` policy
+- ✅ Added `tiers.secondary.budget_overrides` for per-tool budgets
+- ✅ Added `safety` policies for production restrictions
+
+#### `mcp/registry.yaml`
+- ✅ All 30 tools with complete cost models
+- ✅ Added `api_key_env` field support (e.g., VERCEL_TOKEN)
 
 #### `docs/SWARM1-GUIDE.md`
-- Brief "capabilities → tools (runtime)" section, link to router dry-run
+- ✅ Added capability derivation section
+- ✅ Updated MCP strategy with new features
 
-### ✅ Acceptance & Proofs
-- For two sample capability sets ("security.scan + code.static_analysis", "browser.journey + screenshot"), router chooses Primary tools first, Secondary only when explicitly allowed and budget ≥ threshold
-- Dry-run snapshots under `runs/router/*`
+#### CI Integration
+- ✅ Added router validation and tests to CI workflow
+- ✅ Created comprehensive test suites (12 router tests + schema validation)
+
+### ✅ Acceptance & Proofs (Verified)
+- Configuration validation: 30 tools, 27 capabilities, 16 agents ✓
+- Primary tools chosen first, Secondary only with consent and budget ✓
+- Safety policies block risky tools in production unless overridden ✓
+- Schema validation catches configuration errors with clear messages ✓
+- Dry-run snapshots written to `runs/router/*` with rationale ✓
+- All 12 router tests passing consistently ✓
+- CI integration complete with validation steps ✓
 
 ---
 
@@ -421,11 +450,21 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 - ✅ Created comprehensive test suite (18 tests passing)
 - ✅ Verified 60%+ performance improvement with parallel execution
 
-### 🚀 Kick Off Phase-4 (NEXT)
-- Design `mcp/router.mjs` for runtime tool selection based on capabilities
-- Implement capability → tool mapping with Primary/Secondary tier logic
-- Add budget and side-effect tracking for tool usage
-- Create dry-run fixtures for router validation
+### ✅ Phase-4 Closeout (COMPLETED)
+- ✅ Built `mcp/router.mjs` with pure, deterministic routing engine
+- ✅ Added JSON schemas for registry and policies validation
+- ✅ Implemented safety policies and budget management
+- ✅ Created capability derivation from AUV specs
+- ✅ Added comprehensive test suite (12 router tests + schema validation)
+- ✅ Integrated router validation into CI pipeline
+- ✅ Built coverage report tool for configuration health
+- ✅ Added observability with hooks and spend ledgers
+
+### 🚀 Kick Off Phase-5 (NEXT)
+- Design `orchestration/lib/build_lane.mjs` for autonomous code changes
+- Implement branch → patch → test → commit → PR workflow
+- Add specialist agent integration with router-provided tool allowlists
+- Create lint/format/typecheck gates for code quality
 
 ### Docs
 - Update `docs/ORCHESTRATION.md` with Brief→Backlog quickstart and the CLI snippet

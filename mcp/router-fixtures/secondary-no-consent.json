@@ -1,0 +1,14 @@
+{
+  "description": "Secondary tool request without consent - should be rejected",
+  "agentId": "C16.devops_engineer",
+  "requestedCapabilities": [
+    "deploy.preview",
+    "monitoring.saas"
+  ],
+  "budgetUsd": 0.50,
+  "secondaryConsent": false,
+  "env": {
+    "VERCEL_API_KEY": "xxx-masked-xxx",
+    "DATADOG_API_KEY": "xxx-masked-xxx"
+  }
+}

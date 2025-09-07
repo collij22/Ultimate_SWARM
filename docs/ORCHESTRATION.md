@@ -391,3 +391,130 @@ The generated `backlog.yaml` feeds Phase 3 (DAG Runner):
 - Provides dependency graph for parallel execution
 - Includes resource estimates for scheduling
 - Tracks status for incremental delivery
+
+---
+
+## MCP Router - Runtime Tool Selection (Phase 4)
+
+### Overview
+
+The MCP Router enables capability-based tool selection at runtime, enforcing policies around tool tiers (Primary/Secondary), budgets, consent requirements, and agent allowlists. This moves Swarm1 toward fully autonomous tool selection based on what agents need to accomplish rather than hard-coded tool lists.
+
+### Core Concepts
+
+- **Capabilities**: What an agent needs to accomplish (e.g., `browser.automation`, `security.scan`)
+- **Tools**: Concrete implementations that provide capabilities (e.g., Playwright, Semgrep)
+- **Primary Tools**: Free, local tools with no side effects or costs
+- **Secondary Tools**: Paid or rate-limited tools requiring explicit consent and budget
+- **Allowlists**: Per-agent restrictions on which tools they can use
+
+### Router Usage
+
+#### CLI Dry Run
+
+```bash
+# Test with fixture
+npm run router:dry
+
+# Test with custom parameters
+node mcp/router.mjs --dry \
+  --agent B7.rapid_builder \
+  --capabilities browser.automation,web.perf_audit \
+  --budget 0.25
+
+# Test secondary tools (requires consent)
+node mcp/router.mjs --dry \
+  --agent C16.devops_engineer \
+  --capabilities deploy.preview \
+  --budget 0.50 \
+  --secondary-consent
+```
+
+#### Programmatic Usage
+
+```javascript
+import { planTools, loadConfig } from './mcp/router.mjs';
+
+const { registry, policies } = loadConfig();
+
+const result = planTools({
+  agentId: 'B7.rapid_builder',
+  requestedCapabilities: ['browser.automation', 'web.perf_audit'],
+  budgetUsd: 0.25,
+  secondaryConsent: false,
+  env: process.env,
+  registry,
+  policies
+});
+
+if (result.ok) {
+  console.log('Selected tools:', result.toolPlan);
+  console.log('Total cost:', result.budget);
+} else {
+  console.log('Failed to satisfy capabilities:', result.warnings);
+  console.log('Rejected tools:', result.rejected);
+}
+```
+
+### Configuration
+
+#### Registry (`mcp/registry.yaml`)
+
+Each tool must define:
+- `tier`: primary or secondary
+- `capabilities`: list of capabilities it provides
+- `requires_api_key`: boolean
+- `cost_model`: { type: 'flat_per_run', usd: 0.00 }
+- `side_effects`: list of effects (network, file_read, file_write, exec)
+
+#### Policies (`mcp/policies.yaml`)
+
+- `router.defaults`: Global defaults for budget, tier preference, consent
+- `capability_map`: Maps capabilities to candidate tools (ordered by preference)
+- `agents.allowlist`: Per-agent tool restrictions
+
+### Router Algorithm
+
+1. Deduplicate requested capabilities
+2. Resolve capability → tool candidates from capability_map
+3. Filter by agent allowlist
+4. Enforce tier preference (Primary first)
+5. Check secondary consent and budget
+6. Validate API key requirements
+7. Coalesce capabilities per tool
+8. Return tool plan with rationale
+
+### Observability
+
+Router decisions are logged to `runs/observability/hooks.jsonl`:
+- `RouterDecisionStart`: Beginning evaluation
+- `RouterDecisionComplete`: Final decision with selected tools
+- Decision artifacts: `runs/router/<RUN-ID>/decision.json`
+
+### Integration with Runbook
+
+Enable router preview (read-only) in autopilot:
+
+```bash
+ROUTER_DRY=true node orchestration/cli.mjs AUV-0003
+```
+
+This writes a router preview to `runs/<AUV>/router_preview.json` without changing tool execution.
+
+### Testing
+
+```bash
+# Run router unit tests
+npm run test:unit
+
+# Test fixtures
+npm run router:dry
+npm run router:dry:security
+npm run router:dry:secondary
+```
+
+### Future Phases
+
+- Phase 5: Enforce router decisions in build lane
+- Phase 6: Add security tool integration
+- Phase 7: Package router decisions in delivery reports

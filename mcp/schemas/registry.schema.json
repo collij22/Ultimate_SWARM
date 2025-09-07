@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Tool Registry",
+  "description": "Schema for MCP tool registry configuration",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "number",
+      "description": "Registry version number"
+    },
+    "tools": {
+      "type": "object",
+      "description": "Map of tool IDs to tool definitions",
+      "patternProperties": {
+        "^[a-z][a-z0-9-]*$": {
+          "type": "object",
+          "required": ["tier", "capabilities", "requires_api_key", "cost_model", "side_effects"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Human-readable tool name"
+            },
+            "tier": {
+              "type": "string",
+              "enum": ["primary", "secondary"],
+              "description": "Tool tier (primary=free/local, secondary=paid/rate-limited)"
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9._-]*$"
+              },
+              "minItems": 1,
+              "description": "List of capabilities this tool provides"
+            },
+            "requires_api_key": {
+              "type": "boolean",
+              "description": "Whether this tool requires an API key"
+            },
+            "api_key_env": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]*$",
+              "description": "Optional: Environment variable name for API key (defaults to <TOOL_ID>_API_KEY)"
+            },
+            "cost_model": {
+              "type": "object",
+              "required": ["type", "usd"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": ["flat_per_run", "usage_based", "time_based"],
+                  "description": "Cost model type"
+                },
+                "usd": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Cost in USD (for flat_per_run)"
+                },
+                "rate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Rate for usage/time based models"
+                },
+                "unit": {
+                  "type": "string",
+                  "description": "Unit for usage/time based models (e.g., 'per_request', 'per_minute')"
+                }
+              }
+            },
+            "side_effects": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["network", "file_read", "file_write", "exec", "database", "api_call"]
+              },
+              "description": "List of side effects this tool may cause"
+            },
+            "description": {
+              "type": "string",
+              "description": "Brief description of what the tool does"
+            },
+            "notes": {
+              "type": "string",
+              "description": "Additional notes or warnings about the tool"
+            },
+            "deprecated": {
+              "type": "boolean",
+              "default": false,
+              "description": "Whether this tool is deprecated"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["tools"],
+  "additionalProperties": false
+}

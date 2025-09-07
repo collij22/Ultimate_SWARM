@@ -246,6 +246,43 @@ export async function runAuv(auvId, { stagingUrl, apiBase } = {}) {
   let repaired = false;
   let serverProc = null;
 
+  // Router preview (read-only for Phase 4)
+  if (process.env.ROUTER_DRY === 'true') {
+    try {
+      const { planTools, loadConfig, deriveCapabilities } = await import('../../mcp/router.mjs');
+      const { registry, policies } = loadConfig();
+      
+      // Derive capabilities from AUV spec
+      const capabilities = deriveCapabilities(cap);
+      
+      const routerResult = planTools({
+        agentId: 'A1.orchestrator',
+        requestedCapabilities: capabilities,
+        budgetUsd: 0.25,
+        secondaryConsent: false,
+        env: ENV,
+        registry,
+        policies
+      });
+      
+      // Write preview next to result card
+      const previewPath = path.resolve(process.cwd(), 'runs', auvId, 'router_preview.json');
+      fs.mkdirSync(path.dirname(previewPath), { recursive: true });
+      fs.writeFileSync(previewPath, JSON.stringify(routerResult.decision, null, 2));
+      
+      console.log(`[router:preview] Decision written to ${previewPath}`);
+      appendHookLine({
+        ts: Date.now() / 1000, // Use epoch seconds to match other emitters
+        event: 'RouterPreview',
+        auv_id: auvId,
+        tool_count: routerResult.toolPlan.length,
+        total_cost_usd: routerResult.budget
+      });
+    } catch (err) {
+      console.warn('[router:preview] Failed:', err.message);
+    }
+  }
+
   // Observability breadcrumb
   appendHookLine({ ts: Date.now()/1000, event: 'RunbookStart', auv: auvId });
 

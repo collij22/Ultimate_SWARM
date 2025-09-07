@@ -1,0 +1,14 @@
+{
+  "description": "Secondary tools request with insufficient budget",
+  "agentId": "C16.devops_engineer",
+  "requestedCapabilities": [
+    "deploy.preview",
+    "monitoring.saas"
+  ],
+  "budgetUsd": 0.05,
+  "secondaryConsent": true,
+  "env": {
+    "VERCEL_API_KEY": "xxx-masked-xxx",
+    "DATADOG_API_KEY": "xxx-masked-xxx"
+  }
+}

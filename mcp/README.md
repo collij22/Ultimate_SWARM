@@ -1,4 +1,4 @@
-# Swarm1 MCP Router — Quick Guide
+# Swarm1 MCP Router — Phase 4 Implementation
 
 This repo uses a **capability-first** approach. Sub‑agents describe **what** they need
 (`capabilities`) and the router decides **which tools** to grant based on
@@ -9,12 +9,14 @@ Agents **do not** hard‑code specific tools in their prompts.
 ---
 
 ## Key Files
-- **/mcp/registry.yaml** — catalog of tool IDs with `tier` (primary/secondary), `kind`, and description.
+- **/mcp/registry.yaml** — catalog of 30 tools with `tier` (primary/secondary), capabilities, costs, and side effects
 - **/mcp/policies.yaml** — global policy including:
   - `capability_map`: capability → candidate tools
-  - `tiers`: consent & budgets (primary vs secondary)
-  - `agents`: per‑agent allowlists and notes
-  - `routing`: preferences & behavior when a primary is missing
+  - `tiers`: consent & budgets (primary vs secondary) with budget overrides
+  - `agents.allowlist`: per‑agent tool restrictions  
+  - `router`: preferences & behavior when a primary is missing
+- **/mcp/router.mjs** — pure, deterministic routing engine with schema validation
+- **/mcp/schemas/** — JSON schemas for registry and policies validation
 
 ---
 
@@ -124,3 +126,98 @@ From `/mcp/policies.yaml`:
 
 Short and sweet: **Agents ask for capabilities, policies map to tools, allowlists shape the final set.**  
 The router handles the rest.
+
+---
+
+## Phase 4 Enhancements
+
+### Schema Validation
+All configurations are validated against JSON schemas on load:
+- Registry schema enforces required fields: tier, capabilities, cost_model, side_effects
+- Policies schema validates router defaults, capability mappings, and agent allowlists
+- Detailed error messages pinpoint configuration issues
+
+### Budget Management
+```yaml
+# Per-tool budget overrides
+tiers:
+  secondary:
+    budget_overrides:
+      vercel: 0.10    # Override default for specific tools
+      k6: 0.50
+      datadog: 0.20
+
+# on_missing_primary policy
+router:
+  on_missing_primary:
+    action: propose_secondary_with_budget
+    default_budget_usd: 0.10
+```
+
+### API Key Configuration  
+Tools can specify custom environment variable names:
+```yaml
+tools:
+  vercel:
+    requires_api_key: true
+    api_key_env: VERCEL_TOKEN  # Optional: defaults to VERCEL_API_KEY
+```
+
+### Cost Models
+All tools define explicit cost structures:
+```yaml
+cost_model:
+  type: flat_per_run
+  usd: 0.10
+```
+
+### Observability
+- **Decision artifacts**: Written to `runs/router/<run_id>/decision.json`
+- **Hooks log**: Router events in `runs/observability/hooks.jsonl`
+- **Spend ledger**: Per-session tracking in `runs/observability/ledgers/<session_id>.jsonl`
+
+### Testing
+Comprehensive test suite (`tests/router.test.mjs`) validates:
+- Schema validation errors
+- Primary tier preference
+- Budget enforcement and overrides
+- Secondary consent requirements
+- Agent allowlist filtering
+- on_missing_primary policy
+- API key validation
+- Total budget ceilings
+- Side effects tracking
+
+### CLI Usage
+```bash
+# Validate configuration
+node mcp/router.mjs --validate
+
+# Dry run with verbose output
+node mcp/router.mjs --dry --agent B7.rapid_builder --capabilities browser.automation,api.test
+
+# With secondary consent and budget
+node mcp/router.mjs --agent C16.devops_engineer --capabilities deploy.preview --secondary-consent --budget 0.50
+
+# With custom session ID for ledger tracking
+node mcp/router.mjs --agent A1.orchestrator --capabilities browser.automation --session my-session-123
+
+# Test with custom environment
+VERCEL_API_KEY=xxx DATADOG_API_KEY=yyy node mcp/router.mjs --agent A1.orchestrator --capabilities monitoring.saas
+```
+
+### Router Coverage Report
+Generate a comprehensive analysis of your router configuration:
+```bash
+# Generate coverage report
+node mcp/router-report.mjs
+
+# Output includes:
+# - Capabilities without primary tools
+# - Unmapped tools not in any capability
+# - Agents with restrictive allowlists
+# - Missing budget overrides
+# - Configuration statistics
+```
+
+The router is now bulletproof with deterministic tool selection, comprehensive validation, and full observability.

@@ -28,7 +28,22 @@
       "Bash(npm run test:unit:*)",
       "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0102)",
       "Bash(npm pkg:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(mkdir:*)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/graph/runner.mjs orchestration/graph/projects/demo-validation.yaml --concurrency 3)",
+      "Bash(curl:*)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/graph/runner.mjs orchestration/graph/projects/minimal-test.yaml)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/graph/runner.mjs orchestration/graph/projects/working-demo.yaml --concurrency 3)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node tests/integration/graph-parallelization.test.mjs)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/graph/runner.mjs orchestration/graph/projects/test-auv-id.yaml)",
+      "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/graph/runner.mjs orchestration/graph/projects/test-auv-id.yaml --concurrency 2)",
+      "Bash(export:*)",
+      "Bash(npm run:*)",
+      "Bash(ROUTER_DRY=true STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0003)",
+      "Bash(VERCEL_API_KEY=test DATADOG_API_KEY=test node mcp/router.mjs --dry --agent C16.devops_engineer --capabilities deploy.preview --budget 0.05 --secondary-consent)",
+      "Bash(SESSION_ID=test-session npm run router:dry)",
+      "Bash(grep:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [
       "Read(./.env)",
