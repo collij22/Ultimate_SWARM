@@ -1,4 +1,4 @@
-version: "1.0"
+version: '1.0'
 project_id: test-auv-id
 concurrency: 2
 defaults:
@@ -11,7 +11,7 @@ nodes:
     timeout_ms: 5000
     resources:
       - server
-  
+
   # Test AUV_ID derivation from node id
   - id: AUV-0003-ui
     type: playwright
@@ -20,14 +20,14 @@ nodes:
     params:
       specs:
         - tests/robot/playwright/products-filter.spec.ts
-  
+
   - id: AUV-0003-cvf
     type: cvf
     requires:
       - AUV-0003-ui
     params:
       auv: AUV-0003
-  
+
   # Another test with different AUV
   - id: AUV-0004-cvf
     type: cvf

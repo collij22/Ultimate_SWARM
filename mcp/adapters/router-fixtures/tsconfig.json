@@ -9,7 +9,5 @@
     "resolveJsonModule": true,
     "baseUrl": "."
   },
-  "include": [
-    "mcp/adapters/router-fixtures/run-fixtures.ts"
-  ]
+  "include": ["mcp/adapters/router-fixtures/run-fixtures.ts"]
 }

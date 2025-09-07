@@ -19,7 +19,8 @@ function uniq<T>(arr: T[]): T[] {
 }
 
 function arrayEqAsSets(a: string[] | undefined, b: string[] | undefined): boolean {
-  const A = new Set(a ?? []), B = new Set(b ?? []);
+  const A = new Set(a ?? []),
+    B = new Set(b ?? []);
   if (A.size !== B.size) return false;
   for (const x of A) if (!B.has(x)) return false;
   return true;
@@ -35,7 +36,9 @@ function deepSubsetMatch(expected: AnyObj, actual: AnyObj, pathStr: string = '')
 
     if (Array.isArray(e)) {
       if (!Array.isArray(a) || !arrayEqAsSets(e, a)) {
-        mismatches.push(`Field ${keyPath}: expected array ≈ ${JSON.stringify(e)}, got ${JSON.stringify(a)}`);
+        mismatches.push(
+          `Field ${keyPath}: expected array ≈ ${JSON.stringify(e)}, got ${JSON.stringify(a)}`,
+        );
       }
     } else if (e && typeof e === 'object') {
       if (!a || typeof a !== 'object') {
@@ -44,7 +47,10 @@ function deepSubsetMatch(expected: AnyObj, actual: AnyObj, pathStr: string = '')
         mismatches.push(...deepSubsetMatch(e, a, keyPath));
       }
     } else {
-      if (e !== a) mismatches.push(`Field ${keyPath}: expected ${JSON.stringify(e)}, got ${JSON.stringify(a)}`);
+      if (e !== a)
+        mismatches.push(
+          `Field ${keyPath}: expected ${JSON.stringify(e)}, got ${JSON.stringify(a)}`,
+        );
     }
   }
   return mismatches;
@@ -52,7 +58,7 @@ function deepSubsetMatch(expected: AnyObj, actual: AnyObj, pathStr: string = '')
 
 function loadPolicies(policiesPath: string) {
   const pol = readYaml(policiesPath);
-  const capMap: Record<string,string[]> = pol?.capability_map ?? {};
+  const capMap: Record<string, string[]> = pol?.capability_map ?? {};
   const agents: AnyObj = pol?.agents ?? {};
   const routing: AnyObj = pol?.routing ?? { prefer_primary: true };
   const tiers: AnyObj = pol?.tiers ?? {};
@@ -85,14 +91,18 @@ function classifyTools(tools: string[], registry: AnyObj) {
 
 function intersect(a: string[], b: string[]): string[] {
   const B = new Set(b);
-  return a.filter(x => B.has(x));
+  return a.filter((x) => B.has(x));
 }
 
 function toolBudget(tool: string, def: number, overrides: Record<string, number>) {
   return overrides[tool] ?? def;
 }
 
-function computeToolPlan(input: AnyObj, pol: ReturnType<typeof loadPolicies>, reg: ReturnType<typeof loadRegistry>) {
+function computeToolPlan(
+  input: AnyObj,
+  pol: ReturnType<typeof loadPolicies>,
+  reg: ReturnType<typeof loadRegistry>,
+) {
   const agent = input.agent as string;
   const reqCaps: string[] = input.requested_capabilities ?? [];
   const agentCfg: AnyObj | undefined = pol.agents?.[agent];
@@ -109,8 +119,8 @@ function computeToolPlan(input: AnyObj, pol: ReturnType<typeof loadPolicies>, re
         escalation: {
           type: 'missing-capability-map',
           message: `No tools mapped for capability '${cap}'`,
-          request: [`Add at least one tool to capability_map.${cap}`]
-        }
+          request: [`Add at least one tool to capability_map.${cap}`],
+        },
       };
     }
     const { primary, secondary } = classifyTools(candidates, reg);
@@ -144,9 +154,9 @@ function computeToolPlan(input: AnyObj, pol: ReturnType<typeof loadPolicies>, re
           message: `No permitted tools intersect capability '${cap}' for agent ${agent}`,
           request: [
             `Add one of [${candidates.join(', ')}] to agents.${agent}.allowlist.primary/secondary`,
-            `Or add another tool to capability_map.${cap}`
-          ]
-        }
+            `Or add another tool to capability_map.${cap}`,
+          ],
+        },
       };
     }
   }
@@ -157,9 +167,9 @@ function computeToolPlan(input: AnyObj, pol: ReturnType<typeof loadPolicies>, re
   // include secondary candidates (informational) if agent lists secondary in allowlist
   if (agentCfg?.allowlist?.secondary && agentCfg.allowlist.secondary.length) {
     const secPrefs = agentCfg.allowlist.secondary;
-    const mappedSec = reqCaps.flatMap(cap => {
+    const mappedSec = reqCaps.flatMap((cap) => {
       const cands = pol.capMap[cap] ?? [];
-      return cands.filter(t => reg.tools[t]?.tier === 'secondary' && secPrefs.includes(t));
+      return cands.filter((t) => reg.tools[t]?.tier === 'secondary' && secPrefs.includes(t));
     });
     plan.secondary_candidates = uniq(mappedSec);
   }
@@ -168,9 +178,13 @@ function computeToolPlan(input: AnyObj, pol: ReturnType<typeof loadPolicies>, re
     const list = Array.from(proposals);
     plan.proposal = {
       secondary: list,
-      budget_usd: list.length === 1
-        ? toolBudget(list[0], pol.secondaryBudgetDefault, pol.budgetOverrides)
-        : list.reduce((sum, t) => sum + toolBudget(t, pol.secondaryBudgetDefault, pol.budgetOverrides), 0)
+      budget_usd:
+        list.length === 1
+          ? toolBudget(list[0], pol.secondaryBudgetDefault, pol.budgetOverrides)
+          : list.reduce(
+              (sum, t) => sum + toolBudget(t, pol.secondaryBudgetDefault, pol.budgetOverrides),
+              0,
+            ),
     };
   }
 
@@ -204,8 +218,9 @@ function main() {
   const pol = loadPolicies(policiesPath);
   const reg = loadRegistry(registryPath);
 
-  const files = fs.readdirSync(fixturesDir).filter(f => f.endsWith('.yaml'));
-  let pass = 0, fail = 0;
+  const files = fs.readdirSync(fixturesDir).filter((f) => f.endsWith('.yaml'));
+  let pass = 0,
+    fail = 0;
 
   for (const f of files) {
     const p = path.join(fixturesDir, f);
@@ -216,7 +231,9 @@ function main() {
     let mismatches: string[] = [];
     if ('escalation' in expected) {
       if (!('escalation' in actual)) {
-        mismatches.push(`Expected escalation but got tool plan: ${JSON.stringify(actual, null, 2)}`);
+        mismatches.push(
+          `Expected escalation but got tool plan: ${JSON.stringify(actual, null, 2)}`,
+        );
       } else {
         mismatches = deepSubsetMatch(expected.escalation, (actual as any).escalation);
       }
@@ -229,7 +246,8 @@ function main() {
     }
 
     const ok = mismatches.length === 0;
-    if (ok) pass++; else fail++;
+    if (ok) pass++;
+    else fail++;
 
     console.log(`\n=== ${fx.name || f} — ${ok ? 'PASS' : 'FAIL'} ===`);
     if (!ok) {
@@ -244,7 +262,7 @@ function main() {
     }
   }
 
-  console.log(`\nSummary: PASS=${pass} FAIL=${fail} TOTAL=${pass+fail}`);
+  console.log(`\nSummary: PASS=${pass} FAIL=${fail} TOTAL=${pass + fail}`);
   process.exit(fail > 0 ? 1 : 0);
 }
 

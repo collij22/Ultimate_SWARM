@@ -9,11 +9,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Ajv with draft-07 support
-const ajv = new Ajv({ 
-  strict: false, 
+const ajv = new Ajv({
+  strict: false,
   allErrors: true,
   verbose: true,
-  schemaId: 'auto'
+  schemaId: 'auto',
 });
 addFormats(ajv);
 
@@ -69,7 +69,7 @@ function extractFromMarkdown(content) {
     nice_to_have: [],
     constraints: {},
     sample_urls: [],
-    project_context: ''
+    project_context: '',
   };
 
   // Extract business goals
@@ -79,28 +79,34 @@ function extractFromMarkdown(content) {
   }
 
   // Extract must-have features
-  const mustHaveMatch = content.match(/##\s*Must[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const mustHaveMatch = content.match(
+    /##\s*Must[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i,
+  );
   if (mustHaveMatch) {
     brief.must_have = extractListItems(mustHaveMatch[1]);
   }
 
   // Extract nice-to-have features
-  const niceToHaveMatch = content.match(/##\s*Nice[\s-]?to[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const niceToHaveMatch = content.match(
+    /##\s*Nice[\s-]?to[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i,
+  );
   if (niceToHaveMatch) {
     brief.nice_to_have = extractListItems(niceToHaveMatch[1]);
   }
 
   // Extract constraints
-  const constraintsMatch = content.match(/##\s*(?:Constraints?|Budget\s*&?\s*Timeline|Technical\s+Requirements?)\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const constraintsMatch = content.match(
+    /##\s*(?:Constraints?|Budget\s*&?\s*Timeline|Technical\s+Requirements?)\s*\n([\s\S]*?)(?=\n##|$)/i,
+  );
   if (constraintsMatch) {
     const constraintText = constraintsMatch[1];
-    
+
     // Extract budget
     const budgetMatch = constraintText.match(/[Bb]udget[:\s]*\$?([\d,]+(?:\.\d+)?)/);
     if (budgetMatch) {
       brief.constraints.budget_usd = parseFloat(budgetMatch[1].replace(/,/g, ''));
     }
-    
+
     // Extract timeline
     const timelineMatch = constraintText.match(/[Tt]imeline[:\s]*(\d+)\s*(?:days?|weeks?)/i);
     if (timelineMatch) {
@@ -108,14 +114,14 @@ function extractFromMarkdown(content) {
       const unit = timelineMatch[0].toLowerCase();
       brief.constraints.timeline_days = unit.includes('week') ? value * 7 : value;
     }
-    
+
     // Extract tech stack
     const techMatch = constraintText.match(/[Tt]ech(?:nology)?\s*[Ss]tack[:\s]*(.*?)(?:\n|$)/);
     if (techMatch) {
       brief.constraints.tech_stack = techMatch[1]
         .split(/[,、]/)
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
     }
   }
 
@@ -126,7 +132,9 @@ function extractFromMarkdown(content) {
   }
 
   // Extract project context (overview/description)
-  const contextMatch = content.match(/##\s*(?:Overview|Description|Context|Background)\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const contextMatch = content.match(
+    /##\s*(?:Overview|Description|Context|Background)\s*\n([\s\S]*?)(?=\n##|$)/i,
+  );
   if (contextMatch) {
     brief.project_context = contextMatch[1].trim();
   }
@@ -141,28 +149,28 @@ function extractFromMarkdown(content) {
  */
 function extractListItems(text) {
   const items = [];
-  
+
   // Match bullet points (-, *, +) and numbered lists
   const listPattern = /^[\s]*(?:[-*+]|\d+\.)\s+(.+)$/gm;
   let match;
-  
+
   while ((match = listPattern.exec(text)) !== null) {
     let item = match[1].trim();
-    
+
     // Check for multi-line items (indented continuation)
     const nextLineIndex = match.index + match[0].length;
     const remainingText = text.slice(nextLineIndex);
     const continuationMatch = remainingText.match(/^((?:\n\s{2,}[^\n]+)*)/);
-    
+
     if (continuationMatch && continuationMatch[1]) {
       item += ' ' + continuationMatch[1].replace(/\n\s+/g, ' ').trim();
     }
-    
+
     if (item.length > 0) {
       items.push(item);
     }
   }
-  
+
   return items;
 }
 
@@ -173,18 +181,18 @@ function extractListItems(text) {
  */
 export function validateBrief(brief) {
   const valid = validateBriefSchema(brief);
-  
+
   const result = {
     valid,
     errors: [],
-    data: valid ? brief : null
+    data: valid ? brief : null,
   };
-  
+
   if (!valid && validateBriefSchema.errors) {
-    result.errors = validateBriefSchema.errors.map(err => {
+    result.errors = validateBriefSchema.errors.map((err) => {
       const field = err.instancePath.replace(/^\//, '').replace(/\//g, '.');
       const message = err.message || 'validation failed';
-      
+
       switch (err.keyword) {
         case 'required':
           return `Missing required field: ${err.params.missingProperty}`;
@@ -203,7 +211,7 @@ export function validateBrief(brief) {
       }
     });
   }
-  
+
   return result;
 }
 
@@ -216,7 +224,7 @@ export function validateBriefFile(briefPath) {
   try {
     const briefData = parseBriefFile(briefPath);
     const result = validateBrief(briefData);
-    
+
     if (result.valid) {
       // Emit hook for observability
       logHook('BriefValidated', {
@@ -224,21 +232,21 @@ export function validateBriefFile(briefPath) {
         goals: briefData.business_goals?.length || 0,
         features: briefData.must_have?.length || 0,
         budget: briefData.constraints?.budget_usd,
-        timeline: briefData.constraints?.timeline_days
+        timeline: briefData.constraints?.timeline_days,
       });
     } else {
       logHook('BriefValidationFailed', {
         path: briefPath,
-        errors: result.errors
+        errors: result.errors,
       });
     }
-    
+
     return result;
   } catch (error) {
     return {
       valid: false,
       errors: [`Failed to parse brief file: ${error.message}`],
-      data: null
+      data: null,
     };
   }
 }
@@ -251,18 +259,18 @@ export function validateBriefFile(briefPath) {
 function logHook(event, data) {
   const hookPath = path.join(process.cwd(), 'runs/observability/hooks.jsonl');
   const hookDir = path.dirname(hookPath);
-  
+
   if (!fs.existsSync(hookDir)) {
     fs.mkdirSync(hookDir, { recursive: true });
   }
-  
+
   const entry = {
     ts: Date.now() / 1000,
     event,
     module: 'validate_brief',
-    ...data
+    ...data,
   };
-  
+
   fs.appendFileSync(hookPath, JSON.stringify(entry) + '\n', 'utf8');
 }
 
@@ -273,18 +281,18 @@ function logHook(event, data) {
  */
 export function validateBriefCLI(briefPath) {
   console.log(`[validate] Checking brief: ${briefPath}`);
-  
+
   const result = validateBriefFile(briefPath);
-  
+
   if (result.valid) {
     console.log('[validate] ✅ Brief is valid');
-    
+
     if (result.data) {
       console.log('[validate] Summary:');
       console.log(`  - Business goals: ${result.data.business_goals?.length || 0}`);
       console.log(`  - Must-have features: ${result.data.must_have?.length || 0}`);
       console.log(`  - Nice-to-have features: ${result.data.nice_to_have?.length || 0}`);
-      
+
       if (result.data.constraints?.budget_usd) {
         console.log(`  - Budget: $${result.data.constraints.budget_usd.toLocaleString()}`);
       }
@@ -295,11 +303,11 @@ export function validateBriefCLI(briefPath) {
         console.log(`  - Tech stack: ${result.data.constraints.tech_stack.join(', ')}`);
       }
     }
-    
+
     return true;
   } else {
     console.error('[validate] ❌ Brief validation failed:');
-    result.errors.forEach(err => {
+    result.errors.forEach((err) => {
       console.error(`  - ${err}`);
     });
     return false;
@@ -311,5 +319,5 @@ export default {
   parseBriefFile,
   validateBrief,
   validateBriefFile,
-  validateBriefCLI
+  validateBriefCLI,
 };

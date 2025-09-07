@@ -65,7 +65,16 @@
           "description": "Target deployment environments",
           "items": {
             "type": "string",
-            "enum": ["development", "staging", "production", "local", "cloud", "edge", "mobile", "web"]
+            "enum": [
+              "development",
+              "staging",
+              "production",
+              "local",
+              "cloud",
+              "edge",
+              "mobile",
+              "web"
+            ]
           },
           "maxItems": 5
         }

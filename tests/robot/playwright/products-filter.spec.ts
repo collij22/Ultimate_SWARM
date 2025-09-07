@@ -48,12 +48,16 @@ test.describe('AUV-0003 UI  search & filter', () => {
     await page.fill('#q', '3');
 
     // Wait for /api/products to return after clicking Apply
-    const apiWait = page.waitForResponse(r => r.url().includes('/api/products') && r.status() === 200);
+    const apiWait = page.waitForResponse(
+      (r) => r.url().includes('/api/products') && r.status() === 200,
+    );
     await page.click('text=Apply');
     await apiWait;
 
     // Wait until at least one card is rendered
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="product-card"]').length > 0);
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-testid="product-card"]').length > 0,
+    );
 
     const cards = page.locator('[data-testid="product-card"]');
     await expect(cards).toHaveCount(1);
@@ -75,12 +79,16 @@ test.describe('AUV-0003 UI  search & filter', () => {
     await page.fill('#maxPrice', '20');
 
     // Wait for the filtered fetch to complete before asserting
-    const apiWait = page.waitForResponse(r => r.url().includes('/api/products') && r.status() === 200);
+    const apiWait = page.waitForResponse(
+      (r) => r.url().includes('/api/products') && r.status() === 200,
+    );
     await page.click('text=Apply');
     await apiWait;
 
     // Wait until at least one card is rendered
-    await page.waitForFunction(() => document.querySelectorAll('[data-testid="product-card"]').length > 0);
+    await page.waitForFunction(
+      () => document.querySelectorAll('[data-testid="product-card"]').length > 0,
+    );
 
     const prices = page.locator('[data-testid="product-price"]');
     await expect(prices.first()).toBeVisible();

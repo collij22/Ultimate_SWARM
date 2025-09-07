@@ -13,6 +13,7 @@ node orchestration/cli.mjs plan briefs/demo-01/brief.md
 ```
 
 This generates:
+
 - `capabilities/AUV-01xx.yaml` files with acceptance criteria and authoring hints
 - `capabilities/backlog.yaml` with dependencies and estimates
 - `reports/requirements/<RUN-ID>.json` with extracted requirements
@@ -54,6 +55,7 @@ node orchestration/cli.mjs graph-from-backlog capabilities/backlog.yaml \
 ```
 
 This generates a graph with:
+
 - One `server` node (shared resource)
 - For each AUV: `ui`, `perf`, and `cvf` nodes
 - Dependency edges based on `depends_on` relationships
@@ -89,7 +91,7 @@ node orchestration/cli.mjs run-graph orchestration/graph/projects/demo-01.yaml \
 Graphs follow `orchestration/graph/spec.schema.yaml`:
 
 ```yaml
-version: "1.0"
+version: '1.0'
 project_id: demo-01
 concurrency: 3
 defaults:
@@ -110,6 +112,7 @@ edges:
 ```
 
 Node types:
+
 - `server`: Ensure mock server is running
 - `playwright`: Execute UI tests
 - `lighthouse`: Run performance audit
@@ -120,6 +123,7 @@ Node types:
 #### Performance Benefits
 
 With dependency-aware parallel execution:
+
 - Serial: 8 AUVs × 30s avg = 4 minutes
 - Parallel (concurrency=3): ~1.5 minutes (60%+ reduction)
 - Resource locks prevent conflicts
@@ -182,8 +186,9 @@ Artifacts live under `runs/<AUV-ID>/...`. CI replays similar steps and uploads a
 ### Typed Exit Codes & Error Handling
 
 The autopilot uses [typed exit codes](QUALITY-GATES.md) for precise error reporting:
+
 - **101**: Playwright tests failed
-- **102**: Lighthouse performance check failed  
+- **102**: Lighthouse performance check failed
 - **103**: CVF gate failed
 - **104**: Test authoring failed
 - **105**: Server startup failed
@@ -195,7 +200,8 @@ Both the runbook (`orchestration/runbooks/auv_delivery.mjs`) and CVF checker (`o
 ### Repair Loop Behavior
 
 When transient failures are detected (timeouts, network issues, browser crashes), the system:
-1. Analyzes the error type in `maybeRepair()` 
+
+1. Analyzes the error type in `maybeRepair()`
 2. Writes failure context to `runs/<AUV>/repair/failure.json`
 3. Automatically retries once for transient failures
 4. Logs repair attempts and outcomes for debugging
@@ -206,12 +212,12 @@ If no spec files are present for an AUV, the system generates baseline tests gui
 
 ```yaml
 authoring_hints:
-  ui: 
-    page: "/products.html"
-    selectors: "..."
-    screenshot: "products_search.png"
-  api: 
-    base_path: "/products"
+  ui:
+    page: '/products.html'
+    selectors: '...'
+    screenshot: 'products_search.png'
+  api:
+    base_path: '/products'
     cases: [...]
 ```
 
@@ -269,10 +275,12 @@ node orchestration/cli.mjs validate auv AUV-0101
 ### Brief Structure
 
 Required sections:
+
 - **business_goals**: High-level objectives (1-10 items)
 - **must_have**: Essential features (1-20 items)
 
 Optional sections:
+
 - **nice_to_have**: Enhancement features
 - **constraints**: Budget, timeline, tech stack
 - **technical_requirements**: Performance, scale, security
@@ -324,6 +332,7 @@ authoring_hints:
 ### Dependency Detection
 
 Automatic dependency inference:
+
 - UI components depend on corresponding APIs
 - Checkout depends on cart
 - Cart depends on product catalog
@@ -333,6 +342,7 @@ Automatic dependency inference:
 ### Resource Estimation
 
 Each AUV includes estimates:
+
 - **complexity**: 1-10 scale based on feature analysis
 - **tokens**: Estimated LLM tokens (complexity × 15000 × 1.2)
 - **mcp_usd**: Estimated MCP tool costs (complexity × 0.03 × 1.2)
@@ -370,6 +380,7 @@ node orchestration/cli.mjs AUV-0101
 ```
 
 The autopilot will:
+
 1. Auto-generate tests from authoring hints
 2. Run Playwright UI/API tests
 3. Run Lighthouse performance checks
@@ -379,6 +390,7 @@ The autopilot will:
 ### Observability
 
 All compilation events logged to `runs/observability/hooks.jsonl`:
+
 - BriefValidated / BriefValidationFailed
 - RequirementsAnalysisStart / RequirementsAnalysisComplete
 - CompilationStart / CompilationComplete
@@ -388,6 +400,7 @@ All compilation events logged to `runs/observability/hooks.jsonl`:
 ### Next Phase Integration
 
 The generated `backlog.yaml` feeds Phase 3 (DAG Runner):
+
 - Provides dependency graph for parallel execution
 - Includes resource estimates for scheduling
 - Tracks status for incremental delivery
@@ -444,7 +457,7 @@ const result = planTools({
   secondaryConsent: false,
   env: process.env,
   registry,
-  policies
+  policies,
 });
 
 if (result.ok) {
@@ -461,6 +474,7 @@ if (result.ok) {
 #### Registry (`mcp/registry.yaml`)
 
 Each tool must define:
+
 - `tier`: primary or secondary
 - `capabilities`: list of capabilities it provides
 - `requires_api_key`: boolean
@@ -487,6 +501,7 @@ Each tool must define:
 ### Observability
 
 Router decisions are logged to `runs/observability/hooks.jsonl`:
+
 - `RouterDecisionStart`: Beginning evaluation
 - `RouterDecisionComplete`: Final decision with selected tools
 - Decision artifacts: `runs/router/<RUN-ID>/decision.json`

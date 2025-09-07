@@ -23,9 +23,9 @@ artifacts:
 authoring_hints:
   ui:
     page: /products.html
-    search_input: "#q"
-    min_price_input: "#minPrice"
-    max_price_input: "#maxPrice"
+    search_input: '#q'
+    min_price_input: '#minPrice'
+    max_price_input: '#maxPrice'
     apply_button_text: Apply
     card_selector: '[data-testid="product-card"]'
     title_selector: '[data-testid="product-title"]'

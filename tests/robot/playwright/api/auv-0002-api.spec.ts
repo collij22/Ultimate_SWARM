@@ -2,12 +2,12 @@
 // hash:3be1893d11ca02c02d59d23f68a122e807f8952e7697382372049e5060f57f6c file:auv-0002-api.spec.ts
 
 import { test, expect } from '@playwright/test';
-  const API_BASE = process.env.API_BASE;
-  
-  test.describe('AUV-0002 API — baseline', () => {
-    test.skip(!API_BASE, 'API_BASE env var not set');
-  
-    test('list returns 200 and array', async ({ request }) => {
+const API_BASE = process.env.API_BASE;
+
+test.describe('AUV-0002 API — baseline', () => {
+  test.skip(!API_BASE, 'API_BASE env var not set');
+
+  test('list returns 200 and array', async ({ request }) => {
     const res = await request.get(`${API_BASE}/products`);
     expect(res.status()).toBe(200);
     const body = await res.json();
@@ -15,12 +15,11 @@ import { test, expect } from '@playwright/test';
     expect(body.length).toBeGreaterThan(0);
   });
 
-test('q=3 filters', async ({ request }) => {
+  test('q=3 filters', async ({ request }) => {
     const res = await request.get(`${API_BASE}/products?q=3`);
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.length).toBeGreaterThan(0);
     expect(body.some((p) => p.id === 'demo-3')).toBeTruthy();
   });
-  });
-  
+});

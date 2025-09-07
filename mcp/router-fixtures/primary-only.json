@@ -1,10 +1,7 @@
 {
   "description": "Primary tools only - browser automation and performance audit",
   "agentId": "B7.rapid_builder",
-  "requestedCapabilities": [
-    "browser.automation",
-    "web.perf_audit"
-  ],
+  "requestedCapabilities": ["browser.automation", "web.perf_audit"],
   "budgetUsd": 0.25,
   "secondaryConsent": false,
   "env": {}

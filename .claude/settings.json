@@ -1,34 +1,47 @@
 {
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "python scripts/hooks/session_start.py",
-      "timeout": 2 } ] }
+      {
+        "hooks": [
+          { "type": "command", "command": "python scripts/hooks/session_start.py", "timeout": 2 }
+        ]
+      }
     ],
     "PreToolUse": [
-      { "matcher": "*", "hooks": [ { "type": "command", "command": "python scripts/hooks/pre_tool.py",
-      "timeout": 2 } ] }
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "python scripts/hooks/pre_tool.py", "timeout": 2 }
+        ]
+      }
     ],
     "PostToolUse": [
-      { "matcher": "*", "hooks": [ { "type": "command", "command": "python scripts/hooks/post_tool.py",
-      "timeout": 2 } ] }
+      {
+        "matcher": "*",
+        "hooks": [
+          { "type": "command", "command": "python scripts/hooks/post_tool.py", "timeout": 2 }
+        ]
+      }
     ],
     "SubagentStop": [
-      { "hooks": [ { "type": "command", "command": "python scripts/hooks/subagent_stop.py",
-      "timeout": 2 } ] }
+      {
+        "hooks": [
+          { "type": "command", "command": "python scripts/hooks/subagent_stop.py", "timeout": 2 }
+        ]
+      }
     ],
     "SessionEnd": [
-      { "hooks": [ { "type": "command", "command": "python scripts/hooks/session_end.py",
-      "timeout": 2 } ] }
+      {
+        "hooks": [
+          { "type": "command", "command": "python scripts/hooks/session_end.py", "timeout": 2 }
+        ]
+      }
     ]
   },
 
   "permissions": {
-    "allow": [ "Read(./**)" ],
-    "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./secrets/**)"
-    ],
+    "allow": ["Read(./**)"],
+    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
     "ask": []
   }
 }

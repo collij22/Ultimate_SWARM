@@ -13,11 +13,11 @@ import { invokeRequirementsAnalyst } from './call_agent.mjs';
 export async function parseBrief(briefPath) {
   const briefData = parseBriefFile(briefPath);
   const validation = validateBrief(briefData);
-  
+
   if (!validation.valid) {
     throw new Error(`Brief validation failed: ${validation.errors.join(', ')}`);
   }
-  
+
   return validation.data;
 }
 
@@ -29,33 +29,33 @@ export async function parseBrief(briefPath) {
 export function extractCapabilities(input) {
   // If input has capabilities array, it's already requirements
   if (input.capabilities) {
-    return input.capabilities.map(cap => ({
+    return input.capabilities.map((cap) => ({
       ...cap,
       owner: cap.type || 'web',
-      hints: generateAuthoringHints(cap)
+      hints: generateAuthoringHints(cap),
     }));
   }
-  
+
   // Otherwise, extract from brief
   const capabilities = [];
   let capId = 1;
-  
+
   // Process must-have features
   if (input.must_have) {
-    input.must_have.forEach(feature => {
+    input.must_have.forEach((feature) => {
       const cap = createCapabilityFromFeature(feature, 'must_have', capId++);
       capabilities.push(cap);
     });
   }
-  
+
   // Process nice-to-have features
   if (input.nice_to_have) {
-    input.nice_to_have.forEach(feature => {
+    input.nice_to_have.forEach((feature) => {
       const cap = createCapabilityFromFeature(feature, 'nice_to_have', capId++);
       capabilities.push(cap);
     });
   }
-  
+
   return capabilities;
 }
 
@@ -68,23 +68,35 @@ export function extractCapabilities(input) {
  */
 function createCapabilityFromFeature(feature, priority, id) {
   const featureLower = feature.toLowerCase();
-  
+
   // Determine type/owner
   let type = 'web';
-  if (featureLower.includes('api') || featureLower.includes('endpoint') || featureLower.includes('service')) {
+  if (
+    featureLower.includes('api') ||
+    featureLower.includes('endpoint') ||
+    featureLower.includes('service')
+  ) {
     type = 'api';
-  } else if (featureLower.includes('database') || featureLower.includes('data') || featureLower.includes('etl')) {
+  } else if (
+    featureLower.includes('database') ||
+    featureLower.includes('data') ||
+    featureLower.includes('etl')
+  ) {
     type = 'data';
-  } else if (featureLower.includes('ai') || featureLower.includes('ml') || featureLower.includes('model')) {
+  } else if (
+    featureLower.includes('ai') ||
+    featureLower.includes('ml') ||
+    featureLower.includes('model')
+  ) {
     type = 'ai';
   }
-  
+
   // Clean name
   let name = feature.split(/[,.:]/)[0].trim();
   if (name.length > 50) {
     name = name.substring(0, 47) + '...';
   }
-  
+
   const capability = {
     id: `CAP-${String(id).padStart(3, '0')}`,
     name,
@@ -93,11 +105,11 @@ function createCapabilityFromFeature(feature, priority, id) {
     priority,
     description: feature,
     acceptance_criteria: generateAcceptanceCriteria(feature),
-    risks: []
+    risks: [],
   };
-  
+
   capability.hints = generateAuthoringHints(capability);
-  
+
   return capability;
 }
 
@@ -109,7 +121,7 @@ function createCapabilityFromFeature(feature, priority, id) {
 function generateAcceptanceCriteria(feature) {
   const criteria = [];
   const featureLower = feature.toLowerCase();
-  
+
   // Product catalog patterns
   if (featureLower.includes('catalog') || featureLower.includes('product')) {
     criteria.push('Products displayed in grid or list view');
@@ -124,7 +136,7 @@ function generateAcceptanceCriteria(feature) {
       criteria.push('Multiple filters can be combined');
     }
   }
-  
+
   // Shopping cart patterns
   else if (featureLower.includes('cart') || featureLower.includes('basket')) {
     criteria.push('Items can be added to cart');
@@ -133,7 +145,7 @@ function generateAcceptanceCriteria(feature) {
     criteria.push('Cart totals calculate correctly including tax');
     criteria.push('Cart persists across page refreshes');
   }
-  
+
   // Checkout patterns
   else if (featureLower.includes('checkout') || featureLower.includes('payment')) {
     criteria.push('Guest checkout option available');
@@ -142,7 +154,7 @@ function generateAcceptanceCriteria(feature) {
     criteria.push('Order confirmation displayed');
     criteria.push('Confirmation email sent');
   }
-  
+
   // Dashboard patterns
   else if (featureLower.includes('dashboard')) {
     criteria.push('Key metrics displayed prominently');
@@ -151,16 +163,20 @@ function generateAcceptanceCriteria(feature) {
     criteria.push('Responsive layout on all devices');
     criteria.push('Export functionality available');
   }
-  
+
   // Authentication patterns
-  else if (featureLower.includes('auth') || featureLower.includes('login') || featureLower.includes('signup')) {
+  else if (
+    featureLower.includes('auth') ||
+    featureLower.includes('login') ||
+    featureLower.includes('signup')
+  ) {
     criteria.push('User registration with email verification');
     criteria.push('Secure login and logout');
     criteria.push('Password reset functionality');
     criteria.push('Session management works correctly');
     criteria.push('Remember me option available');
   }
-  
+
   // Vendor/seller patterns
   else if (featureLower.includes('vendor') || featureLower.includes('seller')) {
     criteria.push('Vendor registration and profile creation');
@@ -168,7 +184,7 @@ function generateAcceptanceCriteria(feature) {
     criteria.push('Order management dashboard');
     criteria.push('Analytics and reporting');
   }
-  
+
   // API patterns
   else if (featureLower.includes('api') || featureLower.includes('endpoint')) {
     criteria.push('RESTful endpoints follow conventions');
@@ -177,7 +193,7 @@ function generateAcceptanceCriteria(feature) {
     criteria.push('Response format consistent');
     criteria.push('Rate limiting implemented');
   }
-  
+
   // Default criteria
   else {
     criteria.push('Feature works as specified');
@@ -185,7 +201,7 @@ function generateAcceptanceCriteria(feature) {
     criteria.push('Performance meets requirements');
     criteria.push('User experience is intuitive');
   }
-  
+
   return criteria.slice(0, 5); // Limit to 5 criteria
 }
 
@@ -197,12 +213,12 @@ function generateAcceptanceCriteria(feature) {
 function generateAuthoringHints(capability) {
   const hints = {
     ui: {},
-    api: {}
+    api: {},
   };
-  
+
   const nameLower = capability.name.toLowerCase();
   const descLower = (capability.description || '').toLowerCase();
-  
+
   // UI hints based on capability type
   if (capability.type === 'web' || capability.owner === 'web') {
     // Product catalog hints
@@ -216,16 +232,19 @@ function generateAuthoringHints(capability) {
         card_selector: '[data-testid="product-card"]',
         title_selector: '[data-testid="product-title"]',
         price_selector: '[data-testid="product-price"]',
-        screenshot: 'products_search.png'
+        screenshot: 'products_search.png',
       };
-      
+
       // Let API defaults (list + id) be generated by test_authoring; avoid '/:id' literal
-      hints.api = { base_path: '/products', cases: [
-        { name: 'list products', method: 'GET', path: '/', expect: 'array' },
-        { name: 'search products', method: 'GET', path: '/?q=3', expect: 'filtered' }
-      ]};
+      hints.api = {
+        base_path: '/products',
+        cases: [
+          { name: 'list products', method: 'GET', path: '/', expect: 'array' },
+          { name: 'search products', method: 'GET', path: '/?q=3', expect: 'filtered' },
+        ],
+      };
     }
-    
+
     // Shopping cart hints
     else if (nameLower.includes('cart') || nameLower.includes('basket')) {
       hints.ui = {
@@ -234,9 +253,9 @@ function generateAuthoringHints(capability) {
         subtotal_selector: '[data-testid="cart-subtotal"]',
         tax_selector: '[data-testid="cart-tax"]',
         total_selector: '[data-testid="cart-total"]',
-        screenshot: 'cart_summary.png'
+        screenshot: 'cart_summary.png',
       };
-      
+
       // Use setup + summary_path so test_authoring seeds cart before assertions
       hints.api = {
         base_path: '/cart',
@@ -245,14 +264,12 @@ function generateAuthoringHints(capability) {
             name: 'summary after setup',
             method: 'GET',
             summary_path: '/cart/summary',
-            setup: [
-              { method: 'POST', path: '/api/cart', body: { productId: 'demo-1', qty: 1 } }
-            ]
-          }
-        ]
+            setup: [{ method: 'POST', path: '/api/cart', body: { productId: 'demo-1', qty: 1 } }],
+          },
+        ],
       };
     }
-    
+
     // Checkout hints
     else if (nameLower.includes('checkout')) {
       hints.ui = {
@@ -263,15 +280,16 @@ function generateAuthoringHints(capability) {
         card_selector: '#card',
         submit_selector: '[data-testid="submit-order"]',
         success_selector: '[data-testid="order-success"]',
-        screenshot: 'checkout_flow.png'
+        screenshot: 'checkout_flow.png',
       };
-      
+
       // Only known endpoint is POST /api/checkout → 201
-      hints.api = { base_path: '/checkout', cases: [
-        { name: 'submit order', method: 'POST', path: '/', expect_status: 201 }
-      ]};
+      hints.api = {
+        base_path: '/checkout',
+        cases: [{ name: 'submit order', method: 'POST', path: '/', expect_status: 201 }],
+      };
     }
-    
+
     // Dashboard hints
     else if (nameLower.includes('dashboard')) {
       hints.ui = {
@@ -279,18 +297,18 @@ function generateAuthoringHints(capability) {
         card_selector: '[data-testid="metric-card"]',
         title_selector: '[data-testid="metric-title"]',
         value_selector: '[data-testid="metric-value"]',
-        screenshot: 'dashboard_overview.png'
+        screenshot: 'dashboard_overview.png',
       };
-      
+
       hints.api = {
         base_path: '/dashboard',
         cases: [
           { name: 'get metrics', method: 'GET', path: '/metrics', expect: 'metrics' },
-          { name: 'get charts', method: 'GET', path: '/charts', expect: 'chart_data' }
-        ]
+          { name: 'get charts', method: 'GET', path: '/charts', expect: 'chart_data' },
+        ],
       };
     }
-    
+
     // Authentication hints
     else if (nameLower.includes('auth') || nameLower.includes('login')) {
       hints.ui = {
@@ -299,19 +317,19 @@ function generateAuthoringHints(capability) {
         password_selector: '#password',
         submit_selector: '[data-testid="login-button"]',
         success_selector: '[data-testid="user-menu"]',
-        screenshot: 'auth_flow.png'
+        screenshot: 'auth_flow.png',
       };
-      
+
       hints.api = {
         base_path: '/auth',
         cases: [
           { name: 'login', method: 'POST', path: '/login', expect: 'token' },
           { name: 'logout', method: 'POST', path: '/logout', expect: 'success' },
-          { name: 'register', method: 'POST', path: '/register', expect: 'user_id' }
-        ]
+          { name: 'register', method: 'POST', path: '/register', expect: 'user_id' },
+        ],
       };
     }
-    
+
     // Default web hints
     else {
       const featureName = nameLower.replace(/[^a-z0-9]/g, '_');
@@ -319,11 +337,11 @@ function generateAuthoringHints(capability) {
         page: `/${featureName}.html`,
         card_selector: '[data-testid="item"]',
         title_selector: '[data-testid="title"]',
-        screenshot: `${featureName}.png`
+        screenshot: `${featureName}.png`,
       };
     }
   }
-  
+
   // API-specific hints
   if (capability.type === 'api' || capability.owner === 'api') {
     if (!hints.api.base_path) {
@@ -335,12 +353,12 @@ function generateAuthoringHints(capability) {
           { name: 'get', method: 'GET', path: '/:id', expect: 'object' },
           { name: 'create', method: 'POST', path: '/', expect: 'created' },
           { name: 'update', method: 'PUT', path: '/:id', expect: 'updated' },
-          { name: 'delete', method: 'DELETE', path: '/:id', expect: 'deleted' }
-        ]
+          { name: 'delete', method: 'DELETE', path: '/:id', expect: 'deleted' },
+        ],
       };
     }
   }
-  
+
   return hints;
 }
 
@@ -352,49 +370,49 @@ function generateAuthoringHints(capability) {
  */
 export function generateAuvSpec(capability, idAllocator) {
   const auvId = idAllocator();
-  
+
   const auv = {
     id: auvId,
     title: capability.name,
     owner: capability.owner || 'web',
     status: 'pending',
     tags: generateTags(capability),
-    
+
     acceptance: {
       summary: capability.description || capability.name,
-      criteria: capability.acceptance_criteria || []
+      criteria: capability.acceptance_criteria || [],
     },
-    
+
     tests: {
-      playwright: [`tests/robot/playwright/${auvId.toLowerCase()}.spec.ts`]
+      playwright: [`tests/robot/playwright/${auvId.toLowerCase()}.spec.ts`],
     },
-    
+
     artifacts: {
       required: [
         `runs/${auvId}/ui/${capability.hints?.ui?.screenshot || 'screenshot.png'}`,
-        `runs/${auvId}/perf/lighthouse.json`
-      ]
+        `runs/${auvId}/perf/lighthouse.json`,
+      ],
     },
-    
+
     authoring_hints: capability.hints || {},
-    
+
     dependencies: [],
-    
+
     estimates: estimateBudget({
       name: capability.name,
       type: capability.type,
       acceptance_criteria: capability.acceptance_criteria,
-      priority: capability.priority
-    })
+      priority: capability.priority,
+    }),
   };
-  
+
   // Add API tests if applicable
   if (capability.hints?.api?.cases?.length > 0) {
     auv.tests.api = [`tests/robot/playwright/api/${auvId.toLowerCase()}.spec.ts`];
     // API trace artifact removed - tests don't generate deterministic traces yet
     // auv.artifacts.required.push(`runs/${auvId}/api/trace.json`);
   }
-  
+
   return auv;
 }
 
@@ -405,15 +423,17 @@ export function generateAuvSpec(capability, idAllocator) {
  */
 function generateTags(capability) {
   const tags = [];
-  
+
   // Add type tag
   if (capability.type) tags.push(capability.type);
-  
+
   // Add feature tags based on name/description
   const text = `${capability.name} ${capability.description || ''}`.toLowerCase();
-  
-  if (text.includes('ui') || text.includes('interface') || text.includes('frontend')) tags.push('ui');
-  if (text.includes('api') || text.includes('endpoint') || text.includes('service')) tags.push('api');
+
+  if (text.includes('ui') || text.includes('interface') || text.includes('frontend'))
+    tags.push('ui');
+  if (text.includes('api') || text.includes('endpoint') || text.includes('service'))
+    tags.push('api');
   if (text.includes('product')) tags.push('products');
   if (text.includes('cart')) tags.push('cart');
   if (text.includes('checkout')) tags.push('checkout');
@@ -424,7 +444,7 @@ function generateTags(capability) {
   if (text.includes('filter')) tags.push('filter');
   if (text.includes('data')) tags.push('data');
   if (text.includes('admin')) tags.push('admin');
-  
+
   return [...new Set(tags)]; // Unique tags
 }
 
@@ -436,72 +456,67 @@ function generateTags(capability) {
 export function computeDependencies(auvs) {
   auvs.forEach((auv, index) => {
     const deps = [];
-    
+
     // UI depends on API
     if (auv.owner === 'web' && auv.tags.includes('ui')) {
       // Find corresponding API AUV
-      const apiAuv = auvs.find((a, i) => 
-        i < index && 
-        (a.owner === 'api' || a.tags.includes('api')) &&
-        hasRelatedFunctionality(auv, a)
+      const apiAuv = auvs.find(
+        (a, i) =>
+          i < index &&
+          (a.owner === 'api' || a.tags.includes('api')) &&
+          hasRelatedFunctionality(auv, a),
       );
       if (apiAuv) deps.push(apiAuv.id);
     }
-    
+
     // Checkout depends on cart
     if (auv.title.toLowerCase().includes('checkout')) {
-      const cartAuv = auvs.find(a => 
-        a.id !== auv.id && 
-        a.title.toLowerCase().includes('cart')
-      );
+      const cartAuv = auvs.find((a) => a.id !== auv.id && a.title.toLowerCase().includes('cart'));
       if (cartAuv) deps.push(cartAuv.id);
     }
-    
+
     // Cart depends on products
     if (auv.title.toLowerCase().includes('cart')) {
-      const productAuv = auvs.find(a => 
-        a.id !== auv.id && 
-        (a.title.toLowerCase().includes('product') || a.title.toLowerCase().includes('catalog'))
+      const productAuv = auvs.find(
+        (a) =>
+          a.id !== auv.id &&
+          (a.title.toLowerCase().includes('product') || a.title.toLowerCase().includes('catalog')),
       );
       if (productAuv) deps.push(productAuv.id);
     }
-    
+
     // Auth dependency only for protected areas (profile, vendor/admin, dashboard)
     // Note: checkout is open in mock environment, no auth required
-    const authAuv = auvs.find(a =>
-      a.title.toLowerCase().includes('auth') ||
-      a.title.toLowerCase().includes('login')
+    const authAuv = auvs.find(
+      (a) => a.title.toLowerCase().includes('auth') || a.title.toLowerCase().includes('login'),
     );
     const needsAuth = /profile|vendor|seller|dashboard|order/.test(auv.title.toLowerCase());
     if (authAuv && needsAuth && authAuv.id !== auv.id) {
       if (!deps.includes(authAuv.id)) deps.push(authAuv.id);
     }
-    
+
     // Data consumers depend on data creators
     if (auv.tags.includes('dashboard') || auv.tags.includes('report')) {
-      const dataAuv = auvs.find((a, i) => 
-        i < index && 
-        a.tags.includes('data')
-      );
+      const dataAuv = auvs.find((a, i) => i < index && a.tags.includes('data'));
       if (dataAuv) deps.push(dataAuv.id);
     }
-    
+
     auv.dependencies = [...new Set(deps)]; // Unique dependencies
   });
-  
+
   // Detect and break cycles
   const hasCycle = detectCycles(auvs);
   if (hasCycle) {
     console.warn('[compiler] Dependency cycle detected, flattening some dependencies');
     // Simple cycle breaking: remove back-edges
     auvs.forEach((auv, index) => {
-      auv.dependencies = auv.dependencies.filter(depId => {
-        const depIndex = auvs.findIndex(a => a.id === depId);
+      auv.dependencies = auv.dependencies.filter((depId) => {
+        const depIndex = auvs.findIndex((a) => a.id === depId);
         return depIndex < index; // Only depend on earlier AUVs
       });
     });
   }
-  
+
   return auvs;
 }
 
@@ -513,14 +528,14 @@ export function computeDependencies(auvs) {
  */
 function hasRelatedFunctionality(auv1, auv2) {
   // Check for common tags
-  const commonTags = auv1.tags.filter(t => auv2.tags.includes(t));
+  const commonTags = auv1.tags.filter((t) => auv2.tags.includes(t));
   if (commonTags.length > 0) return true;
-  
+
   // Check for name similarity
   const name1Words = auv1.title.toLowerCase().split(/\s+/);
   const name2Words = auv2.title.toLowerCase().split(/\s+/);
-  const commonWords = name1Words.filter(w => name2Words.includes(w) && w.length > 3);
-  
+  const commonWords = name1Words.filter((w) => name2Words.includes(w) && w.length > 3);
+
   return commonWords.length > 0;
 }
 
@@ -532,29 +547,29 @@ function hasRelatedFunctionality(auv1, auv2) {
 function detectCycles(auvs) {
   const visited = new Set();
   const recursionStack = new Set();
-  
+
   function hasCycleDFS(auvId) {
     if (recursionStack.has(auvId)) return true;
     if (visited.has(auvId)) return false;
-    
+
     visited.add(auvId);
     recursionStack.add(auvId);
-    
-    const auv = auvs.find(a => a.id === auvId);
+
+    const auv = auvs.find((a) => a.id === auvId);
     if (auv && auv.dependencies) {
       for (const depId of auv.dependencies) {
         if (hasCycleDFS(depId)) return true;
       }
     }
-    
+
     recursionStack.delete(auvId);
     return false;
   }
-  
+
   for (const auv of auvs) {
     if (hasCycleDFS(auv.id)) return true;
   }
-  
+
   return false;
 }
 
@@ -565,7 +580,7 @@ function detectCycles(auvs) {
  */
 export function estimateBudget(auv) {
   let complexity = 1;
-  
+
   // Type-based complexity
   const type = auv.type || auv.owner || 'web';
   switch (type) {
@@ -582,7 +597,7 @@ export function estimateBudget(auv) {
       complexity += 4;
       break;
   }
-  
+
   // Feature complexity
   const nameLower = (auv.name || auv.title || '').toLowerCase();
   if (nameLower.includes('auth') || nameLower.includes('security')) complexity += 2;
@@ -591,33 +606,33 @@ export function estimateBudget(auv) {
   if (nameLower.includes('integration')) complexity += 2;
   if (nameLower.includes('dashboard') || nameLower.includes('analytics')) complexity += 2;
   if (nameLower.includes('migration') || nameLower.includes('import')) complexity += 2;
-  
+
   // Acceptance criteria count
   const criteriaCount = auv.acceptance_criteria?.length || auv.acceptance?.criteria?.length || 3;
   complexity += Math.floor(criteriaCount / 3);
-  
+
   // Priority adjustment
   if (auv.priority === 'nice_to_have') {
     complexity = Math.max(1, complexity - 1);
   }
-  
+
   complexity = Math.min(complexity, 10);
-  
+
   // Calculate estimates with 20% buffer
   const baseHours = complexity * 3;
   const timeHours = Math.ceil(baseHours * 1.2);
-  
+
   const baseTokens = complexity * 15000;
   const tokens = Math.ceil(baseTokens * 1.2);
-  
+
   const baseMcp = complexity * 0.03;
   const mcpUsd = Math.round(baseMcp * 1.2 * 100) / 100;
-  
+
   return {
     complexity,
     tokens,
     mcp_usd: mcpUsd,
-    time_hours: timeHours
+    time_hours: timeHours,
   };
 }
 
@@ -629,18 +644,21 @@ export function estimateBudget(auv) {
  */
 export async function writeBacklog(auvs, briefId = 'unknown') {
   const backlogPath = path.join(process.cwd(), 'capabilities/backlog.yaml');
-  
+
   // Calculate totals
-  const totals = auvs.reduce((acc, auv) => {
-    acc.tokens += auv.estimates.tokens;
-    acc.mcp_usd += auv.estimates.mcp_usd;
-    acc.time_hours += auv.estimates.time_hours;
-    return acc;
-  }, { tokens: 0, mcp_usd: 0, time_hours: 0 });
-  
+  const totals = auvs.reduce(
+    (acc, auv) => {
+      acc.tokens += auv.estimates.tokens;
+      acc.mcp_usd += auv.estimates.mcp_usd;
+      acc.time_hours += auv.estimates.time_hours;
+      return acc;
+    },
+    { tokens: 0, mcp_usd: 0, time_hours: 0 },
+  );
+
   // Round totals
   totals.mcp_usd = Math.round(totals.mcp_usd * 100) / 100;
-  
+
   const backlog = {
     version: '1.0',
     generated: new Date().toISOString().split('T')[0],
@@ -657,30 +675,30 @@ export async function writeBacklog(auvs, briefId = 'unknown') {
         complexity: auv.estimates.complexity,
         tokens: auv.estimates.tokens,
         mcp_usd: auv.estimates.mcp_usd,
-        time_hours: auv.estimates.time_hours
-      }
-    }))
+        time_hours: auv.estimates.time_hours,
+      },
+    })),
   };
-  
+
   // Write with idempotent pattern
   const content = YAML.stringify(backlog, {
     lineWidth: 120,
-    minContentWidth: 80
+    minContentWidth: 80,
   });
-  
+
   const hash = crypto.createHash('sha256').update(content).digest('hex');
   const header = `# Swarm1 AUV Backlog\n# Generated from brief: ${briefId}\n# Hash: ${hash}\n\n`;
-  
+
   fs.writeFileSync(backlogPath, header + content, 'utf8');
-  
+
   logHook('BacklogWritten', {
     path: backlogPath,
     briefId,
     auvCount: auvs.length,
     totalHours: totals.time_hours,
-    totalCost: totals.mcp_usd
+    totalCost: totals.mcp_usd,
   });
-  
+
   return backlogPath;
 }
 
@@ -691,12 +709,12 @@ export async function writeBacklog(auvs, briefId = 'unknown') {
  */
 export function writeAuvSpec(auv) {
   const auvPath = path.join(process.cwd(), `capabilities/${auv.id}.yaml`);
-  
+
   const content = YAML.stringify(auv, {
     lineWidth: 120,
-    minContentWidth: 80
+    minContentWidth: 80,
   });
-  
+
   // Use writeIfDifferent pattern
   if (fs.existsSync(auvPath)) {
     const existing = fs.readFileSync(auvPath, 'utf8');
@@ -704,16 +722,16 @@ export function writeAuvSpec(auv) {
       return auvPath; // No change needed
     }
   }
-  
+
   fs.writeFileSync(auvPath, content, 'utf8');
-  
+
   logHook('AuvSpecWritten', {
     path: auvPath,
     id: auv.id,
     title: auv.title,
-    complexity: auv.estimates.complexity
+    complexity: auv.estimates.complexity,
   });
-  
+
   return auvPath;
 }
 
@@ -725,41 +743,41 @@ export function writeAuvSpec(auv) {
  */
 export async function compileBrief(briefPath, options = {}) {
   logHook('CompilationStart', { briefPath, dryRun: options.dryRun });
-  
+
   // Step 1: Parse and validate brief
   const brief = await parseBrief(briefPath);
   const dirName = path.basename(path.dirname(briefPath));
   const fileBase = path.basename(briefPath, path.extname(briefPath));
   const briefId = dirName && dirName !== '.' ? dirName : fileBase;
-  
+
   // Step 2: Extract requirements
   const requirements = await invokeRequirementsAnalyst(briefPath, options);
-  
+
   // Step 3: Extract capabilities
   const capabilities = extractCapabilities(requirements);
-  
+
   // Step 4: Generate AUVs
   let auvCounter = 101; // Start at 0101
   const idAllocator = () => `AUV-${String(auvCounter++).padStart(4, '0')}`;
-  
-  const auvs = capabilities.map(cap => generateAuvSpec(cap, idAllocator));
-  
+
+  const auvs = capabilities.map((cap) => generateAuvSpec(cap, idAllocator));
+
   // Step 5: Compute dependencies
   computeDependencies(auvs);
-  
+
   // Step 6: Write AUV files
-  const auvPaths = auvs.map(auv => writeAuvSpec(auv));
-  
+  const auvPaths = auvs.map((auv) => writeAuvSpec(auv));
+
   // Step 7: Write backlog
   const backlogPath = await writeBacklog(auvs, briefId);
-  
+
   logHook('CompilationComplete', {
     briefId,
     auvCount: auvs.length,
     backlogPath,
-    firstAuv: auvs[0]?.id
+    firstAuv: auvs[0]?.id,
   });
-  
+
   return {
     brief,
     requirements,
@@ -770,8 +788,8 @@ export async function compileBrief(briefPath, options = {}) {
       auvCount: auvs.length,
       totalComplexity: auvs.reduce((sum, a) => sum + a.estimates.complexity, 0),
       totalHours: auvs.reduce((sum, a) => sum + a.estimates.time_hours, 0),
-      totalCost: auvs.reduce((sum, a) => sum + a.estimates.mcp_usd, 0)
-    }
+      totalCost: auvs.reduce((sum, a) => sum + a.estimates.mcp_usd, 0),
+    },
   };
 }
 
@@ -782,20 +800,20 @@ export async function compileBrief(briefPath, options = {}) {
  */
 export function validateAuv(auvId) {
   const auvPath = path.join(process.cwd(), `capabilities/${auvId}.yaml`);
-  
+
   if (!fs.existsSync(auvPath)) {
     return {
       valid: false,
-      errors: [`AUV file not found: ${auvPath}`]
+      errors: [`AUV file not found: ${auvPath}`],
     };
   }
-  
+
   try {
     const content = fs.readFileSync(auvPath, 'utf8');
     const auv = YAML.parse(content);
-    
+
     const errors = [];
-    
+
     // Check required fields
     if (!auv.id) errors.push('Missing id field');
     if (!auv.title) errors.push('Missing title field');
@@ -804,7 +822,7 @@ export function validateAuv(auvId) {
     if (!auv.acceptance?.criteria || auv.acceptance.criteria.length === 0) {
       errors.push('Missing or empty acceptance criteria');
     }
-    
+
     // Check authoring hints
     if (!auv.authoring_hints) {
       errors.push('Missing authoring hints');
@@ -816,21 +834,21 @@ export function validateAuv(auvId) {
         errors.push('Missing API base_path hint');
       }
     }
-    
+
     // Check for circular dependencies
     if (auv.dependencies?.includes(auv.id)) {
       errors.push('AUV has self-dependency');
     }
-    
+
     return {
       valid: errors.length === 0,
       errors,
-      data: errors.length === 0 ? auv : null
+      data: errors.length === 0 ? auv : null,
     };
   } catch (error) {
     return {
       valid: false,
-      errors: [`Failed to parse AUV: ${error.message}`]
+      errors: [`Failed to parse AUV: ${error.message}`],
     };
   }
 }
@@ -843,18 +861,18 @@ export function validateAuv(auvId) {
 function logHook(event, data) {
   const hookPath = path.join(process.cwd(), 'runs/observability/hooks.jsonl');
   const hookDir = path.dirname(hookPath);
-  
+
   if (!fs.existsSync(hookDir)) {
     fs.mkdirSync(hookDir, { recursive: true });
   }
-  
+
   const entry = {
     ts: Date.now() / 1000,
     event,
     module: 'auv_compiler',
-    ...data
+    ...data,
   };
-  
+
   fs.appendFileSync(hookPath, JSON.stringify(entry) + '\n', 'utf8');
 }
 
@@ -867,5 +885,5 @@ export default {
   writeBacklog,
   writeAuvSpec,
   compileBrief,
-  validateAuv
+  validateAuv,
 };

@@ -63,40 +63,44 @@ function createTestServer() {
       process.exit(0);
     });
   `;
-  
+
   const proc = spawn('node', ['-e', serverCode], {
     stdio: ['ignore', 'pipe', 'pipe'],
-    detached: process.platform !== 'win32'
+    detached: process.platform !== 'win32',
   });
-  
+
   if (process.platform !== 'win32') {
-    try { proc.unref(); } catch { /* ignore */ }
+    try {
+      proc.unref();
+    } catch {
+      /* ignore */
+    }
   }
-  
+
   return proc;
 }
 
 async function main() {
   console.log(`Platform: ${process.platform}\n`);
-  
+
   try {
     // Step 1: Test process group creation and termination
     console.log('Step 1: Testing process group termination...\n');
-    
+
     const testProc = createTestServer();
     const pid = testProc.pid;
-    
+
     console.log(`  Created test server with PID: ${pid}`);
     console.log(`  Detached: ${process.platform !== 'win32'}`);
     console.log(`  Unref called: ${process.platform !== 'win32'}`);
-    
+
     // Wait for server to start
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
     // Verify process is running
     const beforeKill = isProcessRunning(pid);
     console.log(`  Process running before kill: ${beforeKill ? '✅' : '❌'}`);
-    
+
     // Kill process group (Unix) or direct kill (Windows)
     if (process.platform !== 'win32' && pid) {
       console.log(`  Killing process group: -${pid}`);
@@ -109,17 +113,17 @@ async function main() {
       console.log(`  Direct kill for Windows: ${pid}`);
       testProc.kill();
     }
-    
+
     // Wait for cleanup
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     // Verify process is terminated
     const afterKill = isProcessRunning(pid);
     console.log(`  Process running after kill: ${afterKill ? '❌' : '✅'}`);
-    
+
     // Step 2: Test the actual DAG runner integration
     console.log('\nStep 2: Testing DAG runner server cleanup...\n');
-    
+
     // Create a minimal graph that starts a server
     const testGraph = {
       version: '1.0',
@@ -129,33 +133,30 @@ async function main() {
           id: 'server',
           type: 'server',
           timeout_ms: 5000,
-          resources: ['server']
-        }
-      ]
+          resources: ['server'],
+        },
+      ],
     };
-    
+
     const graphPath = path.join(__dirname, 'temp-process-test.yaml');
     fs.writeFileSync(graphPath, JSON.stringify(testGraph));
-    
+
     // Run the graph
-    const runnerProc = spawn('node', [
-      'orchestration/graph/runner.mjs',
-      graphPath
-    ], {
+    const runnerProc = spawn('node', ['orchestration/graph/runner.mjs', graphPath], {
       env: {
         ...process.env,
         STAGING_URL: 'http://127.0.0.1:3003',
         API_BASE: 'http://127.0.0.1:3003/api',
-        PORT: '3003'
+        PORT: '3003',
       },
       cwd: path.resolve(__dirname, '..'),
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
-    
+
     let runnerOutput = '';
-    runnerProc.stdout.on('data', data => runnerOutput += data.toString());
-    runnerProc.stderr.on('data', data => runnerOutput += data.toString());
-    
+    runnerProc.stdout.on('data', (data) => (runnerOutput += data.toString()));
+    runnerProc.stderr.on('data', (data) => (runnerOutput += data.toString()));
+
     // Wait for completion
     await new Promise((resolve) => {
       runnerProc.on('exit', resolve);
@@ -165,9 +166,9 @@ async function main() {
         resolve();
       }, 10000);
     });
-    
+
     console.log('  Graph runner completed');
-    
+
     // Check for any lingering processes on port 3003
     try {
       const response = await fetch('http://127.0.0.1:3003/health');
@@ -175,12 +176,12 @@ async function main() {
     } catch {
       console.log('  Port 3003 status: ✅ FREE');
     }
-    
+
     // Cleanup
     if (fs.existsSync(graphPath)) {
       fs.unlinkSync(graphPath);
     }
-    
+
     // Summary
     console.log('\n📊 Summary:');
     console.log('  ✅ Process spawned with detached flag');
@@ -188,11 +189,10 @@ async function main() {
     console.log('  ✅ Process group termination works');
     console.log('  ✅ 250ms grace period for port release');
     console.log('  ✅ Cleanup outside finally block for consistency');
-    
+
     console.log('\n✅ Process group cleanup test PASSED');
-    
+
     process.exit(0);
-    
   } catch (error) {
     console.error('❌ Test error:', error.message);
     process.exit(1);

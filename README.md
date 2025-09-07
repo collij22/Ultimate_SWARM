@@ -4,6 +4,7 @@ General‑purpose **Agent Swarm** that delivers AUV‑sized (Acceptable Unit of 
 contract‑first development, deterministic tests (“User Robot”) and evidence‑based gates (CVF → QA → Security → DevOps).
 
 ## Quickstart
+
 ```bash
 # 1) install deps & browsers
 npm i
@@ -20,6 +21,7 @@ node orchestration/cvf-check.mjs AUV-0001
 ```
 
 ## Key docs
+
 - **CLAUDE.md** — operational guide for Claude Code + sub‑agents.
 - **docs/ARCHITECTURE.md** — system diagram & components.
 - **docs/SWARM1-GUIDE.md** — “what to keep/what to change” strategy (11 sections).
@@ -31,6 +33,7 @@ node orchestration/cvf-check.mjs AUV-0001
 - **capabilities/** — AUV specs.
 
 ## Repo layout (essentials)
+
 ```
 .claude/agents, .claude/aux-agents    # system prompts
 capabilities/                         # AUV specs (id, acceptance, proofs)
@@ -43,7 +46,9 @@ tests/robot/{api,playwright,visual/...}  # user robot
 ```
 
 ## Contributing
+
 See **CONTRIBUTING.md**. New? Start with **docs/ONBOARDING.md**.
 
 ---
-> Swarm1 principle: *small, vertical, provable increments — always runnable, always reversible.*
+
+> Swarm1 principle: _small, vertical, provable increments — always runnable, always reversible._

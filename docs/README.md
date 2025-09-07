@@ -10,7 +10,8 @@
 - **CHANGELOG.md** — Keep‑a‑Changelog + SemVer.
 - **releases/** — Release notes per version.
 
-**Related**  
-- **/mcp/** — Registry (v2) & policies (router).  
-- **/capabilities/** — AUV specs.  
+**Related**
+
+- **/mcp/** — Registry (v2) & policies (router).
+- **/capabilities/** — AUV specs.
 - **/orchestration/** — Policies & CVF gate.

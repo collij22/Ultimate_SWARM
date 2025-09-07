@@ -14,6 +14,7 @@ This prevents performance overhead during simple file reads, questions, or gener
 ---
 
 ## Installed Hooks
+
 - `scripts/hooks/pre_tool.py` — enforces `agents.allowlist` from `mcp/policies.yaml` **[Swarm Mode Only]**
 - `scripts/hooks/post_tool.py` — logs tool outcomes to `runs/observability/hooks.jsonl` **[Swarm Mode Only]**
 - `scripts/hooks/session_start.py` — begins per-session ledgers **[Swarm Mode Only]**
@@ -28,10 +29,11 @@ This prevents performance overhead during simple file reads, questions, or gener
 ---
 
 ### Where the data goes
+
 - Stream: `runs/observability/hooks.jsonl`
 - Result Cards: `runs/<AUV-ID>/result-cards/*.json` (e.g., `session-<ID>.json`, `subagent-<name>-<session>.json`)
 
-----
+---
 
 ## Where artifacts go
 
@@ -82,21 +84,25 @@ Both are **evidence sources** for the CVF/QA gates and for troubleshooting.
 ## Reading the logs (examples)
 
 **Show last 20 events:**
+
 ```bash
 tail -n 20 runs/observability/hooks.jsonl
 ```
 
 **Filter by agent:**
+
 ```bash
 jq 'select(.agent == "rapid-builder")' runs/observability/hooks.jsonl
 ```
 
 **Show tool usage summary:**
+
 ```bash
 jq -r '[.tool] | @csv' runs/observability/hooks.jsonl | sort | uniq -c
 ```
 
 **Check result cards for an AUV:**
+
 ```bash
 ls runs/AUV-0003/result-cards/
 cat runs/AUV-0003/result-cards/session-*.json | jq .

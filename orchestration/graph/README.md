@@ -44,6 +44,7 @@ node orchestration/cli.mjs run-graph my-graph.yaml --resume RUN-abc123
 ### State Management
 
 State persisted to `runs/graph/<RUN-ID>/state.json`:
+
 - Per-node status (queued/running/succeeded/failed)
 - Attempt counts and timestamps
 - Error messages for debugging
@@ -51,6 +52,7 @@ State persisted to `runs/graph/<RUN-ID>/state.json`:
 ### Resource Locks
 
 Prevents conflicts via sorted acquisition:
+
 ```javascript
 const sorted = [...resources].sort();
 for (const resource of sorted) {
@@ -61,18 +63,23 @@ for (const resource of sorted) {
 ## Implementation Details
 
 ### Run ID Generation
+
 Uses Node's built-in `crypto.randomUUID()`:
+
 ```javascript
-crypto.randomUUID().replace(/-/g, '').slice(0, 12)
+crypto.randomUUID().replace(/-/g, '').slice(0, 12);
 ```
 
 ### Process Lifecycle
+
 - Unix: Process groups with `detached: true` and `unref()`
 - Windows: Direct process management
 - Cleanup in finally block ensures no orphaned processes
 
 ### AUV_ID Resolution
+
 Extracts base ID from node IDs:
+
 ```javascript
 const auvFromId = (node.id.match(/^AUV-\d{4}/) || [])[0];
 ```
@@ -116,6 +123,7 @@ edges:
 ## Performance
 
 With 8 AUVs:
+
 - Serial execution: ~4 minutes
 - Parallel (concurrency=3): ~1.5 minutes
 - **60%+ time reduction**
@@ -123,6 +131,7 @@ With 8 AUVs:
 ## Troubleshooting
 
 ### Resume After Crash
+
 ```bash
 # Find run ID in logs or state files
 ls runs/graph/
@@ -131,12 +140,14 @@ node orchestration/cli.mjs run-graph graph.yaml --resume RUN-xyz123
 ```
 
 ### Debug State
+
 ```bash
 # View current state
 cat runs/graph/RUN-xyz123/state.json | jq .
 ```
 
 ### Check Logs
+
 ```bash
 # View observability events
 tail -f runs/observability/hooks.jsonl | jq .

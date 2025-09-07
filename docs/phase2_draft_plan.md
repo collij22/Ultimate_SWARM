@@ -46,10 +46,12 @@ Key Principles: Single-source-of-truth contracts, idempotent generation, artifac
 - orchestration/cli.mjs (extend with plan/validate subcommands)
 
 Optional CI/docs:
+
 - .github/workflows/ci.yml (add compiler unit/integration jobs)
 - CHANGELOG.md (Phase 2 completion entry)
 
 Dependencies:
+
 - Add runtime validator: ajv (keep ajv-cli for scripts)
 - Reuse existing yaml dependency (avoid adding handlebars; generate YAML programmatically for determinism)
 
@@ -58,6 +60,7 @@ Dependencies:
 ## Interfaces & Schemas
 
 ### Brief Schema (draft-07)
+
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -86,6 +89,7 @@ Dependencies:
 ```
 
 ### AUV Template (must match auto-authoring expectations)
+
 ```yaml
 id: AUV-{{ID}}
 title: {{TITLE}}
@@ -157,6 +161,7 @@ estimates:
 ```
 
 Notes:
+
 - UI hint keys align with `orchestration/lib/test_authoring.mjs`.
 - API hints normalize `base_path` by stripping a leading `/api` (generator behavior).
 - Template engine optional; deterministic YAML generation with the existing `yaml` lib is preferred.
@@ -212,33 +217,39 @@ Notes:
 ## Implementation Steps (12 Days)
 
 Day 1–2: Schema & Validator
+
 - Add `contracts/brief.schema.json` (draft-07); write `validate_brief.mjs` with Ajv
 - Sample brief: `briefs/demo-01/brief.md`
 - CLI script: `npm run validate:brief -- briefs/demo-01/brief.md` (ajv-cli)
 - Unit tests (Node test runner) for required/invalid fields
 
 Day 3–4: Requirements Analysis Integration
+
 - Implement `call_agent.mjs` with `invokeRequirementsAnalyst(...)`
 - Define structured output JSON shape (versioned) and persist to `reports/requirements/<RUN-ID>.json`
 - Add `--dry-run` heuristic extractor (e-commerce patterns, keywords, constraints)
 
 Day 5–7: Compiler Core
+
 - Implement `auv_compiler.mjs` functions (parse/extract/generate/deps/estimate/writeBacklog)
 - Ensure `authoring_hints` map to test_authoring’s keys; normalize API paths
 - Id allocation: `AUV-0101..` sequential for the project; ensure uniqueness
 - Emit hooks for traceability
 
 Day 8–9: Templates & Backlog Aggregation
+
 - Create `capabilities/templates/AUV-TEMPLATE.yaml`
 - Generate initial AUV YAML files and a consolidated `backlog.yaml` with totals and statuses
 - Update `docs/ORCHESTRATION.md` with “Brief → Backlog” quickstart
 
 Day 10–11: CLI & E2E Validation
+
 - Extend `orchestration/cli.mjs` with `plan` and `validate auv`
 - E2E: run plan on `briefs/demo-01/brief.md`; then `node orchestration/cli.mjs <FIRST-AUV-ID>`
 - Confirm auto-authored tests exist; run autopilot; ensure CVF PASS for first AUV
 
 Day 12: Polish & Docs
+
 - Add `docs/brief-guide.md`, troubleshooting, estimation methodology
 - Add compiler unit/integration jobs in CI; ensure artifacts uploaded
 - Update `CHANGELOG.md`
@@ -337,6 +348,7 @@ tail -n 50 runs/observability/hooks.jsonl
 - First AUV runs green through autopilot and CVF locally; artifacts present and validated
 - Requirements JSON, hooks, and artifacts are present under `reports/**` and `runs/**`
 - Documentation and CLI UX updated; CI jobs added for compiler tests
+
 # Phase 2 Implementation Plan: Brief Intake & AUV Compiler
 
 ## Executive Summary
@@ -373,30 +385,30 @@ Transform raw Upwork-style briefs into verified, executable AUVs (Atomic Units o
   "properties": {
     "business_goals": {
       "type": "array",
-      "items": {"type": "string"},
+      "items": { "type": "string" },
       "minItems": 1
     },
     "must_have": {
       "type": "array",
-      "items": {"type": "string"},
+      "items": { "type": "string" },
       "minItems": 1
     },
     "nice_to_have": {
       "type": "array",
-      "items": {"type": "string"}
+      "items": { "type": "string" }
     },
     "constraints": {
       "type": "object",
       "properties": {
-        "budget_usd": {"type": "number", "minimum": 0},
-        "timeline_days": {"type": "integer", "minimum": 1},
-        "tech_stack": {"type": "array", "items": {"type": "string"}},
-        "environments": {"type": "array", "items": {"type": "string"}}
+        "budget_usd": { "type": "number", "minimum": 0 },
+        "timeline_days": { "type": "integer", "minimum": 1 },
+        "tech_stack": { "type": "array", "items": { "type": "string" } },
+        "environments": { "type": "array", "items": { "type": "string" } }
       }
     },
     "sample_urls": {
       "type": "array",
-      "items": {"type": "string", "format": "uri"}
+      "items": { "type": "string", "format": "uri" }
     }
   }
 }
@@ -408,44 +420,46 @@ Transform raw Upwork-style briefs into verified, executable AUVs (Atomic Units o
 
 #### Core Functions
 
-| Function | Purpose | Input | Output |
-|----------|---------|-------|--------|
-| `parseBrief(briefPath)` | Load and validate brief | File path | Structured brief object |
-| `extractCapabilities(brief)` | NLP-based feature extraction | Brief object | Capability list |
-| `generateAuvSpec(capability)` | Create AUV YAML | Capability | AUV specification |
-| `computeDependencies(auvs)` | Build dependency DAG | AUV list | Dependency graph |
-| `estimateBudget(auv)` | Calculate resource needs | AUV spec | Cost estimates |
-| `writeBacklog(auvs)` | Generate backlog file | AUV list | backlog.yaml |
+| Function                      | Purpose                      | Input        | Output                  |
+| ----------------------------- | ---------------------------- | ------------ | ----------------------- |
+| `parseBrief(briefPath)`       | Load and validate brief      | File path    | Structured brief object |
+| `extractCapabilities(brief)`  | NLP-based feature extraction | Brief object | Capability list         |
+| `generateAuvSpec(capability)` | Create AUV YAML              | Capability   | AUV specification       |
+| `computeDependencies(auvs)`   | Build dependency DAG         | AUV list     | Dependency graph        |
+| `estimateBudget(auv)`         | Calculate resource needs     | AUV spec     | Cost estimates          |
+| `writeBacklog(auvs)`          | Generate backlog file        | AUV list     | backlog.yaml            |
 
 #### Key Algorithms
 
 **Capability Extraction**:
+
 - Pattern matching for feature keywords
 - Domain-specific templates (e-commerce, SaaS, API)
 - Requirement clustering by functional area
 - Priority scoring based on "must have" vs "nice to have"
 
 **Dependency Detection**:
+
 ```javascript
 // Simplified dependency detection logic
 function detectDependencies(auv, allAuvs) {
   const dependencies = [];
-  
+
   // Data dependencies
   if (auv.requires_data && !auv.creates_data) {
     dependencies.push(findDataProvider(auv, allAuvs));
   }
-  
+
   // UI dependencies on API
   if (auv.type === 'ui' && auv.consumes_api) {
     dependencies.push(findApiProvider(auv, allAuvs));
   }
-  
+
   // Authentication dependencies
   if (auv.requires_auth) {
     dependencies.push(findAuthProvider(allAuvs));
   }
-  
+
   return dependencies.filter(Boolean);
 }
 ```
@@ -457,7 +471,7 @@ function detectDependencies(auv, allAuvs) {
 ```javascript
 export async function invokeRequirementsAnalyst(briefPath) {
   const brief = await fs.readFile(briefPath, 'utf8');
-  
+
   const prompt = `
     Analyze this project brief and extract:
     1. Core capabilities (user-facing features)
@@ -470,17 +484,17 @@ export async function invokeRequirementsAnalyst(briefPath) {
     
     Output as structured JSON.
   `;
-  
+
   // Invoke A2 Requirements Analyst
   const response = await callAgent('requirements-analyst', prompt);
-  
+
   // Parse and validate response
   const requirements = parseAgentResponse(response);
-  
+
   // Store for traceability
   const reportPath = `reports/requirements/${Date.now()}.json`;
   await writeReport(reportPath, requirements);
-  
+
   return requirements;
 }
 ```
@@ -563,21 +577,21 @@ if (command === 'plan') {
     console.error('Usage: node orchestration/cli.mjs plan <brief-path>');
     process.exit(2);
   }
-  
+
   console.log(`[cli] Planning from brief: ${briefPath}`);
-  
+
   // Step 1: Validate brief
   const brief = await validateBrief(briefPath);
-  
+
   // Step 2: Extract requirements via A2 agent
   const requirements = await invokeRequirementsAnalyst(briefPath);
-  
+
   // Step 3: Generate AUVs
   const auvs = await compileAuvs(requirements);
-  
+
   // Step 4: Create backlog
   const backlogPath = await writeBacklog(auvs);
-  
+
   console.log(`[cli] Generated ${auvs.length} AUVs`);
   console.log(`[cli] Backlog written to: ${backlogPath}`);
   console.log(`[cli] Next step: node orchestration/cli.mjs ${auvs[0].id}`);
@@ -587,12 +601,12 @@ if (command === 'plan') {
 if (command === 'validate') {
   const auvId = args[0];
   const validation = await validateAuv(auvId);
-  
+
   if (validation.valid) {
     console.log(` ${auvId} is valid and ready for execution`);
   } else {
     console.error(`L ${auvId} validation failed:`);
-    validation.errors.forEach(err => console.error(`  - ${err}`));
+    validation.errors.forEach((err) => console.error(`  - ${err}`));
   }
 }
 ```
@@ -604,6 +618,7 @@ if (command === 'validate') {
 ### Step 1: Schema & Validation (Day 1-2)
 
 #### Tasks
+
 - [ ] Create `contracts/brief.schema.json` with comprehensive validation
 - [ ] Implement `orchestration/lib/validate_brief.mjs`
 - [ ] Create sample brief in `briefs/demo-01/brief.md`
@@ -611,15 +626,18 @@ if (command === 'validate') {
 - [ ] Document brief format in `docs/brief-guide.md`
 
 #### Sample Brief Structure
+
 ```markdown
 # E-Commerce Platform Development
 
 ## Business Goals
+
 - Launch an online marketplace for handmade goods
 - Support 1000+ artisan vendors
 - Process 10,000 orders/month within 6 months
 
 ## Must Have Features
+
 - Product catalog with search and filters
 - Shopping cart and guest checkout
 - Vendor dashboard for inventory management
@@ -627,11 +645,13 @@ if (command === 'validate') {
 - Payment processing (Stripe)
 
 ## Nice to Have
+
 - Recommendation engine
 - Social sharing features
 - Mobile app
 
 ## Constraints
+
 - Budget: $8,000
 - Timeline: 3 weeks
 - Tech Stack: Node.js, React, PostgreSQL
@@ -641,6 +661,7 @@ if (command === 'validate') {
 ### Step 2: Requirements Analysis Integration (Day 3-4)
 
 #### Tasks
+
 - [ ] Implement `call_agent.mjs` with A2 agent invocation
 - [ ] Define structured output format for requirements
 - [ ] Create requirement � AUV mapping algorithm
@@ -648,6 +669,7 @@ if (command === 'validate') {
 - [ ] Add clarification request handling
 
 #### Output Format
+
 ```json
 {
   "version": "1.0",
@@ -687,6 +709,7 @@ if (command === 'validate') {
 ### Step 3: AUV Compiler Core (Day 5-7)
 
 #### Tasks
+
 - [ ] Build NLP-based requirement parser
 - [ ] Implement capability extraction algorithm
 - [ ] Create dependency detection system
@@ -695,26 +718,27 @@ if (command === 'validate') {
 - [ ] Generate comprehensive authoring hints
 
 #### Complexity Scoring Model
+
 ```javascript
 function calculateComplexity(capability) {
   let score = 1; // Base complexity
-  
+
   // UI complexity
   if (capability.has_ui) score += 2;
   if (capability.interactive_ui) score += 1;
-  
+
   // API complexity
   if (capability.has_api) score += 2;
   if (capability.external_integration) score += 2;
-  
+
   // Data complexity
   if (capability.database_writes) score += 1;
   if (capability.transactions) score += 2;
-  
+
   // Business logic
   if (capability.complex_validation) score += 1;
   if (capability.async_processing) score += 1;
-  
+
   return Math.min(score, 10); // Cap at 10
 }
 ```
@@ -722,6 +746,7 @@ function calculateComplexity(capability) {
 ### Step 4: Template & Generation (Day 8-9)
 
 #### Tasks
+
 - [ ] Create comprehensive AUV template
 - [ ] Build YAML generation with Handlebars
 - [ ] Implement backlog aggregation
@@ -729,6 +754,7 @@ function calculateComplexity(capability) {
 - [ ] Add generated AUV validation
 
 #### Numbering Convention
+
 ```
 AUV-0001 to AUV-0099: Core framework capabilities
 AUV-0100 to AUV-0199: Demo/test capabilities
@@ -743,6 +769,7 @@ etc.
 ### Step 5: Integration & Testing (Day 10-11)
 
 #### Tasks
+
 - [ ] Extend CLI with plan/validate commands
 - [ ] Wire up full pipeline
 - [ ] Test with multiple brief types
@@ -751,6 +778,7 @@ etc.
 - [ ] Add performance benchmarks
 
 #### Test Scenarios
+
 1. **E-commerce Brief** � 5-7 AUVs (catalog, cart, checkout, etc.)
 2. **SaaS Dashboard** � 4-6 AUVs (auth, dashboard, reports, settings)
 3. **API Integration** � 3-4 AUVs (auth, endpoints, webhooks)
@@ -759,6 +787,7 @@ etc.
 ### Step 6: Documentation & Refinement (Day 12)
 
 #### Tasks
+
 - [ ] Update `docs/ORCHESTRATION.md`
 - [ ] Create `docs/brief-guide.md`
 - [ ] Add troubleshooting guide
@@ -771,6 +800,7 @@ etc.
 ##  Success Criteria
 
 ### Functional Requirements
+
 -  Parses 500+ word Upwork brief in <5 seconds
 -  Generates e3 valid AUVs with complete specs
 -  Each AUV includes authoring hints for auto-test generation
@@ -779,6 +809,7 @@ etc.
 -  Full traceability from requirements to AUVs
 
 ### Quality Gates
+
 -  Generated AUVs pass schema validation
 -  Auto-authored tests execute successfully
 -  First AUV passes CVF gate
@@ -788,53 +819,61 @@ etc.
 
 ### Performance Targets
 
-| Operation | Target | Maximum |
-|-----------|--------|---------|
-| Brief parsing | 2s | 5s |
-| Requirement extraction | 5s | 10s |
-| AUV generation (per cap) | 3s | 10s |
-| Full pipeline | 60s | 120s |
-| Memory usage | 200MB | 500MB |
+| Operation                | Target | Maximum |
+| ------------------------ | ------ | ------- |
+| Brief parsing            | 2s     | 5s      |
+| Requirement extraction   | 5s     | 10s     |
+| AUV generation (per cap) | 3s     | 10s     |
+| Full pipeline            | 60s    | 120s    |
+| Memory usage             | 200MB  | 500MB   |
 
 ---
 
 ## =� Risk Mitigation
 
 ### Risk 1: Ambiguous Requirements
+
 **Impact**: High - Incorrect AUVs lead to failed implementation  
 **Probability**: Medium - Common in real-world briefs  
 **Mitigation**:
+
 - A2 agent validation with clarification prompts
 - Confidence scoring on extracted requirements
 - Manual review checkpoint for low-confidence items
-**Fallback**: Human-in-the-loop approval before generation
+  **Fallback**: Human-in-the-loop approval before generation
 
 ### Risk 2: Dependency Complexity
+
 **Impact**: High - Circular dependencies block execution  
 **Probability**: Low - Detectable via algorithms  
 **Mitigation**:
+
 - Topological sort validation
 - Cycle detection algorithm
 - Dependency visualization tool
-**Fallback**: Flatten to sequential execution
+  **Fallback**: Flatten to sequential execution
 
 ### Risk 3: Budget Overruns
+
 **Impact**: Medium - Incomplete delivery or cost overages  
 **Probability**: Medium - Estimation is inherently uncertain  
 **Mitigation**:
+
 - Conservative estimation with 20% buffer
 - Historical data correlation
 - Phased delivery with checkpoints
-**Fallback**: Scope reduction via priority ranking
+  **Fallback**: Scope reduction via priority ranking
 
 ### Risk 4: Test Generation Failures
+
 **Impact**: Medium - Manual intervention needed  
 **Probability**: Low - Authoring hints are comprehensive  
 **Mitigation**:
+
 - Extensive hint templates
 - Fallback to generic test patterns
 - Validation before generation
-**Fallback**: Manual test creation for edge cases
+  **Fallback**: Manual test creation for edge cases
 
 ---
 
@@ -842,30 +881,34 @@ etc.
 
 ### With Existing Systems
 
-| System | Integration Method | Data Flow |
-|--------|-------------------|-----------|
-| Runbook (`auv_delivery.mjs`) | Generated AUVs � Autopilot | AUV YAML � Test execution |
-| Test Authoring (`test_authoring.mjs`) | Authoring hints � Auto-generation | Hints � Playwright specs |
-| CVF (`cvf-check.mjs`) | Artifact requirements | Expected � Actual validation |
-| MCP Router | Budget estimates | Cost � Tool selection |
-| Hooks | Brief intake events | Events � JSONL logs |
+| System                                | Integration Method                | Data Flow                    |
+| ------------------------------------- | --------------------------------- | ---------------------------- |
+| Runbook (`auv_delivery.mjs`)          | Generated AUVs � Autopilot        | AUV YAML � Test execution    |
+| Test Authoring (`test_authoring.mjs`) | Authoring hints � Auto-generation | Hints � Playwright specs     |
+| CVF (`cvf-check.mjs`)                 | Artifact requirements             | Expected � Actual validation |
+| MCP Router                            | Budget estimates                  | Cost � Tool selection        |
+| Hooks                                 | Brief intake events               | Events � JSONL logs          |
 
 ### Enabling Future Phases
 
 **Phase 3 (DAG Runner)**:
+
 - Backlog.yaml becomes DAG input
 - Dependencies enable parallelization
 - Estimates inform resource allocation
 
 **Phase 4 (MCP Router)**:
+
 - Budget estimates drive Primary vs Secondary tool choices
 - Capability requirements map to tool selection
 
 **Phase 5 (Build Lane)**:
+
 - AUVs trigger automated implementation
 - Acceptance criteria guide code generation
 
 **Phase 7 (Packaging)**:
+
 - Requirements traced through to deliverables
 - Compliance matrix generated automatically
 
@@ -874,17 +917,18 @@ etc.
 ## >� Testing Strategy
 
 ### Unit Tests
+
 ```javascript
 describe('Brief Validation', () => {
   test('validates required fields', () => {
     const brief = { business_goals: ['Goal 1'] };
     expect(() => validateBrief(brief)).toThrow('must_have is required');
   });
-  
+
   test('accepts valid brief', () => {
     const brief = {
       business_goals: ['Goal 1'],
-      must_have: ['Feature 1']
+      must_have: ['Feature 1'],
     };
     expect(validateBrief(brief)).toBe(true);
   });
@@ -894,9 +938,7 @@ describe('Capability Extraction', () => {
   test('extracts e-commerce capabilities', () => {
     const brief = 'Build shopping cart with checkout';
     const capabilities = extractCapabilities(brief);
-    expect(capabilities).toContainEqual(
-      expect.objectContaining({ name: 'Shopping Cart' })
-    );
+    expect(capabilities).toContainEqual(expect.objectContaining({ name: 'Shopping Cart' }));
   });
 });
 
@@ -911,12 +953,14 @@ describe('Dependency Detection', () => {
 ```
 
 ### Integration Tests
+
 - Brief file � Requirements extraction
 - Requirements � AUV generation
 - AUV � Test authoring compatibility
 - Backlog � DAG readiness
 
 ### E2E Validation
+
 ```bash
 # Real brief to working system
 cp samples/upwork-brief.md briefs/test-01/brief.md
@@ -930,6 +974,7 @@ node orchestration/cli.mjs AUV-0101  # First generated AUV
 ## =� Deliverable Checklist
 
 ### Files to Create
+
 - [ ] `contracts/brief.schema.json` - Brief validation schema
 - [ ] `orchestration/lib/auv_compiler.mjs` - Core compiler logic
 - [ ] `orchestration/lib/call_agent.mjs` - A2 agent integration
@@ -943,6 +988,7 @@ node orchestration/cli.mjs AUV-0101  # First generated AUV
 - [ ] `docs/brief-guide.md` - User documentation
 
 ### Files to Update
+
 - [ ] `orchestration/cli.mjs` - Add plan/validate commands
 - [ ] `package.json` - Add dependencies (ajv, handlebars)
 - [ ] `docs/ORCHESTRATION.md` - Document compiler flow
@@ -955,14 +1001,17 @@ node orchestration/cli.mjs AUV-0101  # First generated AUV
 ## =� Example Input/Output
 
 ### Input Brief (Excerpt)
+
 ```markdown
 # Project: Artisan Marketplace
 
 ## Overview
-Create an online marketplace connecting artisan craftspeople with customers 
+
+Create an online marketplace connecting artisan craftspeople with customers
 seeking unique, handmade items. Think Etsy but focused on local artisans.
 
 ## Must Have Features
+
 1. Product catalog with search and filtering
    - Search by keyword, category, price range
    - Sort by relevance, price, newest
@@ -975,18 +1024,21 @@ seeking unique, handmade items. Think Etsy but focused on local artisans.
    - Order fulfillment tracking
 
 ## Technical Requirements
+
 - Handle 1000+ products
 - Support 100+ concurrent users
 - Mobile-responsive design
 - Secure payment processing (PCI compliant)
 
 ## Budget & Timeline
+
 - Budget: $8,000
 - Timeline: 3 weeks
 - Preferred stack: Node.js, React, PostgreSQL
 ```
 
 ### Generated AUVs
+
 ```yaml
 # AUV-0101: Product Catalog with Search
 id: AUV-0101
@@ -1045,8 +1097,9 @@ estimates:
 ```
 
 ### Generated Backlog
+
 ```yaml
-version: "1.0"
+version: '1.0'
 generated: 2024-12-XX
 brief_id: demo-01
 total_estimates:
@@ -1060,31 +1113,31 @@ backlog:
     priority: 1
     depends_on: []
     status: pending
-    
+
   - id: AUV-0102
     title: Shopping cart management
     priority: 1
     depends_on: [AUV-0101]
     status: pending
-    
+
   - id: AUV-0103
     title: Guest checkout flow
     priority: 1
     depends_on: [AUV-0102]
     status: pending
-    
+
   - id: AUV-0104
     title: Vendor signup and profiles
     priority: 2
     depends_on: []
     status: pending
-    
+
   - id: AUV-0105
     title: Product listing management
     priority: 2
     depends_on: [AUV-0104, AUV-0101]
     status: pending
-    
+
   - id: AUV-0106
     title: Order fulfillment tracking
     priority: 2
@@ -1097,6 +1150,7 @@ backlog:
 ## =� Next Steps After Phase 2
 
 ### Immediate Actions
+
 1. Run compiler on first real brief
 2. Execute generated AUVs through autopilot
 3. Validate CVF gates pass
@@ -1104,12 +1158,14 @@ backlog:
 5. Refine templates based on results
 
 ### Phase 3 Preparation
+
 - Design DAG execution model
 - Plan parallelization strategy
 - Define resource locking mechanism
 - Create state persistence format
 
 ### Continuous Improvement
+
 - Collect metrics on estimation accuracy
 - Build corpus of brief � AUV mappings
 - Refine NLP patterns

@@ -257,7 +257,7 @@ components:
         card:
           type: string
           description: Mock card number (no real processing)
-          example: "4242424242424242"
+          example: '4242424242424242'
       required: [name, email, address, card]
 
     OrderAccepted:

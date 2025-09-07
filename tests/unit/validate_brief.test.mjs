@@ -12,10 +12,10 @@ describe('validate_brief', () => {
       nice_to_have: ['Reviews system'],
       constraints: {
         budget_usd: 5000,
-        timeline_days: 30
-      }
+        timeline_days: 30,
+      },
     };
-    
+
     const result = validateBrief(brief);
     assert.strictEqual(result.valid, true);
     assert.strictEqual(result.errors.length, 0);
@@ -23,12 +23,12 @@ describe('validate_brief', () => {
 
   it('should catch missing required fields', () => {
     const brief = {
-      must_have: ['Product catalog']
+      must_have: ['Product catalog'],
     };
-    
+
     const result = validateBrief(brief);
     assert.strictEqual(result.valid, false);
-    assert(result.errors.some(e => e.includes('business_goals')));
+    assert(result.errors.some((e) => e.includes('business_goals')));
   });
 
   it('should validate budget constraints', () => {
@@ -36,13 +36,13 @@ describe('validate_brief', () => {
       business_goals: ['Build platform'],
       must_have: ['Feature A'],
       constraints: {
-        budget_usd: 'invalid'
-      }
+        budget_usd: 'invalid',
+      },
     };
-    
+
     const result = validateBrief(brief);
     assert.strictEqual(result.valid, false);
-    assert(result.errors.some(e => e.includes('budget_usd')));
+    assert(result.errors.some((e) => e.includes('budget_usd')));
   });
 
   it('should parse markdown brief format', () => {
@@ -66,7 +66,7 @@ describe('validate_brief', () => {
 - Budget: $5000
 - Timeline: 30 days
 `;
-    
+
     const brief = parseBriefFromMarkdown(mdContent);
     assert(Array.isArray(brief.business_goals));
     assert(brief.business_goals.length === 2);
@@ -81,29 +81,32 @@ function parseBriefFromMarkdown(content) {
     business_goals: [],
     must_have: [],
     nice_to_have: [],
-    constraints: {}
+    constraints: {},
   };
 
   const sections = content.split(/^## /m);
-  
+
   for (const section of sections) {
     const lines = section.trim().split('\n');
     const header = lines[0]?.toLowerCase();
-    
+
     if (header?.includes('business') || header?.includes('goal')) {
-      brief.business_goals = lines.slice(1)
-        .filter(l => l.trim().startsWith('-'))
-        .map(l => l.replace(/^-\s*/, '').trim());
+      brief.business_goals = lines
+        .slice(1)
+        .filter((l) => l.trim().startsWith('-'))
+        .map((l) => l.replace(/^-\s*/, '').trim());
     } else if (header?.includes('must')) {
-      brief.must_have = lines.slice(1)
-        .filter(l => l.trim().startsWith('-'))
-        .map(l => l.replace(/^-\s*/, '').trim());
+      brief.must_have = lines
+        .slice(1)
+        .filter((l) => l.trim().startsWith('-'))
+        .map((l) => l.replace(/^-\s*/, '').trim());
     } else if (header?.includes('nice')) {
-      brief.nice_to_have = lines.slice(1)
-        .filter(l => l.trim().startsWith('-'))
-        .map(l => l.replace(/^-\s*/, '').trim());
+      brief.nice_to_have = lines
+        .slice(1)
+        .filter((l) => l.trim().startsWith('-'))
+        .map((l) => l.replace(/^-\s*/, '').trim());
     } else if (header?.includes('constraint')) {
-      lines.slice(1).forEach(line => {
+      lines.slice(1).forEach((line) => {
         if (line.includes('Budget:')) {
           const match = line.match(/\$?([\d,]+)/);
           if (match) brief.constraints.budget_usd = parseInt(match[1].replace(/,/g, ''));
@@ -115,6 +118,6 @@ function parseBriefFromMarkdown(content) {
       });
     }
   }
-  
+
   return brief;
 }

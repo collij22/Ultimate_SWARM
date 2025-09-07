@@ -9,52 +9,52 @@ parallelization:
   # Recommended ranges by task complexity. The Orchestrator may choose any value
   # up to max_parallel_agents, but should stay within these tier hints.
   tiers:
-    simple: 1-2          # trivial AUVs
-    moderate: 2-4        # typical AUVs (default)
-    complex: 5-8         # only if AUV is decomposed into independent lanes and contracts are fixed
+    simple: 1-2 # trivial AUVs
+    moderate: 2-4 # typical AUVs (default)
+    complex: 5-8 # only if AUV is decomposed into independent lanes and contracts are fixed
 
   # Guardrails to determine if parallelization is allowed.
   guardrails:
-    require_contracts_fixed: true      # API/interface contracts must be finalized before parallel work
-    forbid_shared_write_paths: true    # disallow two agents writing to the same file/glob at once
-    serialize_db_migrations: true      # DB schema changes run alone
-    serialize_package_manifest: true   # e.g., package.json / lockfile updates run alone
-    cancel_on_first_p0_failure: true   # fan-in cancels remaining lanes on a critical failure
+    require_contracts_fixed: true # API/interface contracts must be finalized before parallel work
+    forbid_shared_write_paths: true # disallow two agents writing to the same file/glob at once
+    serialize_db_migrations: true # DB schema changes run alone
+    serialize_package_manifest: true # e.g., package.json / lockfile updates run alone
+    cancel_on_first_p0_failure: true # fan-in cancels remaining lanes on a critical failure
 
   # Declare common "lanes" with their write scopes to help detect conflicts.
   lanes:
     frontend_wiring:
       writes:
-        - "src/frontend/**"
+        - 'src/frontend/**'
     backend_endpoint:
       writes:
-        - "api/**"
-        - "src/server/**"
+        - 'api/**'
+        - 'src/server/**'
     robot_tests:
       writes:
-        - "tests/robot/**"
+        - 'tests/robot/**'
     docs:
       writes:
-        - "docs/**"
+        - 'docs/**'
 
   # Optional: files/globs that always require serialization (high contention risk).
   serialize_globs:
-    - "migrations/**"
-    - "package.json"
-    - "pnpm-lock.yaml"
-    - "yarn.lock"
-    - "requirements.txt"
-    - "Dockerfile"
-    - "infra/**"
+    - 'migrations/**'
+    - 'package.json'
+    - 'pnpm-lock.yaml'
+    - 'yarn.lock'
+    - 'requirements.txt'
+    - 'Dockerfile'
+    - 'infra/**'
 
 scheduling:
   priority_order:
-    - blocking_fixes      # red builds, failing gates
-    - auv_p0              # highest value/critical AUVs
-    - security            # security gates / Semgrep fixes
+    - blocking_fixes # red builds, failing gates
+    - auv_p0 # highest value/critical AUVs
+    - security # security gates / Semgrep fixes
     - auv_p1
     - docs
-  preemption: true         # allow the Orchestrator to pause/abort low-priority lanes when a higher priority task arrives
+  preemption: true # allow the Orchestrator to pause/abort low-priority lanes when a higher priority task arrives
 
 budgets:
   # Soft limits the Orchestrator should respect; per-agent and overall.
@@ -75,6 +75,6 @@ fan_in:
 
 # Safety switches for production-like actions.
 safety:
-  allow_production_mutations: false         # default deny; override per-environment
-  require_stripe_test_mode: true            # payments MCP must be in test mode unless explicitly allowed
-  allow_external_crawling: false            # disable heavy crawling by default (enable per-project in /mcp/policies.yaml)
+  allow_production_mutations: false # default deny; override per-environment
+  require_stripe_test_mode: true # payments MCP must be in test mode unless explicitly allowed
+  allow_external_crawling: false # disable heavy crawling by default (enable per-project in /mcp/policies.yaml)

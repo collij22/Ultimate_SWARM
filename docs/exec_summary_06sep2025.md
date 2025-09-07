@@ -1,6 +1,6 @@
 # Swarm1 — Executive Overview
 
-*Status, How It Works, What's Next*
+_Status, How It Works, What's Next_
 
 ## Why Swarm1 exists
 
@@ -28,14 +28,16 @@ It combines:
 **All AUVs (0002-0005) passing in CI with full validation**
 
 **Hardened Runbook automation** (`orchestration/cli.mjs`) that:
+
 1. Checks for existing healthy server (prevents double starts)
-2. Auto-authors tests from capability hints 
+2. Auto-authors tests from capability hints
 3. Runs Playwright with retry logic for transients
-4. Runs Lighthouse 
+4. Runs Lighthouse
 5. Enforces CVF with proper ENV propagation
 6. Writes versioned result cards with typed exit codes (101-105)
 
 **Phase 1 Improvements:**
+
 - **Validation Pipeline**: Result cards validated with ajv-cli against schemas
 - **Artifact Consistency**: Automated verification that CVF expectations match runbook artifacts
 - **CI Simplification**: All AUVs use autopilot as single source of truth
@@ -43,6 +45,7 @@ It combines:
 - **Server Management**: Health check prevents duplicate instances
 
 **Additional components:**
+
 - Auto test authoring (`orchestration/lib/test_authoring.mjs`) from `capabilities/<AUV>.yaml`
 - CVF gate (`orchestration/cvf-check.mjs`) that codifies "done" by checking required artifacts per AUV
 - CI pipeline (Playwright + Lighthouse + CVF + artifact upload) for ALL AUV-0002..0005
@@ -54,24 +57,31 @@ It combines:
 ### ⛳ What we DON'T have yet (gaps to full autonomy)
 
 **Brief → Capabilities pipeline**
+
 - Automated intake that reads a client brief and emits AUV plans (with acceptance criteria & authoring hints)
 
 **Task-graph execution**
+
 - A DAG that coordinates parallel agents with dependencies, retries, and repair loops
 
 **Autonomous build lane**
+
 - Agents that write code, open PRs, iterate until tests/CVF pass (today this step is still largely human-driven)
 
 **Dynamic MCP routing**
+
 - Cost/side-effect aware tool selection (primary vs secondary) at runtime with policy enforcement
 
 **Packaging & client delivery**
+
 - Release bundles (ZIPs, docs, videos, verification report) generated automatically
 
 **Security/compliance & cost guardrails**
+
 - Semgrep security gate, budgets, SBOM/license checks, secret hygiene
 
 **Durable workflow engine**
+
 - Background execution (resume, retry, checkpointing) beyond the current single-run runbook
 
 ## How it works today (end-to-end)
@@ -83,6 +93,7 @@ node orchestration/cli.mjs AUV-000x
 ```
 
 The runbook:
+
 1. Starts mock server and health-checks it
 2. Reads `capabilities/<AUV>.yaml` and auto-generates tests if missing
 3. Runs Playwright UI/API tests headless, capturing artifacts
@@ -144,6 +155,7 @@ This ensures specs, runs tests, and fails until implementation exists.
 ### Step 3 — Package and deliver
 
 **Compose a release bundle:**
+
 - Source + build outputs, verification report, artifacts pack, and README for deployment
 - Update `CHANGELOG` and `docs/verify.md` with the new AUVs
 - Tag a release (`0.3.0-demo01`) and generate client-facing Statement of Conformance

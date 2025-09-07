@@ -11,11 +11,11 @@ import { spawn } from 'child_process';
 export async function invokeRequirementsAnalyst(briefPath, options = {}) {
   const briefContent = fs.readFileSync(briefPath, 'utf8');
   const runId = `REQ-${Date.now()}`;
-  
+
   logHook('RequirementsAnalysisStart', { briefPath, runId, dryRun: options.dryRun });
-  
+
   let requirements;
-  
+
   if (options.dryRun) {
     // Use heuristic extraction for dry-run mode
     requirements = await extractRequirementsHeuristic(briefContent, briefPath);
@@ -24,24 +24,24 @@ export async function invokeRequirementsAnalyst(briefPath, options = {}) {
     // For now, use enhanced heuristic extraction
     requirements = await extractRequirementsEnhanced(briefContent, briefPath);
   }
-  
+
   // Persist requirements to reports
   const reportPath = path.join(process.cwd(), `reports/requirements/${runId}.json`);
   const reportDir = path.dirname(reportPath);
-  
+
   if (!fs.existsSync(reportDir)) {
     fs.mkdirSync(reportDir, { recursive: true });
   }
-  
+
   fs.writeFileSync(reportPath, JSON.stringify(requirements, null, 2), 'utf8');
-  
+
   logHook('RequirementsAnalysisComplete', {
     runId,
     reportPath,
     capabilityCount: requirements.capabilities.length,
-    riskCount: requirements.risks.length
+    riskCount: requirements.risks.length,
   });
-  
+
   return requirements;
 }
 
@@ -62,10 +62,10 @@ async function extractRequirementsHeuristic(content, briefPath) {
     estimates: {
       total_complexity: 0,
       total_hours: 0,
-      confidence: 0.7
-    }
+      confidence: 0.7,
+    },
   };
-  
+
   // Extract capabilities from common patterns
   const patterns = {
     ecommerce: {
@@ -79,8 +79,8 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'Products displayed in grid/list view',
             'Product details accessible',
-            'Responsive design for mobile/desktop'
-          ]
+            'Responsive design for mobile/desktop',
+          ],
         },
         {
           name: 'Shopping Cart',
@@ -90,8 +90,8 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'Add/remove items from cart',
             'Update quantities',
-            'Calculate totals with tax'
-          ]
+            'Calculate totals with tax',
+          ],
         },
         {
           name: 'Checkout Flow',
@@ -101,13 +101,22 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'Guest checkout option',
             'Payment processing',
-            'Order confirmation'
-          ]
-        }
-      ]
+            'Order confirmation',
+          ],
+        },
+      ],
     },
     saas: {
-      keywords: ['dashboard', 'user', 'auth', 'login', 'account', 'subscription', 'analytics', 'report'],
+      keywords: [
+        'dashboard',
+        'user',
+        'auth',
+        'login',
+        'account',
+        'subscription',
+        'analytics',
+        'report',
+      ],
       capabilities: [
         {
           name: 'User Authentication',
@@ -117,8 +126,8 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'User registration with email verification',
             'Secure login/logout',
-            'Password reset functionality'
-          ]
+            'Password reset functionality',
+          ],
         },
         {
           name: 'Dashboard',
@@ -128,21 +137,17 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'Overview metrics displayed',
             'Navigation to features',
-            'Responsive layout'
-          ]
+            'Responsive layout',
+          ],
         },
         {
           name: 'Analytics & Reports',
           type: 'web',
           priority: 'nice_to_have',
           description: 'Data visualization and insights',
-          acceptance_criteria: [
-            'Generate reports',
-            'Export data',
-            'Interactive charts'
-          ]
-        }
-      ]
+          acceptance_criteria: ['Generate reports', 'Export data', 'Interactive charts'],
+        },
+      ],
     },
     api: {
       keywords: ['api', 'endpoint', 'rest', 'graphql', 'webhook', 'integration', 'service'],
@@ -155,8 +160,8 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'RESTful endpoints',
             'Authentication/authorization',
-            'Rate limiting'
-          ]
+            'Rate limiting',
+          ],
         },
         {
           name: 'Data Endpoints',
@@ -166,10 +171,10 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'Create/Read/Update/Delete operations',
             'Input validation',
-            'Error handling'
-          ]
-        }
-      ]
+            'Error handling',
+          ],
+        },
+      ],
     },
     data: {
       keywords: ['database', 'data', 'pipeline', 'etl', 'warehouse', 'analytics', 'migration'],
@@ -182,8 +187,8 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'Multiple format support',
             'Validation and cleaning',
-            'Error handling'
-          ]
+            'Error handling',
+          ],
         },
         {
           name: 'Data Processing',
@@ -193,26 +198,26 @@ async function extractRequirementsHeuristic(content, briefPath) {
           acceptance_criteria: [
             'Transformation rules',
             'Data quality checks',
-            'Performance optimization'
-          ]
-        }
-      ]
-    }
+            'Performance optimization',
+          ],
+        },
+      ],
+    },
   };
-  
+
   // Detect project type from keywords
   const contentLower = content.toLowerCase();
   let detectedTypes = [];
   let allCapabilities = [];
-  
+
   for (const [type, config] of Object.entries(patterns)) {
-    const keywordCount = config.keywords.filter(kw => contentLower.includes(kw)).length;
+    const keywordCount = config.keywords.filter((kw) => contentLower.includes(kw)).length;
     if (keywordCount >= 2) {
       detectedTypes.push(type);
       allCapabilities.push(...config.capabilities);
     }
   }
-  
+
   // If no specific type detected, use generic capabilities
   if (allCapabilities.length === 0) {
     allCapabilities = [
@@ -224,8 +229,8 @@ async function extractRequirementsHeuristic(content, briefPath) {
         acceptance_criteria: [
           'Primary user flows work end-to-end',
           'Data persistence',
-          'Error handling'
-        ]
+          'Error handling',
+        ],
       },
       {
         name: 'User Interface',
@@ -235,23 +240,19 @@ async function extractRequirementsHeuristic(content, briefPath) {
         acceptance_criteria: [
           'Responsive design',
           'Intuitive navigation',
-          'Accessibility compliance'
-        ]
+          'Accessibility compliance',
+        ],
       },
       {
         name: 'Backend Services',
         type: 'api',
         priority: 'must_have',
         description: 'Server-side logic',
-        acceptance_criteria: [
-          'API endpoints functional',
-          'Data validation',
-          'Security measures'
-        ]
-      }
+        acceptance_criteria: ['API endpoints functional', 'Data validation', 'Security measures'],
+      },
     ];
   }
-  
+
   // Assign IDs and calculate complexity
   allCapabilities.forEach((cap, index) => {
     cap.id = `CAP-${String(index + 1).padStart(3, '0')}`;
@@ -261,13 +262,13 @@ async function extractRequirementsHeuristic(content, briefPath) {
     requirements.estimates.total_complexity += cap.complexity;
     requirements.estimates.total_hours += cap.estimated_hours;
   });
-  
+
   // Detect dependencies
   requirements.dependencies = detectCapabilityDependencies(requirements.capabilities);
-  
+
   // Identify common risks
   requirements.risks = identifyRisks(content, requirements.capabilities);
-  
+
   return requirements;
 }
 
@@ -280,31 +281,37 @@ async function extractRequirementsHeuristic(content, briefPath) {
 async function extractRequirementsEnhanced(content, briefPath) {
   // Start with heuristic extraction
   const requirements = await extractRequirementsHeuristic(content, briefPath);
-  
+
   // Enhance with more sophisticated analysis
   // Parse structured sections if present
   const sections = parseMarkdownSections(content);
-  
+
   // Refine capabilities based on must-have features
   if (sections.mustHave && sections.mustHave.length > 0) {
     requirements.capabilities = mapFeaturesToCapabilities(sections.mustHave, sections.niceToHave);
   }
-  
+
   // Extract technical requirements
   if (sections.technical) {
     requirements.technical_requirements = extractTechnicalRequirements(sections.technical);
   }
-  
+
   // Extract constraints
   if (sections.constraints) {
     requirements.constraints = sections.constraints;
   }
-  
+
   // Re-calculate estimates based on refined data
-  requirements.estimates.total_complexity = requirements.capabilities.reduce((sum, cap) => sum + cap.complexity, 0);
-  requirements.estimates.total_hours = requirements.capabilities.reduce((sum, cap) => sum + cap.estimated_hours, 0);
+  requirements.estimates.total_complexity = requirements.capabilities.reduce(
+    (sum, cap) => sum + cap.complexity,
+    0,
+  );
+  requirements.estimates.total_hours = requirements.capabilities.reduce(
+    (sum, cap) => sum + cap.estimated_hours,
+    0,
+  );
   requirements.estimates.confidence = 0.85; // Higher confidence with enhanced analysis
-  
+
   return requirements;
 }
 
@@ -315,31 +322,37 @@ async function extractRequirementsEnhanced(content, briefPath) {
  */
 function parseMarkdownSections(content) {
   const sections = {};
-  
+
   // Extract must-have features
-  const mustHaveMatch = content.match(/##\s*Must[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const mustHaveMatch = content.match(
+    /##\s*Must[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i,
+  );
   if (mustHaveMatch) {
     sections.mustHave = extractListItems(mustHaveMatch[1]);
   }
-  
+
   // Extract nice-to-have features
-  const niceToHaveMatch = content.match(/##\s*Nice[\s-]?to[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const niceToHaveMatch = content.match(
+    /##\s*Nice[\s-]?to[\s-]?Have(?:\s+Features?)?\s*\n([\s\S]*?)(?=\n##|$)/i,
+  );
   if (niceToHaveMatch) {
     sections.niceToHave = extractListItems(niceToHaveMatch[1]);
   }
-  
+
   // Extract technical requirements
   const techMatch = content.match(/##\s*Technical\s+Requirements?\s*\n([\s\S]*?)(?=\n##|$)/i);
   if (techMatch) {
     sections.technical = techMatch[1];
   }
-  
+
   // Extract constraints
-  const constraintsMatch = content.match(/##\s*(?:Constraints?|Budget\s*&?\s*Timeline)\s*\n([\s\S]*?)(?=\n##|$)/i);
+  const constraintsMatch = content.match(
+    /##\s*(?:Constraints?|Budget\s*&?\s*Timeline)\s*\n([\s\S]*?)(?=\n##|$)/i,
+  );
   if (constraintsMatch) {
     sections.constraints = parseConstraints(constraintsMatch[1]);
   }
-  
+
   return sections;
 }
 
@@ -352,11 +365,11 @@ function extractListItems(text) {
   const items = [];
   const listPattern = /^[\s]*(?:[-*+]|\d+\.)\s+(.+)$/gm;
   let match;
-  
+
   while ((match = listPattern.exec(text)) !== null) {
     items.push(match[1].trim());
   }
-  
+
   return items;
 }
 
@@ -367,13 +380,13 @@ function extractListItems(text) {
  */
 function parseConstraints(text) {
   const constraints = {};
-  
+
   // Budget
   const budgetMatch = text.match(/[Bb]udget[:\s]*\$?([\d,]+(?:\.\d+)?)/);
   if (budgetMatch) {
     constraints.budget_usd = parseFloat(budgetMatch[1].replace(/,/g, ''));
   }
-  
+
   // Timeline
   const timelineMatch = text.match(/[Tt]imeline[:\s]*(\d+)\s*(?:days?|weeks?)/i);
   if (timelineMatch) {
@@ -381,7 +394,7 @@ function parseConstraints(text) {
     const unit = timelineMatch[0].toLowerCase();
     constraints.timeline_days = unit.includes('week') ? value * 7 : value;
   }
-  
+
   return constraints;
 }
 
@@ -394,19 +407,19 @@ function parseConstraints(text) {
 function mapFeaturesToCapabilities(mustHave, niceToHave = []) {
   const capabilities = [];
   let capId = 1;
-  
+
   // Process must-have features
-  mustHave.forEach(feature => {
+  mustHave.forEach((feature) => {
     const cap = featureToCapability(feature, 'must_have', capId++);
     if (cap) capabilities.push(cap);
   });
-  
+
   // Process nice-to-have features
-  niceToHave.forEach(feature => {
+  niceToHave.forEach((feature) => {
     const cap = featureToCapability(feature, 'nice_to_have', capId++);
     if (cap) capabilities.push(cap);
   });
-  
+
   return capabilities;
 }
 
@@ -419,26 +432,30 @@ function mapFeaturesToCapabilities(mustHave, niceToHave = []) {
  */
 function featureToCapability(feature, priority, id) {
   const featureLower = feature.toLowerCase();
-  
+
   // Determine capability type
   let type = 'web'; // default
   if (featureLower.includes('api') || featureLower.includes('endpoint')) {
     type = 'api';
   } else if (featureLower.includes('database') || featureLower.includes('data')) {
     type = 'data';
-  } else if (featureLower.includes('ai') || featureLower.includes('ml') || featureLower.includes('model')) {
+  } else if (
+    featureLower.includes('ai') ||
+    featureLower.includes('ml') ||
+    featureLower.includes('model')
+  ) {
     type = 'ai';
   }
-  
+
   // Extract name (first noun phrase or key terms)
   let name = feature.split(/[,.]/)[0].trim();
   if (name.length > 50) {
     name = name.substring(0, 50) + '...';
   }
-  
+
   // Generate acceptance criteria based on feature keywords
   const criteria = generateAcceptanceCriteria(feature);
-  
+
   const capability = {
     id: `CAP-${String(id).padStart(3, '0')}`,
     name,
@@ -447,11 +464,11 @@ function featureToCapability(feature, priority, id) {
     description: feature,
     acceptance_criteria: criteria,
     complexity: estimateComplexity({ name, type, acceptance_criteria: criteria }),
-    estimated_hours: 0
+    estimated_hours: 0,
   };
-  
+
   capability.estimated_hours = capability.complexity * 3;
-  
+
   return capability;
 }
 
@@ -463,49 +480,49 @@ function featureToCapability(feature, priority, id) {
 function generateAcceptanceCriteria(feature) {
   const criteria = [];
   const featureLower = feature.toLowerCase();
-  
+
   // Common patterns
   if (featureLower.includes('search')) {
     criteria.push('Search returns relevant results');
     criteria.push('Search response time under 2 seconds');
   }
-  
+
   if (featureLower.includes('filter')) {
     criteria.push('Filters update results dynamically');
     criteria.push('Multiple filters can be combined');
   }
-  
+
   if (featureLower.includes('cart') || featureLower.includes('basket')) {
     criteria.push('Items can be added/removed from cart');
     criteria.push('Cart persists across sessions');
     criteria.push('Cart totals calculated correctly');
   }
-  
+
   if (featureLower.includes('checkout') || featureLower.includes('payment')) {
     criteria.push('Payment information validated');
     criteria.push('Order confirmation generated');
     criteria.push('Payment processed securely');
   }
-  
+
   if (featureLower.includes('dashboard')) {
     criteria.push('Key metrics displayed prominently');
     criteria.push('Data refreshes automatically');
     criteria.push('Responsive layout for all devices');
   }
-  
+
   if (featureLower.includes('auth') || featureLower.includes('login')) {
     criteria.push('Secure authentication implemented');
     criteria.push('Session management works correctly');
     criteria.push('Password reset functionality available');
   }
-  
+
   // Default criteria if no specific patterns matched
   if (criteria.length === 0) {
     criteria.push('Feature works as described');
     criteria.push('Error cases handled gracefully');
     criteria.push('Performance meets requirements');
   }
-  
+
   return criteria;
 }
 
@@ -519,31 +536,47 @@ function extractTechnicalRequirements(text) {
     performance: [],
     scalability: [],
     security: [],
-    compatibility: []
+    compatibility: [],
   };
-  
+
   const lines = text.split('\n');
-  
-  lines.forEach(line => {
+
+  lines.forEach((line) => {
     const lineLower = line.toLowerCase();
-    
-    if (lineLower.includes('performance') || lineLower.includes('speed') || lineLower.includes('latency')) {
+
+    if (
+      lineLower.includes('performance') ||
+      lineLower.includes('speed') ||
+      lineLower.includes('latency')
+    ) {
       requirements.performance.push(line.trim());
     }
-    
-    if (lineLower.includes('scale') || lineLower.includes('concurrent') || lineLower.includes('users')) {
+
+    if (
+      lineLower.includes('scale') ||
+      lineLower.includes('concurrent') ||
+      lineLower.includes('users')
+    ) {
       requirements.scalability.push(line.trim());
     }
-    
-    if (lineLower.includes('security') || lineLower.includes('encrypt') || lineLower.includes('auth')) {
+
+    if (
+      lineLower.includes('security') ||
+      lineLower.includes('encrypt') ||
+      lineLower.includes('auth')
+    ) {
       requirements.security.push(line.trim());
     }
-    
-    if (lineLower.includes('browser') || lineLower.includes('mobile') || lineLower.includes('compatible')) {
+
+    if (
+      lineLower.includes('browser') ||
+      lineLower.includes('mobile') ||
+      lineLower.includes('compatible')
+    ) {
       requirements.compatibility.push(line.trim());
     }
   });
-  
+
   return requirements;
 }
 
@@ -554,7 +587,7 @@ function extractTechnicalRequirements(text) {
  */
 function estimateComplexity(capability) {
   let complexity = 1; // Base complexity
-  
+
   // Type-based complexity
   switch (capability.type) {
     case 'web':
@@ -570,7 +603,7 @@ function estimateComplexity(capability) {
       complexity += 4;
       break;
   }
-  
+
   // Name-based complexity indicators
   const nameLower = capability.name.toLowerCase();
   if (nameLower.includes('auth') || nameLower.includes('security')) complexity += 2;
@@ -578,12 +611,12 @@ function estimateComplexity(capability) {
   if (nameLower.includes('real-time') || nameLower.includes('realtime')) complexity += 2;
   if (nameLower.includes('integration')) complexity += 2;
   if (nameLower.includes('migration')) complexity += 2;
-  
+
   // Acceptance criteria count
   const criteriaCount = capability.acceptance_criteria?.length || 0;
   if (criteriaCount > 5) complexity += 1;
   if (criteriaCount > 10) complexity += 1;
-  
+
   return Math.min(complexity, 10); // Cap at 10
 }
 
@@ -594,10 +627,10 @@ function estimateComplexity(capability) {
  */
 function detectCapabilityDependencies(capabilities) {
   const dependencies = {};
-  
+
   capabilities.forEach((cap, index) => {
     const deps = [];
-    
+
     // UI depends on API
     if (cap.type === 'web') {
       const apiCaps = capabilities.filter((c, i) => i < index && c.type === 'api');
@@ -605,28 +638,28 @@ function detectCapabilityDependencies(capabilities) {
         deps.push(apiCaps[0].id);
       }
     }
-    
+
     // Checkout depends on cart
     if (cap.name.toLowerCase().includes('checkout')) {
-      const cartCap = capabilities.find(c => c.name.toLowerCase().includes('cart'));
+      const cartCap = capabilities.find((c) => c.name.toLowerCase().includes('cart'));
       if (cartCap && cartCap.id !== cap.id) {
         deps.push(cartCap.id);
       }
     }
-    
+
     // Everything depends on auth if present
-    const authCap = capabilities.find(c => c.name.toLowerCase().includes('auth'));
+    const authCap = capabilities.find((c) => c.name.toLowerCase().includes('auth'));
     if (authCap && authCap.id !== cap.id && cap.priority === 'must_have') {
       if (!deps.includes(authCap.id)) {
         deps.push(authCap.id);
       }
     }
-    
+
     if (deps.length > 0) {
       dependencies[cap.id] = deps;
     }
   });
-  
+
   return dependencies;
 }
 
@@ -639,57 +672,73 @@ function detectCapabilityDependencies(capabilities) {
 function identifyRisks(content, capabilities) {
   const risks = [];
   const contentLower = content.toLowerCase();
-  
+
   // Payment integration risk
-  if (contentLower.includes('payment') || contentLower.includes('stripe') || contentLower.includes('checkout')) {
+  if (
+    contentLower.includes('payment') ||
+    contentLower.includes('stripe') ||
+    contentLower.includes('checkout')
+  ) {
     risks.push({
       description: 'Payment integration complexity',
       impact: 'high',
       probability: 'medium',
-      mitigation: 'Use established payment SDK (Stripe/PayPal) with proven integration patterns'
+      mitigation: 'Use established payment SDK (Stripe/PayPal) with proven integration patterns',
     });
   }
-  
+
   // Scalability risk
-  if (contentLower.includes('1000') || contentLower.includes('concurrent') || contentLower.includes('scale')) {
+  if (
+    contentLower.includes('1000') ||
+    contentLower.includes('concurrent') ||
+    contentLower.includes('scale')
+  ) {
     risks.push({
       description: 'Scalability requirements may require architecture changes',
       impact: 'medium',
       probability: 'medium',
-      mitigation: 'Design for horizontal scaling from the start, use caching and CDN'
+      mitigation: 'Design for horizontal scaling from the start, use caching and CDN',
     });
   }
-  
+
   // Timeline risk
-  if (contentLower.includes('urgent') || contentLower.includes('asap') || contentLower.includes('1 week')) {
+  if (
+    contentLower.includes('urgent') ||
+    contentLower.includes('asap') ||
+    contentLower.includes('1 week')
+  ) {
     risks.push({
       description: 'Aggressive timeline may compromise quality',
       impact: 'high',
       probability: 'high',
-      mitigation: 'Focus on MVP features first, defer nice-to-have items'
+      mitigation: 'Focus on MVP features first, defer nice-to-have items',
     });
   }
-  
+
   // Integration risk
-  if (contentLower.includes('integrate') || contentLower.includes('third-party') || contentLower.includes('api')) {
+  if (
+    contentLower.includes('integrate') ||
+    contentLower.includes('third-party') ||
+    contentLower.includes('api')
+  ) {
     risks.push({
       description: 'Third-party integration dependencies',
       impact: 'medium',
       probability: 'low',
-      mitigation: 'Build abstraction layers, implement fallback mechanisms'
+      mitigation: 'Build abstraction layers, implement fallback mechanisms',
     });
   }
-  
+
   // Complexity risk based on capability count
   if (capabilities.length > 10) {
     risks.push({
       description: 'High project complexity with many moving parts',
       impact: 'medium',
       probability: 'medium',
-      mitigation: 'Break into phases, deliver incrementally with continuous validation'
+      mitigation: 'Break into phases, deliver incrementally with continuous validation',
     });
   }
-  
+
   return risks;
 }
 
@@ -701,21 +750,21 @@ function identifyRisks(content, capabilities) {
 function logHook(event, data) {
   const hookPath = path.join(process.cwd(), 'runs/observability/hooks.jsonl');
   const hookDir = path.dirname(hookPath);
-  
+
   if (!fs.existsSync(hookDir)) {
     fs.mkdirSync(hookDir, { recursive: true });
   }
-  
+
   const entry = {
     ts: Date.now() / 1000,
     event,
     module: 'call_agent',
-    ...data
+    ...data,
   };
-  
+
   fs.appendFileSync(hookPath, JSON.stringify(entry) + '\n', 'utf8');
 }
 
 export default {
-  invokeRequirementsAnalyst
+  invokeRequirementsAnalyst,
 };

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Swarm1 Backlog to Graph Compiler
- * 
+ *
  * Transforms capabilities/backlog.yaml into an executable DAG graph
  */
 
@@ -17,10 +17,10 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  */
 export function compileBacklogToGraph(backlog, options = {}) {
   const { projectId = backlog.brief_id || 'compiled', concurrency = 3 } = options;
-  
+
   // Handle both 'auvs' and 'backlog' field names
   const auvList = backlog.auvs || backlog.backlog || [];
-  
+
   const graph = {
     version: '1.0',
     project_id: projectId,
@@ -28,39 +28,39 @@ export function compileBacklogToGraph(backlog, options = {}) {
     defaults: {
       retries: {
         max: 1,
-        backoff_ms: 1000
+        backoff_ms: 1000,
       },
-      timeout_ms: 180000
+      timeout_ms: 180000,
     },
     nodes: [],
-    edges: []
+    edges: [],
   };
-  
+
   // Add server node
   graph.nodes.push({
     id: 'server',
     type: 'server',
     timeout_ms: 15000,
-    resources: ['server']
+    resources: ['server'],
   });
-  
+
   // Process each AUV
   const auvMap = new Map();
-  
+
   for (const auv of auvList) {
     const auvId = auv.id;
     auvMap.set(auvId, auv);
-    
+
     // UI node
     const uiNode = {
       id: `${auvId}-ui`,
       type: 'playwright',
       requires: ['server'],
       params: {
-        specs: [`tests/robot/playwright/${auvId.toLowerCase()}.spec.ts`]
-      }
+        specs: [`tests/robot/playwright/${auvId.toLowerCase()}.spec.ts`],
+      },
     };
-    
+
     // Add AUV dependencies (handle both 'dependencies' and 'depends_on' fields)
     const deps = auv.dependencies || auv.depends_on || [];
     if (deps.length > 0) {
@@ -69,9 +69,9 @@ export function compileBacklogToGraph(backlog, options = {}) {
         uiNode.requires.push(`${dep}-ui`);
       }
     }
-    
+
     graph.nodes.push(uiNode);
-    
+
     // Performance node
     const perfNode = {
       id: `${auvId}-perf`,
@@ -79,29 +79,29 @@ export function compileBacklogToGraph(backlog, options = {}) {
       requires: [`${auvId}-ui`],
       params: {
         url: '${STAGING_URL}' + _getPageForAuv(auv),
-        out: `runs/${auvId}/perf/lighthouse.json`
-      }
+        out: `runs/${auvId}/perf/lighthouse.json`,
+      },
     };
-    
+
     graph.nodes.push(perfNode);
-    
+
     // CVF node
     const cvfNode = {
       id: `${auvId}-cvf`,
       type: 'cvf',
       requires: [`${auvId}-perf`],
       params: {
-        auv: auvId
-      }
+        auv: auvId,
+      },
     };
-    
+
     graph.nodes.push(cvfNode);
-    
+
     // Add edges (explicit for clarity, though requires field is sufficient)
     graph.edges.push(['server', `${auvId}-ui`]);
     graph.edges.push([`${auvId}-ui`, `${auvId}-perf`]);
     graph.edges.push([`${auvId}-perf`, `${auvId}-cvf`]);
-    
+
     // Add dependency edges (handle both 'dependencies' and 'depends_on' fields)
     const dependencies = auv.dependencies || auv.depends_on || [];
     if (dependencies.length > 0) {
@@ -110,7 +110,7 @@ export function compileBacklogToGraph(backlog, options = {}) {
       }
     }
   }
-  
+
   return graph;
 }
 
@@ -119,7 +119,7 @@ export function compileBacklogToGraph(backlog, options = {}) {
  */
 function _getPageForAuv(auv) {
   const title = (auv.title || '').toLowerCase();
-  
+
   if (title.includes('product') || title.includes('catalog') || title.includes('list')) {
     return '/products.html';
   }
@@ -135,7 +135,7 @@ function _getPageForAuv(auv) {
   if (title.includes('home') || title.includes('landing')) {
     return '/index.html';
   }
-  
+
   // Default
   return '/products.html';
 }
@@ -147,7 +147,7 @@ export async function loadBacklog(backlogPath) {
   if (!fs.existsSync(backlogPath)) {
     throw new Error(`Backlog file not found: ${backlogPath}`);
   }
-  
+
   const content = fs.readFileSync(backlogPath, 'utf8');
   return yaml.parse(content);
 }
@@ -160,12 +160,12 @@ export async function saveGraph(graph, outputPath) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  
+
   const yamlContent = yaml.stringify(graph, {
     lineWidth: 120,
-    nullStr: ''
+    nullStr: '',
   });
-  
+
   fs.writeFileSync(outputPath, yamlContent);
   return outputPath;
 }
@@ -175,35 +175,38 @@ export async function saveGraph(graph, outputPath) {
  */
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length < 1) {
-    console.error('Usage: node compile_from_backlog.mjs <backlog.yaml> [-o output.yaml] [--concurrency N]');
+    console.error(
+      'Usage: node compile_from_backlog.mjs <backlog.yaml> [-o output.yaml] [--concurrency N]',
+    );
     process.exit(1);
   }
-  
+
   const backlogPath = args[0];
   const outputIdx = args.indexOf('-o');
-  const outputPath = outputIdx > -1 
-    ? args[outputIdx + 1] 
-    : `orchestration/graph/projects/${path.basename(backlogPath, '.yaml')}.graph.yaml`;
-  
+  const outputPath =
+    outputIdx > -1
+      ? args[outputIdx + 1]
+      : `orchestration/graph/projects/${path.basename(backlogPath, '.yaml')}.graph.yaml`;
+
   const concurrencyIdx = args.indexOf('--concurrency');
   const concurrency = concurrencyIdx > -1 ? parseInt(args[concurrencyIdx + 1]) : 3;
-  
+
   try {
     console.log(`[compiler] Loading backlog from: ${backlogPath}`);
     const backlog = await loadBacklog(backlogPath);
-    
+
     const auvList = backlog.auvs || backlog.backlog || [];
     console.log(`[compiler] Compiling graph for ${auvList.length} AUVs`);
     const graph = compileBacklogToGraph(backlog, {
       projectId: backlog.brief_id || path.basename(backlogPath, '.yaml'),
-      concurrency
+      concurrency,
     });
-    
+
     console.log(`[compiler] Writing graph to: ${outputPath}`);
     await saveGraph(graph, outputPath);
-    
+
     // Summary
     console.log('\n✅ Graph compilation complete:');
     console.log(`  Project ID: ${graph.project_id}`);
@@ -211,7 +214,7 @@ async function main() {
     console.log(`  Edges: ${graph.edges.length}`);
     console.log(`  Concurrency: ${graph.concurrency}`);
     console.log(`  Output: ${outputPath}`);
-    
+
     // Show execution order
     if (auvList.length > 0) {
       console.log('\nExecution chains:');
@@ -219,9 +222,8 @@ async function main() {
         console.log(`  ${auv.id}: ui → perf → cvf`);
       }
     }
-    
+
     console.log(`\nNext step: node orchestration/graph/runner.mjs ${outputPath}`);
-    
   } catch (error) {
     console.error(`❌ Compilation error: ${error.message}`);
     process.exit(1);
@@ -229,7 +231,10 @@ async function main() {
 }
 
 // Run if called directly
-if (import.meta.url.endsWith(process.argv[1]?.replace(/\\/g, '/')) || process.argv[1]?.endsWith('compile_from_backlog.mjs')) {
+if (
+  import.meta.url.endsWith(process.argv[1]?.replace(/\\/g, '/')) ||
+  process.argv[1]?.endsWith('compile_from_backlog.mjs')
+) {
   main();
 }
 

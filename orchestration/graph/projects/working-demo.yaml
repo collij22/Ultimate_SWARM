@@ -1,4 +1,4 @@
-version: "1.0"
+version: '1.0'
 project_id: working-demo
 concurrency: 3
 defaults:
@@ -12,22 +12,22 @@ nodes:
     timeout_ms: 15000
     resources:
       - server
-  
-  # Three parallel CVF checks 
+
+  # Three parallel CVF checks
   - id: AUV-0002-cvf
     type: cvf
     requires:
       - server
     params:
       auv: AUV-0002
-  
+
   - id: AUV-0003-cvf
     type: cvf
     requires:
       - server
     params:
       auv: AUV-0003
-  
+
   - id: AUV-0004-cvf
     type: cvf
     requires:

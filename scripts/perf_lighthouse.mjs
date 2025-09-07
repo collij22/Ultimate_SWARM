@@ -23,22 +23,24 @@ const chrome = await launch({
     '--ignore-certificate-errors',
     '--disable-client-side-phishing-detection',
     '--disable-features=BlockInsecurePrivateNetworkRequests',
-    '--window-size=1366,768'
-  ]
+    '--window-size=1366,768',
+  ],
 });
 
 const options = {
   logLevel: 'error',
   output: 'json',
   onlyCategories: ['performance'],
-  port: chrome.port
+  port: chrome.port,
 };
 
 let lhr;
 try {
   const runnerResult = await lighthouse(url, options);
-  const rawReport = Array.isArray(runnerResult.report) ? runnerResult.report[0] : runnerResult.report;
-  lhr = typeof rawReport === 'string' ? JSON.parse(rawReport) : (runnerResult.lhr || rawReport);
+  const rawReport = Array.isArray(runnerResult.report)
+    ? runnerResult.report[0]
+    : runnerResult.report;
+  lhr = typeof rawReport === 'string' ? JSON.parse(rawReport) : runnerResult.lhr || rawReport;
 
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
   fs.writeFileSync(outPath, JSON.stringify(lhr));

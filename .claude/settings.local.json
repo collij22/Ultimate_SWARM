@@ -43,7 +43,12 @@
       "Bash(VERCEL_API_KEY=test DATADOG_API_KEY=test node mcp/router.mjs --dry --agent C16.devops_engineer --capabilities deploy.preview --budget 0.05 --secondary-consent)",
       "Bash(SESSION_ID=test-session npm run router:dry)",
       "Bash(grep:*)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(git remote get-url:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx prettier:*)",
+      "Bash(git stash:*)",
+      "Bash(cat:*)"
     ],
     "deny": [
       "Read(./.env)",

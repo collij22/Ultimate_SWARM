@@ -28,6 +28,9 @@ test.describe('AUV-0002 API', () => {
 
     const dir = path.resolve(process.cwd(), 'runs', 'AUV-0002', 'api');
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'get_product_detail_200.json'), JSON.stringify(detail, null, 2));
+    fs.writeFileSync(
+      path.join(dir, 'get_product_detail_200.json'),
+      JSON.stringify(detail, null, 2),
+    );
   });
 });

@@ -6,8 +6,12 @@ export function ensureDir(p) {
 }
 
 export function fileExists(p) {
-  try { fs.accessSync(p, fs.constants.F_OK); return true; }
-  catch { return false; }
+  try {
+    fs.accessSync(p, fs.constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function writeIfMissing(file, content) {

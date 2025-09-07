@@ -11,9 +11,9 @@ acceptance:
 
 requirements:
   api:
-    - GET /api/cart            # returns array of { productId, qty }
-    - GET /api/cart/summary    # { items:[{id,title,price,qty,lineTotal}], subtotal, tax, total }
-    - POST /api/cart           # adds/updates items
+    - GET /api/cart # returns array of { productId, qty }
+    - GET /api/cart/summary # { items:[{id,title,price,qty,lineTotal}], subtotal, tax, total }
+    - POST /api/cart # adds/updates items
     - Tax: fixed mock rate 10% for now
   ui:
     - /cart.html renders rows + Subtotal/Tax/Total
@@ -21,7 +21,7 @@ requirements:
 
 tests:
   playwright:
-    - tests/robot/playwright/cart-summary.spec.ts   # will be auto-created if missing
+    - tests/robot/playwright/cart-summary.spec.ts # will be auto-created if missing
   api:
     - tests/robot/playwright/api/cart-summary.spec.ts
 
@@ -50,6 +50,6 @@ authoring_hints:
       - name: add 2x demo-1 then summary totals
         setup:
           - method: POST
-            path: /cart            # no /api here
-            body: { productId: "demo-1", qty: 2 }
+            path: /cart # no /api here
+            body: { productId: 'demo-1', qty: 2 }
         summary_path: /cart/summary # no /api here

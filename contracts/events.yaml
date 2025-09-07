@@ -6,7 +6,6 @@ info:
     Contract-first catalogue of domain events for Swarm1.
     Extend incrementally per AUV. Keep topics versioned with `.vN`.
 defaultContentType: application/json
-
 servers:
   staging-bus:
     url: https://example-staging-bus.invalid

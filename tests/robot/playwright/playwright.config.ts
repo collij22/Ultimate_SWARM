@@ -9,6 +9,6 @@ export default defineConfig({
     headless: true,
     video: 'on',
     screenshot: 'only-on-failure',
-    trace: 'off'
-  }
+    trace: 'off',
+  },
 });

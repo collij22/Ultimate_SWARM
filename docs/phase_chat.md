@@ -1,192 +1,600 @@
-## Phase 4 — Remaining Enhancements To Implement (Guidance)
+<!-- Ruthless Phase 5 audit: implementation is close but has 5 blockers (diff safety, staging/committing artifacts, dry-run mutation, reject discovery, CI gating/tests). Below are precise edits to make it bulletproof before moving to Phase 6. -->
 
-Must fix before Phase 5
--Runbook RouterPreview timestamp:
-  -Currently emits ISO string (ts: new Date().toISOString()). Switch to epoch seconds (ts: Date.now()/1000) for consistency with other emitters.
+### Phase 5 audit (pass/fail)
 
--Make schema validation testable:
-  -Add failing-config tests that call loadConfig() and assert Ajv throws with clear messages (e.g., missing required fields, wrong types). Right now tests use parsed YAML directly and don’t exercise validation failures.
+- Passed
+  - build lane core (`orchestration/lib/build_lane.mjs`) with typed exit codes, QA runners, autopilot smoke, artifacts, observability.
+  - GitHub integration (`orchestration/lib/gh.mjs`) with gh CLI + REST fallback; PR card under `runs/<AUV>/result-cards/pr.json`.
+  - CLI integration (`orchestration/cli.mjs build-lane …`).
+  - QA configs: `.prettierrc.json`, `.eslintrc.cjs`, `tsconfig.json`.
+  - `package.json` scripts: `format`, `format:check`, `lint`, `typecheck`, `qa`, `build-lane`.
 
--Ensure new router tests run in CI:
-  -tests/router.test.mjs is not under tests/unit and doesn’t use node:test, so it won’t run via npm run test:unit. Either:
-    -Move it to tests/unit/router_phase4.test.mjs and use node:test, or
-    -Add a script test:router and wire it into CI.
+- Gaps/Blockers
+  - [B1] Diff safety: `git apply` does not validate changed paths against the allowlist; diff can mutate disallowed paths.
+  - [B2] Dry-run safety: `applyPatch()` still runs `git apply` during `--dry-run`, mutating the tree.
+  - [B3] Artifact bleed: `recordDiff()` does `git add -A`, staging `runs/**` artifacts; `commitAndPush()` will commit them.
+  - [B4] Rejects detection: only checks `.` for `.rej` files; misses nested rejects (e.g., under `tests/**`).
+  - [B5] CI QA gates are non‑blocking and tests aren’t run in QA (only router + autopilot later). This violates “No green gates → no merge”.
+  - [T1] Unit test uses `require()` in ESM; breaks on Node 20.
 
--Document and exercise api_key_env:
-  -Add an example in mcp/registry.yaml (e.g., vercel.api_key_env: VERCEL_TOKEN) and a test asserting the override works.
+- Non-blocking nits
+  - Changeset writer determines action after write (always “modify”); should check existence before write.
+  - Minor duplication of PR body formatting between `build_lane.mjs` and `gh.mjs`.
+    result.artifacts.push(diffPath);
 
-Nice-to-have (recommended)
--Graph runner: also append a small RouterPreview event to runs/observability/hooks.jsonl for parity with runbook.
--Align counts/claims in mcp/README.md with actual registry size, or expand registry to match.
+        if (!dryRun) {
+          const commitResult = await commitAndPush(auvId, targetBranch, patchResult.summary);
+          result.commitSha = commitResult.sha;
+          if (openPr) {
+            const { createPullRequest } = await import('./gh.mjs');
+            const prResult = await createPullRequest({
+              base: 'main',
+              head: targetBranch,
+              title: `feat(${auvId}): ${patchResult.summary}`,
+              body: formatPRBody(auvId, result),
+              auvId,
+            });
+            result.prUrl = prResult.url;
+            result.prNumber = prResult.number;
+          }
+        }
 
-Go/No-Go
-With the timestamp fix, schema-failure tests added, and test integration corrected, Phase 4 is production-solid and we can proceed to Phase 5 (enforcement in the build lane).
+        result.success = true;
+        await writeResultCard(auvId, runId, result);
+        appendHookLine({ event: 'BuildEnd', auv_id: auvId, run_id: runId, success: true, duration_ms: Date.now() - startTime, pr_url: result.prUrl, timestamp: Date.now() });
+        return result;
 
-Further details on how to implement below, must be used as a basis for the changes:
-----
+    } catch (error) {
+    result.success = false;
+    result.error = error.message;
+    result.exitCode = error.exitCode || 1;
+    await writeResultCard(auvId, runId, result);
+    appendHookLine({ event: 'BuildEnd', auv_id: auvId, run_id: runId, success: false, error: error.message, exit_code: result.exitCode, duration_ms: Date.now() - startTime, timestamp: Date.now() });
+    throw error;
+    }
+    }
 
-### Must-implement now
-
-1) CI wiring for router tests
-- Add a dedicated script and run it in CI.
-```json
-// package.json (scripts)
-"test:router": "node tests/router.test.mjs"
-```
-- CI: add a step after unit tests: `npm run test:router`.
-
-2) Graph runner hooks + ledger for router preview
-- File: `orchestration/graph/runner.mjs`
-- After writing `router_preview_<node_type>.json`, also:
-  - Append a hooks event (epoch seconds):
-```js
-emitEvent({ type: 'RouterPreview', auv_id: AUV_ID, node_type: node.type, tool_count: routerResult.toolPlan.length, total_cost_usd: routerResult.budget });
-```
-  - Update spend ledger (reuse `updateLedger` from `mcp/router.mjs`):
-```js
-const { updateLedger } = await import('../../mcp/router.mjs');
-updateLedger(process.env.SESSION_ID || this.runId, routerResult.toolPlan);
-```
-
-3) Derive router capabilities from AUV spec (not hard-coded)
-- Files: `orchestration/runbooks/auv_delivery.mjs`, `orchestration/graph/runner.mjs`.
-- Strategy:
-  - Load `capabilities/<AUV-ID>.yaml`.
-  - If `authoring_hints.ui.page` → include `browser.automation`.
-  - If page exists → include `web.perf_audit`.
-  - If `authoring_hints.api` present → include `api.test`.
-  - Map other hints (e.g., visual) → `visual.regression` as needed.
-```js
-const hints = cap.authoring_hints || {};
-const caps = new Set();
-if (hints.ui?.page) caps.add('browser.automation') || caps.add('web.perf_audit');
-if (hints.api) caps.add('api.test');
-// TODO: extend mapping as policies evolve
-const requestedCapabilities = [...caps];
-```
-
-4) Cross-reference validation (policies ↔ registry)
-- File: `mcp/router.mjs` (inside `loadConfig()` after Ajv checks).
-- Add referential integrity checks and throw clear errors:
-```js
-// capability_map tools must exist
-for (const [cap, tools] of Object.entries(policies.capability_map)) {
-  for (const id of tools) {
-    if (!registry.tools[id]) throw new Error(`capability_map references unknown tool: ${id} (capability=${cap})`);
-  }
+(build_lane.mjs)
+export async function runBuildLane(options) {
+const {
+auvId,
+patch,
+branch,
+openPr = false,
+dryRun = false,
+qa = {}
+} = options;
+...
+// Step 3: Apply patch
+const patchResult = await applyPatch(auvId, patch, runId);
+...iffPath = patch.path;
+if (!fileExists(diffPath)) {
+throw new Error(`Diff file not found: ${diffPath}`);
 }
-// optional: warn if registry tool is unmapped or capability not covered
-```
 
-5) Safety enforcement in router decisions
-- File: `mcp/router.mjs` (inside `planTools`).
-- Enforce `policies.safety`:
-  - If `allow_production_mutations:false` and `NODE_ENV==='production'`, reject tools with `side_effects` including `exec` or external `network` unless an explicit override flag is set (e.g., `SAFETY_ALLOW_PROD=true`).
-  - If `require_test_mode_for` contains domains like `payments`, require `TEST_MODE==='true'` or reject with rationale.
-```js
-const isProd = (env.NODE_ENV === 'production');
-if (isProd && policies.safety?.allow_production_mutations === false) {
-  const risky = (tool.side_effects || []).some(e => e === 'exec' || e === 'network');
-  if (risky && env.SAFETY_ALLOW_PROD !== 'true') {
-    decision.rejected.push({ tool_id: toolId, reason: 'blocked by safety policy in production', capability });
-    continue;
-  }
+    const diffContent = fs.readFileSync(diffPath, 'utf8');
+    const appliedPath = path.join('runs', auvId, 'patches', `${Date.now()}-applied.diff`);
+    fs.writeFileSync(appliedPath, diffContent);
+    artifacts.push(appliedPath);
+
+    try {
+      // Apply with 3-way merge and reject handling
+      await execCommand('git', ['apply', '--3way', '--reject', diffPath]);
+    } catch (error) {
+      // Check for rejects
+      const rejectFiles = fs.readdirSync('.').filter(f => f.endsWith('.rej'));
+      for (const reject of rejectFiles) {
+        const rejectPath = path.join('runs', auvId, 'patches', 'rejects', reject);
+        ensureDir(path.dirname(rejectPath));
+        fs.renameSync(reject, rejectPath);
+        rejects.push(rejectPath);
+      }
+    }
+
+    summary = extractDiffSummary(diffContent);
+
+} else if (patch.type === 'changeset') {
+// Apply JSON changeset
+const changes = patch.changes || [];
+const changeset = {
+auv_id: auvId,
+files: [],
+timestamp: Date.now()
+};
+
+    for (const change of changes) {
+      const filePath = change.path;
+
+      // Validate against allowlist
+      if (!isPathAllowed(filePath)) {
+        throw new Error(`Path not allowed by write policy: ${filePath}`);
+      }
+
+      // Write file
+      ensureDir(path.dirname(filePath));
+      fs.writeFileSync(filePath, change.content, 'utf8');
+
+      changeset.files.push({
+        path: filePath,
+        action: fileExists(filePath) ? 'modify' : 'add',
+        sha256: crypto.createHash('sha256').update(change.content).digest('hex')
+      });
+    }
+
+    // Write changeset record
+    const changesetPath = path.join('runs', auvId, 'changeset.json');
+    fs.writeFileSync(changesetPath, JSON.stringify(changeset, null, 2));
+    artifacts.push(changesetPath);
+
+    summary = `Modified ${changeset.files.length} file(s)`;
+
 }
-```
 
-6) CLI enhancements for operability
-- File: `mcp/router.mjs`
-- Add `--session <ID>` to set ledger session; default remains UUID.
-- Add `--validate` mode to only load+validate configs and exit non-zero on errors.
-```js
-// parse --session, --validate; pass session to updateLedger; if --validate, run loadConfig() and exit(0/1)
-```
+appendHookLine({
+event: 'PatchApplied',
+auv_id: auvId,
+patch_type: patch.type,
+files_changed: artifacts.length,
+rejects: rejects.length,
+timestamp: Date.now()
+});
 
-### Nice-to-haves (implement now)
-
-7) Enriched decision rationale & alternatives
-- File: `mcp/router.mjs`
-- For each capability, record `alternatives[]` with `{ tool_id, tier, reason }` for rejected candidates; include in decision JSON under `decision.alternatives` to aid debugging and policy tuning.
-
-8) Router coverage report
-- New file: `mcp/router-report.mjs`
-- Emits JSON to `runs/router/report.json` with:
-  - Capabilities with no primary tools
-  - Registry tools not referenced by any `capability_map`
-  - Agents with empty/overly restrictive allowlists
-```bash
-node mcp/router-report.mjs
-```
-
-9) Policy docs generator
-- New file: `mcp/generate-policy-doc.mjs`
-- Produce `docs/MCP-POLICY.md` from `policies.yaml`/`registry.yaml`: tables for capabilities→tools, tiers, budgets, allowlists.
-
-10) Decision caching within process
-- File: `mcp/router.mjs`
-- Memoize `planTools` by key `{agentId, capabilities, budget, consent}` during a single process run to avoid recomputation; still write artifacts for the first call.
-
-11) Secondary consent env handling in previews
-- Files: `orchestration/runbooks/auv_delivery.mjs`, `orchestration/graph/runner.mjs`
-- If `SECONDARY_CONSENT==='true'`, pass `secondaryConsent:true` to `planTools` for previews.
-
-12) CI: fail fast on router validation errors
-- Add a CI step: `node mcp/router.mjs --validate` before executing test suites.
+return { artifacts, rejects, summary };
+}
 
 ---
 
-### Acceptance checklist for these enhancements
-- Router/graph previews emit hooks + ledger entries consistently with epoch timestamps.
-- Router derives capabilities from AUV spec and passes schema + cross-ref validation.
-- Safety policies actively block risky tools in production envs unless explicitly overridden.
-- CI runs `test:unit`, `test:router`, and `router --validate`; fails on any error.
-- Policy coverage report and generated docs are created without errors and kept up to date.
+// EDIT: pass dryRun to applyPatch and restrict staging/diff to allowlist
+export async function runBuildLane(options) {
+const {
+auvId,
+patch,
+branch,
+openPr = false,
+dryRun = false,
+qa = {},
+} = options;
 
+const qaConfig = {
+format: qa.format !== false,
+lint: qa.lint !== false,
+typecheck: qa.typecheck !== false,
+unit: qa.unit !== false,
+integration: qa.integration !== false,
+autopilot: qa.autopilot !== false,
+};
 
------------
-<FIXES APPLIED BY AGENT>
+const runId = generateRunId();
+const startTime = Date.now();
+const result = { auvId, runId, branch: null, artifacts: [], qaResults: {}, prUrl: null, success: false, exitCode: 0 };
 
-Phase 4 Enhancements Complete! 🎉
+try {
+appendHookLine({ event: 'BuildStart', auv_id: auvId, run_id: runId, patch_type: patch.type, dry_run: dryRun, timestamp: Date.now() });
 
-  All 12 critical enhancements from phase_chat.md have been successfully implemented:
+    if (!dryRun) {
+      await assertRepoClean();
+    }
 
-  ✅ Core Enhancements Implemented:
+    const targetBranch = await createOrSelectBranch(auvId, branch, dryRun);
+    result.branch = targetBranch;
 
-  1. CLI Enhancements - Added --validate flag for config validation and --session for ledger
-  tracking
-  2. Cross-reference Validation - Validates all tool references in capability_map and agent
-  allowlists exist
-  3. Safety Policy Enforcement - Blocks risky tools in production unless explicitly allowed
-  4. CI Integration - Router tests and validation now run in CI workflow
-  5. Schema Validation Tests - Comprehensive test suite for invalid configurations
-  6. Capability Derivation - Automatically derives capabilities from AUV specs based on
-  authoring_hints
-  7. Graph Runner Observability - Emits hooks events and updates spend ledger
-  8. Enriched Decision Rationale - Tracks all alternatives considered per capability
-  9. Router Coverage Report - Tool to analyze configuration coverage and issues
-  10. Fixed README Tool Count - Corrected from "35+" to actual "30 tools"
-  11. API Key Environment Override - Added api_key_env support with VERCEL_TOKEN example
-  12. Timestamp Consistency - All emitters use epoch seconds (Date.now()/1000)
+    const patchResult = await applyPatch(auvId, patch, runId, dryRun); // pass dryRun
+    result.artifacts.push(...patchResult.artifacts);
+    if (patchResult.rejects?.length > 0) throw new BuildLaneError('Patch application had rejects', 'patch', 209);
 
-  Key Files Modified/Created:
+    // QA steps unchanged…
 
-  - mcp/router.mjs - Enhanced with all new features
-  - mcp/schemas/ - JSON schemas for validation
-  - tests/unit/router_schema.test.mjs - Schema validation tests
-  - mcp/router-report.mjs - Coverage analysis tool
-  - orchestration/runbooks/auv_delivery.mjs - Uses deriveCapabilities
-  - orchestration/graph/runner.mjs - Added observability
-  - .github/workflows/ci.yml - Runs router validation and tests
-  - package.json - Added test:router script
+    // Record diff restricted to allowlist
+    const diffPath = await recordDiff(auvId, runId);
+    result.artifacts.push(diffPath);
 
-  Validation Results:
+    if (!dryRun) {
+      const commitResult = await commitAndPush(auvId, targetBranch, patchResult.summary);
+      result.commitSha = commitResult.sha;
+      if (openPr) {
+        const { createPullRequest } = await import('./gh.mjs');
+        const prResult = await createPullRequest({
+          base: 'main',
+          head: targetBranch,
+          title: `feat(${auvId}): ${patchResult.summary}`,
+          body: formatPRBody(auvId, result),
+          auvId,
+        });
+        result.prUrl = prResult.url;
+        result.prNumber = prResult.number;
+      }
+    }
 
-  - ✅ Configuration validation passed (30 tools, 27 capabilities, 16 agents)
-  - ✅ All 12 router tests passing
-  - ✅ Safety policies enforced
-  - ✅ Cross-references validated
-  - ✅ CI integration complete
+    result.success = true;
+    await writeResultCard(auvId, runId, result);
+    appendHookLine({ event: 'BuildEnd', auv_id: auvId, run_id: runId, success: true, duration_ms: Date.now() - startTime, pr_url: result.prUrl, timestamp: Date.now() });
+    return result;
 
-  Phase 4 is now bulletproof and ready for Phase 5 (runtime MCP protocol enforcement)!
+} catch (error) {
+result.success = false;
+result.error = error.message;
+result.exitCode = error.exitCode || 1;
+await writeResultCard(auvId, runId, result);
+appendHookLine({ event: 'BuildEnd', auv_id: auvId, run_id: runId, success: false, error: error.message, exit_code: result.exitCode, duration_ms: Date.now() - startTime, timestamp: Date.now() });
+throw error;
+}
+}ts.length, timestamp: Date.now() });
+return { artifacts, rejects, summary };
+}
 
-</FIXES APPLIED BY AGENT>
+function extractFilesFromDiff(diffContent) {
+const files = new Set();
+for (const line of diffContent.split('\n')) {
+if (line.startsWith('+++ ') || line.startsWith('--- ')) {
+const p = line.slice(4).trim();
+if (p === '/dev/null') continue;
+const clean = p.replace(/^a\//, '').replace(/^b\//, '');
+files.add(clean);
+}
+}
+return Array.from(files);
+}
+
+function collectRejectsRecursive(rootDir, auvId) {
+const out = [];
+const rejectsDir = path.join('runs', auvId, 'patches', 'rejects');
+ensureDir(rejectsDir);
+(function walk(dir) {
+for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+const full = path.join(dir, entry.name);
+if (entry.isDirectory()) walk(full);
+else if (entry.isFile() && entry.name.endsWith('.rej')) {
+const dest = path.join(rejectsDir, path.basename(full));
+try { fs.renameSync(full, dest); } catch { /_ ignore _/ }
+out.push(dest);
+}
+}
+})(rootDir);
+return out;
+}
+
+function getAllowedGitPathspecs() {
+return [
+'orchestration/**',
+'mcp/**',
+'tests/**',
+'docs/**',
+'capabilities/**',
+'scripts/**',
+'.github/**',
+'mock/**',
+'public/**',
+];
+}
+
+(build_lane.mjs)
+async function applyPatch(auvId, patch, runId) {
+const artifacts = [];
+const rejects = [];
+let summary = 'Applied changes';
+
+ensureDir(path.join('runs', auvId, 'patches'));
+
+if (patch.type === 'diff') {
+// Apply unified diff
+const diffPath = patch.path;
+if (!fileExists(diffPath)) {
+throw new Error(`Diff file not found: ${diffPath}`);
+}
+
+    const diffContent = fs.readFileSync(diffPath, 'utf8');
+    const appliedPath = path.join('runs', auvId, 'patches', `${Date.now()}-applied.diff`);
+    fs.writeFileSync(appliedPath, diffContent);
+    artifacts.push(appliedPath);
+
+    try {
+      // Apply with 3-way merge and reject handling
+      await execCommand('git', ['apply', '--3way', '--reject', diffPath]);
+    } catch (error) {
+      // Check for rejects
+      const rejectFiles = fs.readdirSync('.').filter(f => f.endsWith('.rej'));
+      for (const reject of rejectFiles) {
+        const rejectPath = path.join('runs', auvId, 'patches', 'rejects', reject);
+        ensureDir(path.dirname(rejectPath));
+        fs.renameSync(reject, rejectPath);
+        rejects.push(rejectPath);
+      }
+    }
+
+    summary = extractDiffSummary(diffContent);
+
+} else if (patch.type === 'changeset') {
+// Apply JSON changeset
+const changes = patch.changes || [];
+const changeset = {
+auv_id: auvId,
+files: [],
+timestamp: Date.now()
+};
+
+    for (const change of changes) {
+      const filePath = change.path;
+
+      // Validate against allowlist
+      if (!isPathAllowed(filePath)) {
+        throw new Error(`Path not allowed by write policy: ${filePath}`);
+      }
+
+      // Write file
+      ensureDir(path.dirname(filePath));
+      fs.writeFileSync(filePath, change.content, 'utf8');
+
+      changeset.files.push({
+        path: filePath,
+        action: fileExists(filePath) ? 'modify' : 'add',
+        sha256: crypto.createHash('sha256').update(change.content).digest('hex')
+      });
+    }
+
+    // Write changeset record
+    const changesetPath = path.join('runs', auvId, 'changeset.json');
+    fs.writeFileSync(changesetPath, JSON.stringify(changeset, null, 2));
+    artifacts.push(changesetPath);
+
+    summary = `Modified ${changeset.files.length} file(s)`;
+
+}
+
+appendHookLine({
+event: 'PatchApplied',
+auv_id: auvId,
+patch_type: patch.type,
+files_changed: artifacts.length,
+rejects: rejects.length,
+timestamp: Date.now()
+});
+
+return { artifacts, rejects, summary };
+}
+
+---
+
+// EDIT: hardened applyPatch with allowlist validation, dry-run behavior, and recursive reject collection
+async function applyPatch(auvId, patch, runId, dryRun = false) {
+const artifacts = [];
+const rejects = [];
+let summary = 'Applied changes';
+
+ensureDir(path.join('runs', auvId, 'patches'));
+
+if (patch.type === 'diff') {
+const diffPath = patch.path;
+if (!fileExists(diffPath)) throw new Error(`Diff file not found: ${diffPath}`);
+
+    const diffContent = fs.readFileSync(diffPath, 'utf8');
+    const appliedPath = path.join('runs', auvId, 'patches', `${Date.now()}-applied.diff`);
+    fs.writeFileSync(appliedPath, diffContent);
+    artifacts.push(appliedPath);
+
+    // Validate all paths referenced by the diff against allowlist
+    const changedFiles = extractFilesFromDiff(diffContent);
+    for (const fp of changedFiles) {
+      if (!isPathAllowed(fp)) {
+        throw new Error(`Diff touches disallowed path: ${fp}`);
+      }
+    }
+
+    if (!dryRun) {
+      // Pre-check then apply; restrict to allowlisted pathspecs
+      const includes = ['--'].concat(getAllowedGitPathspecs());
+      await execCommand('git', ['apply', '--check', diffPath]);
+      try {
+        await execCommand('git', ['apply', '--3way', '--reject', '--whitespace=fix', ...includes, diffPath]);
+      } catch {
+        rejects.push(...collectRejectsRecursive(process.cwd(), auvId));
+      }
+    } else {
+      // Dry-run: do not mutate workspace; only record artifacts/summary
+    }
+
+    summary = extractDiffSummary(diffContent);
+
+} else if (patch.type === 'changeset') {
+const changes = patch.changes || [];
+const changeset = { auv_id: auvId, files: [], timestamp: Date.now() };
+
+    for (const change of changes) {
+      const filePath = change.path;
+      if (!isPathAllowed(filePath)) throw new Error(`Path not allowed by write policy: ${filePath}`);
+      const existedBefore = fileExists(filePath);
+      if (!dryRun) {
+        ensureDir(path.dirname(filePath));
+        fs.writeFileSync(filePath, change.content, 'utf8');
+      }
+      changeset.files.push({
+        path: filePath,
+        action: existedBefore ? 'modify' : 'add',
+        sha256: crypto.createHash('sha256').update(change.content).digest('hex'),
+      });
+    }
+
+    const changesetPath = path.join('runs', auvId, 'changeset.json');
+    fs.writeFileSync(changesetPath, JSON.stringify(changeset, null, 2));
+    artifacts.push(changesetPath);
+
+    summary = `Modified ${changeset.files.length} file(s)`;
+
+}
+
+appendHookLine({ event: 'PatchApplied', auv_id: auvId, patch_type: patch.type, files_changed: artifacts.length, rejects: rejects.length, timestamp: Date.now() });
+return { artifacts, rejects, summary };
+}
+
+function extractFilesFromDiff(diffContent) {
+const files = new Set();
+for (const line of diffContent.split('\n')) {
+if (line.startsWith('+++ ') || line.startsWith('--- ')) {
+const p = line.slice(4).trim();
+if (p === '/dev/null') continue;
+const clean = p.replace(/^a\//, '').replace(/^b\//, '');
+files.add(clean);
+}
+}
+return Array.from(files);
+}
+
+function collectRejectsRecursive(rootDir, auvId) {
+const out = [];
+const rejectsDir = path.join('runs', auvId, 'patches', 'rejects');
+ensureDir(rejectsDir);
+(function walk(dir) {
+for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+const full = path.join(dir, entry.name);
+if (entry.isDirectory()) walk(full);
+else if (entry.isFile() && entry.name.endsWith('.rej')) {
+const dest = path.join(rejectsDir, path.basename(full));
+try { fs.renameSync(full, dest); } catch { /_ ignore _/ }
+out.push(dest);
+}
+}
+})(rootDir);
+return out;
+}
+
+function getAllowedGitPathspecs() {
+return [
+'orchestration/**',
+'mcp/**',
+'tests/**',
+'docs/**',
+'capabilities/**',
+'scripts/**',
+'.github/**',
+'mock/**',
+'public/**',
+];
+}
+
+(build_lane.mjs)
+async function recordDiff(auvId, runId) {
+await execCommand('git', ['add', '-A']);
+
+const diffResult = await execCommand('git', ['diff', '--staged']);
+const diffPath = path.join('runs', auvId, 'patches', `${Date.now()}-staged.diff`);
+
+ensureDir(path.dirname(diffPath));
+fs.writeFileSync(diffPath, diffResult.stdout);
+
+return diffPath;
+}
+
+---
+
+// EDIT: stage and diff only allowlisted paths; avoid committing runs/\*\*
+async function recordDiff(auvId, runId) {
+const specs = getAllowedGitPathspecs();
+await execCommand('git', ['add', '--', ...specs]);
+const diffResult = await execCommand('git', ['diff', '--staged', '--', ...specs]);
+const diffPath = path.join('runs', auvId, 'patches', `${Date.now()}-staged.diff`);
+ensureDir(path.dirname(diffPath));
+fs.writeFileSync(diffPath, diffResult.stdout);
+return diffPath;
+}
+
+(build_lane.mjs)
+changeset.files.push({
+path: filePath,
+action: fileExists(filePath) ? 'modify' : 'add',
+sha256: crypto.createHash('sha256').update(change.content).digest('hex')
+});t check
+shell: bash
+run: npx eslint . --max-warnings=0 || true # Non-blocking for now
+
+      - name: Typecheck
+        shell: bash
+        run: npx tsc --noEmit || true  # Non-blocking for now
+
+---
+
+// EDIT: determine action before write
+const existedBefore = fileExists(filePath);
+if (!dryRun) {
+ensureDir(path.dirname(filePath));
+fs.writeFileSync(filePath, change.content, 'utf8');
+}
+changeset.files.push({
+path: filePath,
+action: existedBefore ? 'modify' : 'add',
+sha256: crypto.createHash('sha256').update(change.content).digest('hex'),
+}); - name: Unit tests
+shell: bash
+run: npm run test:unit
+
+      - name: Integration tests
+        shell: bash
+        run: npm run test:integration
+
+(ci.yml) # ---- QA Gates (Phase 5) ---- - name: Format check
+shell: bash
+run: npx prettier --check . || true # Non-blocking for now
+
+      - name: Lint check
+        shell: bash
+        run: npx eslint . --max-warnings=0 || true  # Non-blocking for now
+
+      - name: Typecheck
+        shell: bash
+        run: npx tsc --noEmit || true  # Non-blocking for now
+
+---
+
+# EDIT: make QA gates blocking and add tests before autopilot lanes
+
+      # ---- QA Gates (Phase 5) ----
+      - name: Format check
+        shell: bash
+        run: npx prettier --check .
+
+      - name: Lint check
+        shell: bash
+        run: npx eslint . --max-warnings=0
+
+      - name: Typecheck
+        shell: bash
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        shell: bash
+        run: npm run test:unit
+
+      - name: Integration tests
+        shell: bash
+        run: npm run test:integration
+
+(build_lane.test.mjs)
+generateRunId: () => {
+const crypto = require('crypto');
+return `RUN-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+}Dry-run build lane (no mutations): `node orchestration/cli.mjs build-lane AUV-0003 --patch runs/demo/demo-patch.diff --dry-run --no-autopilot` - Changeset validation (dry): `node orchestration/cli.mjs build-lane AUV-0003 --patch changes.json --dry-run --no-autopilot` - Full run with PR (on a demo branch): `node orchestration/cli.mjs build-lane AUV-0003 --patch changes.diff --branch auv/AUV-0003/demo --open-pr`
+
+- CI must fail on any QA violation and must run unit+integration before autopilot.
+- Confirm no `runs/**` files are staged/committed; PR diff only touches allowlisted paths.
+- Ensure `runs/observability/hooks.jsonl` contains BuildStart/PatchApplied/BuildEnd events for build-lane runs.
+
+Blocking issues resolved → proceed to Phase 6.
+
+---
+
+// EDIT: ESM-safe random bytes
+import { randomBytes } from 'node:crypto';
+...
+generateRunId: () => {
+return `RUN-${Date.now()}-${randomBytes(4).toString('hex')}`;
+}
+
+### Verification checklist to exit Phase 5
+
+- After applying edits:
+  - Run locally:
+    - Format/lint/typecheck/tests: `npm run qa`
+    - Dry-run build lane (no mutations): `node orchestration/cli.mjs build-lane AUV-0003 --patch runs/demo/demo-patch.diff --dry-run --no-autopilot`
+    - Changeset validation (dry): `node orchestration/cli.mjs build-lane AUV-0003 --patch changes.json --dry-run --no-autopilot`
+    - Full run with PR (on a demo branch): `node orchestration/cli.mjs build-lane AUV-0003 --patch changes.diff --branch auv/AUV-0003/demo --open-pr`
+  - CI must fail on any QA violation and must run unit+integration before autopilot.
+  - Confirm no `runs/**` files are staged/committed; PR diff only touches allowlisted paths.
+  - Ensure `runs/observability/hooks.jsonl` contains BuildStart/PatchApplied/BuildEnd events for build-lane runs.

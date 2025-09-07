@@ -1,9 +1,11 @@
 # Project: Artisan Marketplace
 
 ## Overview
+
 Create an online marketplace connecting artisan craftspeople with customers seeking unique, handmade items. Think Etsy but focused on local artisans within a 50-mile radius. The platform should emphasize discoverability of local creators and provide tools for both buyers and sellers.
 
 ## Business Goals
+
 - Launch a minimum viable marketplace within 3 weeks
 - Support 1000+ artisan vendors in the first year
 - Process 10,000 orders per month within 6 months
@@ -11,6 +13,7 @@ Create an online marketplace connecting artisan craftspeople with customers seek
 - Generate revenue through transaction fees (5% per sale)
 
 ## Must Have Features
+
 - Product catalog with search and filtering by keyword, category, price range, and distance
 - Shopping cart with persistent state across sessions
 - Guest checkout with optional account creation
@@ -23,6 +26,7 @@ Create an online marketplace connecting artisan craftspeople with customers seek
 - Mobile-responsive design for all pages
 
 ## Nice to Have Features
+
 - Product recommendations based on browsing history
 - Social sharing buttons for products
 - Wishlist/favorites functionality
@@ -35,6 +39,7 @@ Create an online marketplace connecting artisan craftspeople with customers seek
 - Multi-language support (Spanish initially)
 
 ## Technical Requirements
+
 - Handle 1000+ concurrent users
 - Support 50,000+ products in catalog
 - Page load times under 3 seconds
@@ -46,6 +51,7 @@ Create an online marketplace connecting artisan craftspeople with customers seek
 - GDPR-compliant data handling
 
 ## Constraints
+
 - Budget: $8,000
 - Timeline: 3 weeks
 - Tech Stack: Node.js, React, PostgreSQL preferred
@@ -53,6 +59,7 @@ Create an online marketplace connecting artisan craftspeople with customers seek
 - Team: 2-3 developers available
 
 ## Sample URLs
+
 - https://www.etsy.com (reference for marketplace features)
 - https://www.shopify.com (reference for vendor tools)
 - https://marketplace.faire.com (reference for B2B features)

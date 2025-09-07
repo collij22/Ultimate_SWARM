@@ -8,7 +8,7 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 - `@docs/exec_summary_06sep2025.md` (summary at 06-Sep-2025)
 - `@docs/deep_technical_plan_06sep2025.md` (proposed technical moving forward, including current state and recent implementation)
 - `@docs/plan.md` (a high level plan to supplement the technical plan)
-IMPORTANT: other core documents
+  IMPORTANT: other core documents
 - `@docs/ARCHITECTURE.md`
 - `@docs/ORCHESTRATION.md`
 - `@docs/QUALITY-GATES.md`
@@ -53,12 +53,12 @@ IMPORTANT: other core documents
 
 Reply with exactly this structure:
 
-```xml
+````xml
 <ready>
   <snapshot>
     <!-- 3–5 bullets: where we are (AUVs, runbook, MCP router/policies, artifacts/gates), and any env/setup preconditions -->
   </snapshot>
-  
+
   <quick_commands>
     npm run mock:staging
     STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api
@@ -67,7 +67,7 @@ Reply with exactly this structure:
     node orchestration/cvf-check.mjs AUV-0003
     tail -n 50 runs/observability/hooks.jsonl
   </quick_commands>
-  
+
   <menus>
     <option id="1">Run a full AUV delivery (autopilot): choose 0003, 0004, or 0005</option>
     <option id="2">Author a new AUV spec from template (then auto-generate tests)</option>
@@ -75,7 +75,7 @@ Reply with exactly this structure:
     <option id="4">Draft/update agents.allowlist + capability_map for a task</option>
     <option id="5">Package delivery + client report (zip + report HTML)</option>
   </menus>
-  
+
   <notes>
     - Auto-authoring will create missing specs from capability hints
     - Use the MCP router by **capability**, not tool name; policies/registry are the source of truth
@@ -83,3 +83,4 @@ Reply with exactly this structure:
   </notes>
 </ready>
 ``` ::contentReference[oaicite:0]{index=0}
+````

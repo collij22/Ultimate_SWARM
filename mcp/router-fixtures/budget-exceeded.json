@@ -1,10 +1,7 @@
 {
   "description": "Secondary tools request with insufficient budget",
   "agentId": "C16.devops_engineer",
-  "requestedCapabilities": [
-    "deploy.preview",
-    "monitoring.saas"
-  ],
+  "requestedCapabilities": ["deploy.preview", "monitoring.saas"],
   "budgetUsd": 0.05,
   "secondaryConsent": true,
   "env": {

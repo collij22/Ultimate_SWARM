@@ -2,43 +2,43 @@
 // hash:ce66d70281b7449d663a386c17755c72d06f69ac9eab0057923f943e08fcb16f file:auv-0102.spec.ts
 
 import { test, expect } from '@playwright/test';
-  import fs from 'fs'; import path from 'path';
-  const STAGING_URL = process.env.STAGING_URL;
-  const API_BASE = process.env.API_BASE;
-  const AUV_ID = process.env.AUV_ID || 'AUV-0102';
-  
-  test.describe('AUV-0102 UI — cart summary', () => {
-    test.skip(!STAGING_URL || !API_BASE, 'STAGING_URL/API_BASE env vars not set');
-  
-    test('renders rows and totals after API setup', async ({ page, request }) => {
-      // Perform setup (add cart items) if any
-      const setup = [{"method":"POST","path":"/api/cart","body":{"productId":"demo-1","qty":1}}];
-      for (const step of setup) {
-        const method = (step.method || 'POST').toUpperCase();
-        const rawPath = step.path || '';
-        const normPath = rawPath.replace(/^\/api(?=\/|$)/, ''); // strip leading /api if present
-        const url = `${API_BASE}${normPath}`;
-        if (method === 'POST') {
-          await request.post(url, { data: step.body || {} });
-        } else if (method === 'GET') {
-          await request.get(url);
-        }
+import fs from 'fs';
+import path from 'path';
+const STAGING_URL = process.env.STAGING_URL;
+const API_BASE = process.env.API_BASE;
+const AUV_ID = process.env.AUV_ID || 'AUV-0102';
+
+test.describe('AUV-0102 UI — cart summary', () => {
+  test.skip(!STAGING_URL || !API_BASE, 'STAGING_URL/API_BASE env vars not set');
+
+  test('renders rows and totals after API setup', async ({ page, request }) => {
+    // Perform setup (add cart items) if any
+    const setup = [{ method: 'POST', path: '/api/cart', body: { productId: 'demo-1', qty: 1 } }];
+    for (const step of setup) {
+      const method = (step.method || 'POST').toUpperCase();
+      const rawPath = step.path || '';
+      const normPath = rawPath.replace(/^\/api(?=\/|$)/, ''); // strip leading /api if present
+      const url = `${API_BASE}${normPath}`;
+      if (method === 'POST') {
+        await request.post(url, { data: step.body || {} });
+      } else if (method === 'GET') {
+        await request.get(url);
       }
-  
-      // Navigate and wait for cart summary to load
-      await page.goto(`${STAGING_URL}/cart.html`, { waitUntil: 'networkidle' });
-  
-      const rows = page.locator('[data-testid="cart-row"]');
-      await expect(rows.first()).toBeVisible();
-  
-      const subtotalText = await page.locator('[data-testid="cart-subtotal"]').innerText();
-      const taxText = await page.locator('[data-testid="cart-tax"]').innerText();
-      const totalText = await page.locator('[data-testid="cart-total"]').innerText();
-      expect(totalText).toMatch(/\$\d/); // some currency
-  
-      const dir = path.resolve(process.cwd(), 'runs', AUV_ID, 'ui');
-      fs.mkdirSync(dir, { recursive: true });
-      await page.screenshot({ path: path.join(dir, 'cart_summary.png') });
-    });
+    }
+
+    // Navigate and wait for cart summary to load
+    await page.goto(`${STAGING_URL}/cart.html`, { waitUntil: 'networkidle' });
+
+    const rows = page.locator('[data-testid="cart-row"]');
+    await expect(rows.first()).toBeVisible();
+
+    const subtotalText = await page.locator('[data-testid="cart-subtotal"]').innerText();
+    const taxText = await page.locator('[data-testid="cart-tax"]').innerText();
+    const totalText = await page.locator('[data-testid="cart-total"]').innerText();
+    expect(totalText).toMatch(/\$\d/); // some currency
+
+    const dir = path.resolve(process.cwd(), 'runs', AUV_ID, 'ui');
+    fs.mkdirSync(dir, { recursive: true });
+    await page.screenshot({ path: path.join(dir, 'cart_summary.png') });
   });
-  
+});

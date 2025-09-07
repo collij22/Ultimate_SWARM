@@ -20,62 +20,62 @@ const testCases = [
     name: 'Extract AUV_ID from node id (playwright node)',
     node: { id: 'AUV-0101-ui', params: {} },
     baseEnv: { AUV_ID: 'DEFAULT-001' },
-    expected: 'AUV-0101'
+    expected: 'AUV-0101',
   },
   {
     name: 'Extract AUV_ID from node id (perf node)',
     node: { id: 'AUV-0102-perf', params: {} },
     baseEnv: { AUV_ID: 'DEFAULT-001' },
-    expected: 'AUV-0102'
+    expected: 'AUV-0102',
   },
   {
     name: 'Extract AUV_ID from node id (cvf node)',
     node: { id: 'AUV-0103-cvf', params: {} },
     baseEnv: { AUV_ID: 'DEFAULT-001' },
-    expected: 'AUV-0103'
+    expected: 'AUV-0103',
   },
   {
     name: 'Use AUV_ID from params (CVF node with params)',
     node: { id: 'AUV-0103-cvf', params: { auv: 'AUV-0103' } },
     baseEnv: { AUV_ID: 'DEFAULT-001' },
-    expected: 'AUV-0103'
+    expected: 'AUV-0103',
   },
   {
     name: 'Params override node id extraction',
     node: { id: 'AUV-0104-ui', params: { auv: 'AUV-0105' } },
     baseEnv: { AUV_ID: 'DEFAULT-001' },
-    expected: 'AUV-0105'
+    expected: 'AUV-0105',
   },
   {
     name: 'Non-AUV node falls back to base env',
     node: { id: 'server', params: {} },
     baseEnv: { AUV_ID: 'DEFAULT-001' },
-    expected: 'DEFAULT-001'
+    expected: 'DEFAULT-001',
   },
   {
     name: 'Complex AUV ID with 4 digits',
     node: { id: 'AUV-9999-lighthouse', params: {} },
     baseEnv: { AUV_ID: 'DEFAULT-001' },
-    expected: 'AUV-9999'
+    expected: 'AUV-9999',
   },
   {
     name: 'No AUV_ID anywhere returns undefined',
     node: { id: 'generic-node', params: {} },
     baseEnv: {},
-    expected: undefined
+    expected: undefined,
   },
   {
     name: 'AUV-0201-ui extracts correctly',
     node: { id: 'AUV-0201-ui', params: {} },
     baseEnv: {},
-    expected: 'AUV-0201'
+    expected: 'AUV-0201',
   },
   {
     name: 'Multiple hyphens in node id',
     node: { id: 'AUV-0301-ui-test-node', params: {} },
     baseEnv: {},
-    expected: 'AUV-0301'
-  }
+    expected: 'AUV-0301',
+  },
 ];
 
 // Run tests
@@ -86,7 +86,7 @@ const results = [];
 for (const test of testCases) {
   const result = deriveAuvId(test.node, test.baseEnv);
   const success = result === test.expected;
-  
+
   if (success) {
     console.log(`✅ ${test.name}`);
     console.log(`   Node: ${test.node.id} → AUV_ID: ${result}`);
@@ -97,15 +97,15 @@ for (const test of testCases) {
     console.log(`   Expected: ${test.expected}, Got: ${result}`);
     failed++;
   }
-  
+
   results.push({
     name: test.name,
     nodeId: test.node.id,
     result,
     expected: test.expected,
-    success
+    success,
   });
-  
+
   console.log();
 }
 
@@ -118,9 +118,9 @@ const regexTests = [
   { input: 'AUV-9999-perf', expected: 'AUV-9999' },
   { input: 'AUV-1234-cvf', expected: 'AUV-1234' },
   { input: 'server', expected: undefined },
-  { input: 'AUV-123', expected: undefined },  // Only 3 digits
+  { input: 'AUV-123', expected: undefined }, // Only 3 digits
   { input: 'AUV-12345', expected: 'AUV-1234' }, // 5 digits - matches first 4
-  { input: 'auv-0001', expected: undefined },  // Lowercase
+  { input: 'auv-0001', expected: undefined }, // Lowercase
 ];
 
 let regexPassed = 0;
@@ -129,12 +129,14 @@ let regexFailed = 0;
 for (const test of regexTests) {
   const match = (test.input.match(/^AUV-\d{4}/) || [])[0];
   const success = match === test.expected;
-  
+
   if (success) {
     console.log(`✅ Regex: "${test.input}" → ${match || 'undefined'}`);
     regexPassed++;
   } else {
-    console.log(`❌ Regex: "${test.input}" expected ${test.expected || 'undefined'}, got ${match || 'undefined'}`);
+    console.log(
+      `❌ Regex: "${test.input}" expected ${test.expected || 'undefined'}, got ${match || 'undefined'}`,
+    );
     regexFailed++;
   }
 }
@@ -143,7 +145,9 @@ for (const test of regexTests) {
 console.log('\n📊 Summary:');
 console.log(`  Logic Tests: ${passed}/${passed + failed} passed`);
 console.log(`  Regex Tests: ${regexPassed}/${regexPassed + regexFailed} passed`);
-console.log(`  Total: ${passed + regexPassed}/${passed + failed + regexPassed + regexFailed} passed`);
+console.log(
+  `  Total: ${passed + regexPassed}/${passed + failed + regexPassed + regexFailed} passed`,
+);
 
 const totalFailed = failed + regexFailed;
 

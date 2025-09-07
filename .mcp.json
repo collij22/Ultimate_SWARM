@@ -1,12 +1,12 @@
 {
-    "mcpServers": {
-      "notion": {
-        "type": "http",
-        "url": "https://mcp.notion.com/mcp"
-      },
-      "sentry": {
-        "type": "http",
-        "url": "https://mcp.sentry.dev/mcp"
-      }
+  "mcpServers": {
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
+    },
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp"
     }
-  }  
+  }
+}

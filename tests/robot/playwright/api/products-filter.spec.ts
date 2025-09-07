@@ -11,7 +11,7 @@ test.describe('AUV-0003 API — baseline', () => {
     expect(body.length).toBeGreaterThan(0);
   });
 
-test('q=3 filters by title', async ({ request }) => {
+  test('q=3 filters by title', async ({ request }) => {
     const res = await request.get(`${API_BASE}/products?q=3`);
     expect(res.status()).toBe(200);
     const body = await res.json();

@@ -87,22 +87,22 @@ agents:
     C14.debugger: [traces, explain, depgraph]
     C15.security_auditor: [semgrep, gitleaks, checkov, trivy]
     C16.devops_engineer: [kubectl, helm, docker-buildx, vercel]
-    
+
   # Auxiliary agents
   performance-optimizer:
     capabilities: [perf.web, perf.api, perf.db, trace.profile]
     allowlist:
       primary: [lighthouse, bundle-analyzer, latency-sampler, explain, traces]
       secondary: [k6]
-    notes: "Run baselines first; verify deltas with identical scripts/env."
+    notes: 'Run baselines first; verify deltas with identical scripts/env.'
 
   code-migrator:
     capabilities: [dep.graph, code.codemod, typecheck, lint]
     allowlist:
       primary: [depgraph, jscodeshift, ts-morph, tsc, eslint]
       secondary: []
-    serialized_files: ["package.json", "pnpm-lock.yaml", "yarn.lock", "migrations/**"]
-    notes: "Use codemods with reports; phase changes; respect serialize_globs."
+    serialized_files: ['package.json', 'pnpm-lock.yaml', 'yarn.lock', 'migrations/**']
+    notes: 'Use codemods with reports; phase changes; respect serialize_globs.'
 
 # Header/CSP check defaults
 headers_csp:

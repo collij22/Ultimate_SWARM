@@ -11,22 +11,28 @@ Briefs can be written in Markdown (.md), YAML (.yaml), or JSON (.json) format. M
 ## Required Sections
 
 ### 1. Business Goals
+
 **Purpose**: Define high-level objectives the project aims to achieve  
 **Format**: List of 1-10 clear, measurable goals  
 **Example**:
+
 ```markdown
 ## Business Goals
+
 - Launch a minimum viable marketplace within 3 weeks
 - Support 1000+ vendors in the first year
 - Process 10,000 orders per month within 6 months
 ```
 
 ### 2. Must Have Features
+
 **Purpose**: Essential features that must be delivered  
 **Format**: List of specific, actionable features (1-20 items)  
 **Example**:
+
 ```markdown
 ## Must Have Features
+
 - Product catalog with search and filtering
 - Shopping cart with persistent state
 - Guest checkout with optional account creation
@@ -36,27 +42,34 @@ Briefs can be written in Markdown (.md), YAML (.yaml), or JSON (.json) format. M
 ## Optional Sections
 
 ### 3. Nice to Have Features
+
 **Purpose**: Additional features that add value but aren't critical  
 **Format**: List of enhancement features  
 **Example**:
+
 ```markdown
 ## Nice to Have Features
+
 - Product recommendations
 - Social sharing buttons
 - Advanced analytics dashboard
 ```
 
 ### 4. Constraints
+
 **Purpose**: Project limitations and requirements  
 **Fields**:
+
 - `budget_usd`: Maximum budget in USD
 - `timeline_days`: Project duration in days
 - `tech_stack`: Preferred technologies
 - `environments`: Target deployment environments
 
 **Example**:
+
 ```markdown
 ## Constraints
+
 - Budget: $8,000
 - Timeline: 21 days (3 weeks)
 - Tech Stack: Node.js, React, PostgreSQL
@@ -64,10 +77,13 @@ Briefs can be written in Markdown (.md), YAML (.yaml), or JSON (.json) format. M
 ```
 
 ### 5. Technical Requirements
+
 **Purpose**: Non-functional requirements and performance criteria  
 **Example**:
+
 ```markdown
 ## Technical Requirements
+
 - Handle 1000+ concurrent users
 - Page load times under 3 seconds
 - 99.9% uptime SLA
@@ -75,11 +91,14 @@ Briefs can be written in Markdown (.md), YAML (.yaml), or JSON (.json) format. M
 ```
 
 ### 6. Sample URLs
+
 **Purpose**: Reference sites for inspiration or feature comparison  
 **Format**: List of URLs with descriptions  
 **Example**:
+
 ```markdown
 ## Sample URLs
+
 - https://www.etsy.com (marketplace features)
 - https://www.shopify.com (vendor tools)
 ```
@@ -118,18 +137,22 @@ Briefs are validated against a JSON Schema (contracts/brief.schema.json):
 The compiler recognizes these patterns and generates appropriate AUVs:
 
 #### E-commerce
+
 Keywords: shop, cart, product, catalog, checkout, payment, order
 Generates: Product catalog, shopping cart, checkout flow AUVs
 
 #### SaaS Dashboard
+
 Keywords: dashboard, analytics, report, metrics, charts
 Generates: Dashboard, analytics, reporting AUVs
 
 #### Authentication
+
 Keywords: login, signup, auth, user, account, profile
 Generates: Authentication, user management AUVs
 
 #### API/Integration
+
 Keywords: api, endpoint, webhook, integration, service
 Generates: API gateway, data endpoint AUVs
 
@@ -187,21 +210,25 @@ See `briefs/demo-01/brief.md` for a complete example of an e-commerce marketplac
 ## Troubleshooting
 
 ### Brief validation fails
+
 - Check required fields are present (business_goals, must_have)
 - Ensure proper formatting (arrays for lists, numbers for budget)
 - Validate against schema: `contracts/brief.schema.json`
 
 ### Too few AUVs generated
+
 - Add more specific features to must_have section
 - Include technical details that suggest implementation
 - Use recognized keywords for your domain
 
 ### Dependencies incorrect
+
 - Ensure logical feature ordering in brief
 - Explicitly state dependencies in feature descriptions
 - Review generated `backlog.yaml` and adjust brief accordingly
 
 ### Estimates seem wrong
+
 - Provide more detail about feature complexity
 - Include performance requirements
 - Specify integration points and external dependencies
@@ -218,17 +245,21 @@ After successful compilation:
 ## Advanced Usage
 
 ### Custom Templates
+
 Modify `capabilities/templates/AUV-TEMPLATE.yaml` to customize AUV structure.
 
 ### Agent Configuration
+
 Adjust heuristic patterns in `orchestration/lib/call_agent.mjs` for domain-specific extraction.
 
 ### Budget Tuning
+
 Update complexity scoring in `orchestration/lib/auv_compiler.mjs` based on your team's velocity.
 
 ## Support
 
 For issues or improvements:
+
 - Check existing AUV examples in `capabilities/`
 - Review test authoring compatibility in `orchestration/lib/test_authoring.mjs`
 - Examine hooks logs: `tail -n 50 runs/observability/hooks.jsonl`

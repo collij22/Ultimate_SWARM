@@ -12,7 +12,7 @@ test.describe('AUV-0001 API', () => {
   test('POST /cart returns 200 and includes item', async ({ request }) => {
     const res = await request.post(`${API_BASE}/cart`, {
       data: { productId: 'demo-1', qty: 1 },
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
@@ -22,7 +22,7 @@ test.describe('AUV-0001 API', () => {
   test('invalid qty -> 400 with error envelope', async ({ request }) => {
     const res = await request.post(`${API_BASE}/cart`, {
       data: { productId: 'demo-1', qty: 0 },
-      headers: { 'Content-Type': 'application/json' }
+      headers: { 'Content-Type': 'application/json' },
     });
     expect(res.status()).toBe(400);
     const body = await res.json();

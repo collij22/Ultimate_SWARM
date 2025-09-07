@@ -2,12 +2,12 @@ name: "Security Auditor \u2192 sast + secrets + headers (all primary)"
 input:
   agent: security-auditor
   requested_capabilities:
-  - security.scan
-  - security.secrets
-  - header.csp
+    - security.scan
+    - security.secrets
+    - header.csp
 expected:
   allowlist:
-  - semgrep
-  - gitleaks
-  - fetch
+    - semgrep
+    - gitleaks
+    - fetch
   secondary_candidates: []

@@ -3,9 +3,9 @@ name: Swarm1 CI
 on:
   workflow_dispatch:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,7 +19,7 @@ jobs:
     # Global env (no AUV_ID needed)
     env:
       STAGING_URL: http://127.0.0.1:3000
-      API_BASE:    http://127.0.0.1:3000/api
+      API_BASE: http://127.0.0.1:3000/api
 
     steps:
       - name: Checkout
@@ -44,11 +44,32 @@ jobs:
         shell: bash
         run: npx playwright install --with-deps
 
+      # ---- QA Gates (Phase 5) ----
+      - name: Format check
+        shell: bash
+        run: npx prettier --check .
+
+      - name: Lint check
+        shell: bash
+        run: npx eslint . --max-warnings=0
+
+      - name: Typecheck
+        shell: bash
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        shell: bash
+        run: npm run test:unit
+
+      - name: Integration tests
+        shell: bash
+        run: npm run test:integration
+
       # ---- Router validation and tests ----
       - name: Validate router configuration
         shell: bash
         run: node mcp/router.mjs --validate
-      
+
       - name: Run router tests
         shell: bash
         run: npm run test:router

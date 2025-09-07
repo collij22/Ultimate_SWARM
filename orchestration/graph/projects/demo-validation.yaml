@@ -1,4 +1,4 @@
-version: "1.0"
+version: '1.0'
 project_id: demo-validation
 concurrency: 3
 defaults:
@@ -12,7 +12,7 @@ nodes:
     timeout_ms: 15000
     resources:
       - server
-  
+
   # AUV-0003 chain (independent)
   - id: AUV-0003-ui
     type: playwright
@@ -21,7 +21,7 @@ nodes:
     params:
       specs:
         - tests/robot/playwright/products-filter.spec.ts
-  
+
   - id: AUV-0003-perf
     type: lighthouse
     requires:
@@ -29,14 +29,14 @@ nodes:
     params:
       url: ${STAGING_URL}/products.html
       out: runs/AUV-0003/perf/lighthouse.json
-  
+
   - id: AUV-0003-cvf
     type: cvf
     requires:
       - AUV-0003-perf
     params:
       auv: AUV-0003
-  
+
   # AUV-0004 chain (independent)
   - id: AUV-0004-ui
     type: playwright
@@ -45,7 +45,7 @@ nodes:
     params:
       specs:
         - tests/robot/playwright/cart-summary.spec.ts
-  
+
   - id: AUV-0004-perf
     type: lighthouse
     requires:
@@ -53,14 +53,14 @@ nodes:
     params:
       url: ${STAGING_URL}/cart.html
       out: runs/AUV-0004/perf/lighthouse.json
-  
+
   - id: AUV-0004-cvf
     type: cvf
     requires:
       - AUV-0004-perf
     params:
       auv: AUV-0004
-  
+
   # AUV-0005 chain (independent)
   - id: AUV-0005-ui
     type: playwright
@@ -69,7 +69,7 @@ nodes:
     params:
       specs:
         - tests/robot/playwright/checkout-flow.spec.ts
-  
+
   - id: AUV-0005-perf
     type: lighthouse
     requires:
@@ -77,7 +77,7 @@ nodes:
     params:
       url: ${STAGING_URL}/checkout.html
       out: runs/AUV-0005/perf/lighthouse.json
-  
+
   - id: AUV-0005-cvf
     type: cvf
     requires:
@@ -90,15 +90,15 @@ edges:
   - [server, AUV-0003-ui]
   - [server, AUV-0004-ui]
   - [server, AUV-0005-ui]
-  
+
   # AUV-0003 chain
   - [AUV-0003-ui, AUV-0003-perf]
   - [AUV-0003-perf, AUV-0003-cvf]
-  
+
   # AUV-0004 chain
   - [AUV-0004-ui, AUV-0004-perf]
   - [AUV-0004-perf, AUV-0004-cvf]
-  
+
   # AUV-0005 chain
   - [AUV-0005-ui, AUV-0005-perf]
   - [AUV-0005-perf, AUV-0005-cvf]

@@ -15,10 +15,10 @@ const auvs = getAuvsWithArtifacts();
 
 for (const id of auvs) {
   const artifacts = expectedArtifacts(id);
-  
+
   // Ensure each AUV has at least one artifact defined
   assert(artifacts.length > 0, `${id}: no artifacts defined`);
-  
+
   console.log(`\n${id}:`);
   console.log(`  Expected artifacts: ${artifacts.join(', ')}`);
   console.log(`  ✅ ${artifacts.length} artifacts defined`);

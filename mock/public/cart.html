@@ -1,35 +1,75 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Cart</title>
-  <style>body{font-family:system-ui,sans-serif;margin:2rem}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{border:1px solid #ddd;padding:.5rem;text-align:left}tfoot td{font-weight:600}</style>
-</head>
-<body>
-  <h1>Cart</h1>
-  <table>
-    <thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Line</th></tr></thead>
-    <tbody id="cart-body"></tbody>
-    <tfoot>
-      <tr><td colspan="3">Subtotal</td><td data-testid="cart-subtotal">—</td></tr>
-      <tr><td colspan="3">Tax</td><td data-testid="cart-tax">—</td></tr>
-      <tr><td colspan="3">Total</td><td data-testid="cart-total">—</td></tr>
-    </tfoot>
-  </table>
-  <script>
-    async function loadCart(){
-      const sum = await fetch('/api/cart/summary').then(r=>r.json());
-      const b = document.getElementById('cart-body'); b.innerHTML='';
-      sum.items.forEach(it=>{
-        const tr=document.createElement('tr'); tr.setAttribute('data-testid','cart-row');
-        tr.innerHTML=`<td>${it.title}</td><td>${it.qty}</td><td>$${it.price.toFixed(2)}</td><td>$${it.lineTotal.toFixed(2)}</td>`;
-        b.appendChild(tr);
-      });
-      document.querySelector('[data-testid="cart-subtotal"]').textContent = `$${sum.subtotal.toFixed(2)}`;
-      document.querySelector('[data-testid="cart-tax"]').textContent = `$${sum.tax.toFixed(2)}`;
-      document.querySelector('[data-testid="cart-total"]').textContent = `$${sum.total.toFixed(2)}`;
-    }
-    loadCart();
-  </script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cart</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        text-align: left;
+      }
+      tfoot td {
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Cart</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qty</th>
+          <th>Price</th>
+          <th>Line</th>
+        </tr>
+      </thead>
+      <tbody id="cart-body"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3">Subtotal</td>
+          <td data-testid="cart-subtotal">—</td>
+        </tr>
+        <tr>
+          <td colspan="3">Tax</td>
+          <td data-testid="cart-tax">—</td>
+        </tr>
+        <tr>
+          <td colspan="3">Total</td>
+          <td data-testid="cart-total">—</td>
+        </tr>
+      </tfoot>
+    </table>
+    <script>
+      async function loadCart() {
+        const sum = await fetch('/api/cart/summary').then((r) => r.json());
+        const b = document.getElementById('cart-body');
+        b.innerHTML = '';
+        sum.items.forEach((it) => {
+          const tr = document.createElement('tr');
+          tr.setAttribute('data-testid', 'cart-row');
+          tr.innerHTML = `<td>${it.title}</td><td>${it.qty}</td><td>$${it.price.toFixed(2)}</td><td>$${it.lineTotal.toFixed(2)}</td>`;
+          b.appendChild(tr);
+        });
+        document.querySelector('[data-testid="cart-subtotal"]').textContent =
+          `$${sum.subtotal.toFixed(2)}`;
+        document.querySelector('[data-testid="cart-tax"]').textContent = `$${sum.tax.toFixed(2)}`;
+        document.querySelector('[data-testid="cart-total"]').textContent =
+          `$${sum.total.toFixed(2)}`;
+      }
+      loadCart();
+    </script>
+  </body>
 </html>

@@ -14,10 +14,10 @@ requirements:
     - POST /api/checkout -> 201 { orderId } on valid; 400 { error } on invalid
   ui:
     - /checkout.html renders form with data-testids:
-      - name: #name, email: #email, address: #address, card: #card
-      - submit: [data-testid="submit-order"]
-      - errors inline: [data-testid="error-<field>"]
-      - success banner: [data-testid="order-success"]
+        - name: #name, email: #email, address: #address, card: #card
+        - submit: [data-testid="submit-order"]
+        - errors inline: [data-testid="error-<field>"]
+        - success banner: [data-testid="order-success"]
 
 tests:
   playwright:
@@ -42,8 +42,8 @@ authoring_hints:
       - name: valid -> 201
         method: POST
         body:
-          name: "Jane"
-          email: "jane@example.com"
-          address: "1 Test St"
-          card: "4242424242424242"
+          name: 'Jane'
+          email: 'jane@example.com'
+          address: '1 Test St'
+          card: '4242424242424242'
         expect_status: 201

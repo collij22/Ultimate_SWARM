@@ -23,10 +23,10 @@ artifacts:
 authoring_hints:
   ui:
     page: /checkout.html
-    name_selector: "#name"
-    email_selector: "#email"
-    address_selector: "#address"
-    card_selector: "#card"
+    name_selector: '#name'
+    email_selector: '#email'
+    address_selector: '#address'
+    card_selector: '#card'
     submit_selector: '[data-testid="submit-order"]'
     success_selector: '[data-testid="order-success"]'
     screenshot: checkout_flow.png

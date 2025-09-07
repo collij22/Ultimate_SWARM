@@ -6,7 +6,7 @@
  *   node orchestration/cvf-check.mjs AUV-0002
  *   node orchestration/cvf-check.mjs AUV-0002 --strict   # same for now; reserved for future checks
  *   node orchestration/cvf-check.mjs AUV-0003
- * 
+ *
  * Behavior:
  * - Looks up the expected artifact list for the provided AUV-ID.
  * - Fails if any path is missing.
@@ -62,7 +62,9 @@ function main() {
 
   const required = expectedArtifacts(auvId);
   if (!required) {
-    console.error(`[CVF] FAIL — no artifact definition for '${auvId}'. Update expectedArtifacts().`);
+    console.error(
+      `[CVF] FAIL — no artifact definition for '${auvId}'. Update expectedArtifacts().`,
+    );
     process.exit(1);
   }
 

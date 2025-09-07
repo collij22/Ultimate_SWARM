@@ -2,43 +2,50 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "RunbookSummary",
   "type": "object",
-  "required": ["event","auv","ok","ts","steps"],
+  "required": ["event", "auv", "ok", "ts", "steps"],
   "properties": {
-    "event": {"enum":["RunbookDone","RunbookFailed"]},
-    "auv": {"type":"string", "pattern":"^AUV-\\d{4}$"},
-    "ok": {"type":"boolean"},
-    "ts": {"type":"number"},
-    "duration_ms": {"type":"number"},
-    "repaired": {"type":"boolean"},
+    "event": { "enum": ["RunbookDone", "RunbookFailed"] },
+    "auv": { "type": "string", "pattern": "^AUV-\\d{4}$" },
+    "ok": { "type": "boolean" },
+    "ts": { "type": "number" },
+    "duration_ms": { "type": "number" },
+    "repaired": { "type": "boolean" },
     "steps": {
-      "type":"array",
+      "type": "array",
       "items": {
-        "type":"object",
-        "required":["name","duration_ms","ok"],
-        "properties":{
-          "name":{"type":"string"},
-          "duration_ms":{"type":"number"},
-          "ok":{"type":"boolean"},
-          "error":{"type":"string"}
+        "type": "object",
+        "required": ["name", "duration_ms", "ok"],
+        "properties": {
+          "name": { "type": "string" },
+          "duration_ms": { "type": "number" },
+          "ok": { "type": "boolean" },
+          "error": { "type": "string" }
         }
       },
       "minItems": 1
     },
-    "artifacts": {"type":"array","items":{"type":"string"}},
+    "artifacts": { "type": "array", "items": { "type": "string" } },
     "perf": {
-      "type":"object",
-      "properties":{"perf_score":{"type":["number","null"]},"lcp_ms":{"type":["number","null"]}},
+      "type": "object",
+      "properties": {
+        "perf_score": { "type": ["number", "null"] },
+        "lcp_ms": { "type": ["number", "null"] }
+      },
       "additionalProperties": false
     },
     "env": {
-      "type":"object",
-      "properties":{"STAGING_URL":{"type":"string"},"API_BASE":{"type":"string"},"NODE_ENV":{"type":["string","null"]}},
+      "type": "object",
+      "properties": {
+        "STAGING_URL": { "type": "string" },
+        "API_BASE": { "type": "string" },
+        "NODE_ENV": { "type": ["string", "null"] }
+      },
       "additionalProperties": true
     },
-    "error": {"type":"string"},
-    "error_step": {"type":"string"},
-    "exit_code": {"type":"number"},
-    "version": {"type":"string"}
+    "error": { "type": "string" },
+    "error_step": { "type": "string" },
+    "exit_code": { "type": "number" },
+    "version": { "type": "string" }
   },
   "additionalProperties": true
 }

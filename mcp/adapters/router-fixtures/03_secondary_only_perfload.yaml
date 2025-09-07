@@ -2,13 +2,13 @@ name: "Perf load (secondary only) \u2192 propose with budget"
 input:
   agent: performance-optimizer
   requested_capabilities:
-  - perf.load
+    - perf.load
 expected:
   allowlist: []
   proposal:
     secondary:
-    - k6
+      - k6
     budget_usd: 0.1
     reason: No primary tool available for perf.load
   notes:
-  - Consent required for secondary tool
+    - Consent required for secondary tool

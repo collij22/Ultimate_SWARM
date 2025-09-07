@@ -1,37 +1,71 @@
-<!doctype html><html lang="en"><head>
-  <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Checkout</title>
-  <style>body{font-family:system-ui,sans-serif;margin:2rem} .err{color:#b00;font-size:.9rem}</style>
-  </head><body>
-  <h1>Checkout</h1>
-  <form id="f">
-    <div><label>Name <input id="name"/></label><div class="err" data-testid="error-name"></div></div>
-    <div><label>Email <input id="email"/></label><div class="err" data-testid="error-email"></div></div>
-    <div><label>Address <input id="address"/></label><div class="err" data-testid="error-address"></div></div>
-    <div><label>Card <input id="card"/></label><div class="err" data-testid="error-card"></div></div>
-    <button type="submit" data-testid="submit-order">Submit</button>
-  </form>
-  <div data-testid="order-success" style="display:none"></div>
-  <script>
-    const err = id => document.querySelector(`[data-testid="error-${id}"]`);
-    const ok  = t  => { const el=document.querySelector('[data-testid="order-success"]'); el.textContent=t; el.style.display='block'; };
-    document.getElementById('f').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      ['name','email','address','card'].forEach(k => err(k).textContent='');
-      const payload = {
-        name:    document.getElementById('name').value,
-        email:   document.getElementById('email').value,
-        address: document.getElementById('address').value,
-        card:    document.getElementById('card').value
-      };
-      const r = await fetch('/api/checkout', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-      if (r.status === 201) {
-        const { orderId } = await r.json();
-        ok(`Order placed! ${orderId}`);
-      } else {
-        const j = await r.json().catch(()=>({}));
-        (j.error?.fields || []).forEach(k => err(k).textContent = 'Invalid');
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
       }
-    });
-  </script>
-  </body></html>  
+      .err {
+        color: #b00;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Checkout</h1>
+    <form id="f">
+      <div>
+        <label>Name <input id="name" /></label>
+        <div class="err" data-testid="error-name"></div>
+      </div>
+      <div>
+        <label>Email <input id="email" /></label>
+        <div class="err" data-testid="error-email"></div>
+      </div>
+      <div>
+        <label>Address <input id="address" /></label>
+        <div class="err" data-testid="error-address"></div>
+      </div>
+      <div>
+        <label>Card <input id="card" /></label>
+        <div class="err" data-testid="error-card"></div>
+      </div>
+      <button type="submit" data-testid="submit-order">Submit</button>
+    </form>
+    <div data-testid="order-success" style="display: none"></div>
+    <script>
+      const err = (id) => document.querySelector(`[data-testid="error-${id}"]`);
+      const ok = (t) => {
+        const el = document.querySelector('[data-testid="order-success"]');
+        el.textContent = t;
+        el.style.display = 'block';
+      };
+      document.getElementById('f').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        ['name', 'email', 'address', 'card'].forEach((k) => (err(k).textContent = ''));
+        const payload = {
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          address: document.getElementById('address').value,
+          card: document.getElementById('card').value,
+        };
+        const r = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (r.status === 201) {
+          const { orderId } = await r.json();
+          ok(`Order placed! ${orderId}`);
+        } else {
+          const j = await r.json().catch(() => ({}));
+          (j.error?.fields || []).forEach((k) => (err(k).textContent = 'Invalid'));
+        }
+      });
+    </script>
+  </body>
+</html>

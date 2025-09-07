@@ -3,6 +3,7 @@
 ## ✅ Completed
 
 ### Phase 1: Foundation Hardening (Completed 2025-09-06)
+
 - **Typed Exit Codes**: Standardized error reporting (101-105)
 - **Result Card Validation**: ajv-cli integration for schema validation
 - **CI Simplification**: All AUV-0002..0005 using autopilot approach
@@ -47,5 +48,5 @@
 
 - **P0**: Critical/blocking for next milestone
 - **P1**: High priority for current quarter
-- **P2**: Medium priority for next quarter  
+- **P2**: Medium priority for next quarter
 - **P3**: Future vision/nice-to-have

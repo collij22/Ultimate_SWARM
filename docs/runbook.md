@@ -49,6 +49,7 @@ CI runs autopilot for AUV-0002, AUV-0003, AUV-0004, and AUV-0005 with full artif
 ## Validation
 
 After running AUVs, validate result cards:
+
 ```bash
 npm run validate:cards
 ```

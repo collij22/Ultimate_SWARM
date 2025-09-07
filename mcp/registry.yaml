@@ -288,7 +288,7 @@ tools:
     tier: secondary
     capabilities: [deploy.preview]
     requires_api_key: true
-    api_key_env: VERCEL_TOKEN  # Optional: custom env var (defaults to VERCEL_API_KEY)
+    api_key_env: VERCEL_TOKEN # Optional: custom env var (defaults to VERCEL_API_KEY)
     cost_model:
       type: flat_per_run
       usd: 0.10

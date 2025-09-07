@@ -1,11 +1,7 @@
 {
   "description": "Security scanning request - mix of primary tools",
   "agentId": "C15.security_auditor",
-  "requestedCapabilities": [
-    "security.scan",
-    "security.secrets",
-    "code.static_analysis"
-  ],
+  "requestedCapabilities": ["security.scan", "security.secrets", "code.static_analysis"],
   "budgetUsd": 0.25,
   "secondaryConsent": false,
   "env": {}

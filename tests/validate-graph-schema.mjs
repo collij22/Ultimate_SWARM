@@ -24,10 +24,10 @@ const validate = ajv.compile(schema);
 // Test demo files
 const demoFiles = [
   'demo-validation.yaml',
-  'working-demo.yaml', 
+  'working-demo.yaml',
   'compiled-demo.yaml',
   'demo-01.yaml',
-  'minimal-test.yaml'
+  'minimal-test.yaml',
 ];
 
 let passed = 0;
@@ -36,19 +36,21 @@ const results = [];
 
 for (const file of demoFiles) {
   const graphPath = path.join(__dirname, '../orchestration/graph/projects/', file);
-  
+
   if (fs.existsSync(graphPath)) {
     const graph = yaml.parse(fs.readFileSync(graphPath, 'utf8'));
     const valid = validate(graph);
-    
+
     if (valid) {
       console.log(`✅ ${file} is valid`);
-      console.log(`   Project: ${graph.project_id}, Nodes: ${graph.nodes.length}, Edges: ${graph.edges?.length || 0}`);
+      console.log(
+        `   Project: ${graph.project_id}, Nodes: ${graph.nodes.length}, Edges: ${graph.edges?.length || 0}`,
+      );
       passed++;
       results.push({ file, valid: true, project: graph.project_id });
     } else {
       console.log(`❌ ${file} is invalid:`);
-      validate.errors.forEach(err => {
+      validate.errors.forEach((err) => {
         console.log(`   ${err.instancePath}: ${err.message}`);
       });
       failed++;
@@ -67,21 +69,21 @@ const constraintTests = [
   {
     name: 'Invalid version',
     graph: { version: '2.0', project_id: 'test', nodes: [] },
-    expectValid: false
+    expectValid: false,
   },
   {
     name: 'Valid minimal graph',
     graph: { version: '1.0', project_id: 'test', nodes: [] },
-    expectValid: true
+    expectValid: true,
   },
   {
     name: 'Invalid node type',
-    graph: { 
-      version: '1.0', 
-      project_id: 'test', 
-      nodes: [{ id: 'test', type: 'invalid_type' }]
+    graph: {
+      version: '1.0',
+      project_id: 'test',
+      nodes: [{ id: 'test', type: 'invalid_type' }],
     },
-    expectValid: false
+    expectValid: false,
   },
   {
     name: 'Valid node types',
@@ -92,21 +94,21 @@ const constraintTests = [
         { id: 'n1', type: 'server' },
         { id: 'n2', type: 'playwright', params: { specs: ['test.ts'] } },
         { id: 'n3', type: 'lighthouse', params: { url: 'http://test', out: 'test.json' } },
-        { id: 'n4', type: 'cvf', params: { auv: 'AUV-0001' } }
-      ]
+        { id: 'n4', type: 'cvf', params: { auv: 'AUV-0001' } },
+      ],
     },
-    expectValid: true
+    expectValid: true,
   },
   {
     name: 'Invalid concurrency (too high)',
     graph: { version: '1.0', project_id: 'test', concurrency: 11, nodes: [] },
-    expectValid: false
+    expectValid: false,
   },
   {
     name: 'Valid concurrency',
     graph: { version: '1.0', project_id: 'test', concurrency: 5, nodes: [] },
-    expectValid: true
-  }
+    expectValid: true,
+  },
 ];
 
 let constraintPassed = 0;
@@ -115,14 +117,14 @@ let constraintFailed = 0;
 for (const test of constraintTests) {
   const valid = validate(test.graph);
   const result = valid === test.expectValid;
-  
+
   if (result) {
     console.log(`✅ ${test.name}`);
     constraintPassed++;
   } else {
     console.log(`❌ ${test.name}`);
     if (!valid && validate.errors) {
-      validate.errors.forEach(err => {
+      validate.errors.forEach((err) => {
         console.log(`   ${err.instancePath}: ${err.message}`);
       });
     }
@@ -134,7 +136,9 @@ for (const test of constraintTests) {
 console.log('\n📊 Summary:');
 console.log(`  Graph Files: ${passed}/${passed + failed} valid`);
 console.log(`  Constraints: ${constraintPassed}/${constraintPassed + constraintFailed} passed`);
-console.log(`  Total: ${passed + constraintPassed}/${passed + failed + constraintPassed + constraintFailed} passed`);
+console.log(
+  `  Total: ${passed + constraintPassed}/${passed + failed + constraintPassed + constraintFailed} passed`,
+);
 
-const exitCode = (failed + constraintFailed) > 0 ? 1 : 0;
+const exitCode = failed + constraintFailed > 0 ? 1 : 0;
 process.exit(exitCode);

@@ -2,10 +2,10 @@ name: "Frontend Specialist \u2192 docs.search (primary only)"
 input:
   agent: frontend-specialist
   requested_capabilities:
-  - docs.search
+    - docs.search
 expected:
   allowlist:
-  - refdocs
+    - refdocs
   secondary_candidates: []
   notes:
-  - Primary tool only; no consent needed
+    - Primary tool only; no consent needed
