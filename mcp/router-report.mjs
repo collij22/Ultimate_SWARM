@@ -128,14 +128,14 @@ export function generateCoverageReport() {
   const capToolCounts = Object.values(policies.capability_map || {}).map((tools) => tools.length);
   report.statistics.average_tools_per_capability =
     capToolCounts.length > 0
-      ? (capToolCounts.reduce((a, b) => a + b, 0) / capToolCounts.length).toFixed(2)
+      ? parseFloat((capToolCounts.reduce((a, b) => a + b, 0) / capToolCounts.length).toFixed(2))
       : 0;
 
   // Average allowlist size
   const allowlistSizes = Object.values(policies.agents?.allowlist || {}).map((list) => list.length);
   report.statistics.average_allowlist_size =
     allowlistSizes.length > 0
-      ? (allowlistSizes.reduce((a, b) => a + b, 0) / allowlistSizes.length).toFixed(2)
+      ? parseFloat((allowlistSizes.reduce((a, b) => a + b, 0) / allowlistSizes.length).toFixed(2))
       : 0;
 
   return report;

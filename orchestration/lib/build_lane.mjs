@@ -653,10 +653,12 @@ function execCommand(command, args = [], options = {}) {
       if (code === 0) {
         resolve({ stdout, stderr, code });
       } else {
-        const error = new Error(`Command failed: ${command} ${args.join(' ')}`);
-        error.code = code;
-        error.stdout = stdout;
-        error.stderr = stderr;
+        const error = new CommandError(
+          `Command failed: ${command} ${args.join(' ')}`,
+          code,
+          stdout,
+          stderr
+        );
         reject(error);
       }
     });
@@ -781,6 +783,16 @@ class BuildLaneError extends Error {
     this.name = 'BuildLaneError';
     this.step = step;
     this.exitCode = exitCode;
+  }
+}
+
+class CommandError extends Error {
+  constructor(message, code, stdout, stderr) {
+    super(message);
+    this.name = 'CommandError';
+    this.code = code;
+    this.stdout = stdout;
+    this.stderr = stderr;
   }
 }
 

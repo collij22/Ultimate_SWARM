@@ -8,7 +8,7 @@ import { invokeRequirementsAnalyst } from './call_agent.mjs';
 /**
  * Parse a brief file and return structured data
  * @param {string} briefPath - Path to the brief file
- * @returns {object} Parsed and validated brief
+ * @returns {Promise<object>} Parsed and validated brief
  */
 export async function parseBrief(briefPath) {
   const briefData = parseBriefFile(briefPath);
@@ -641,7 +641,7 @@ export function estimateBudget(auv) {
  * Write backlog file
  * @param {object[]} auvs - List of AUV specs
  * @param {string} briefId - Brief identifier
- * @returns {string} Path to backlog file
+ * @returns {Promise<string>} Path to backlog file
  */
 export async function writeBacklog(auvs, briefId = 'unknown') {
   const backlogPath = path.join(process.cwd(), 'capabilities/backlog.yaml');
@@ -740,7 +740,7 @@ export function writeAuvSpec(auv) {
  * Full compilation pipeline
  * @param {string} briefPath - Path to brief file
  * @param {object} options - Options { dryRun: boolean }
- * @returns {object} Compilation result
+ * @returns {Promise<object>} Compilation result
  */
 export async function compileBrief(briefPath, options = {}) {
   logHook('CompilationStart', { briefPath, dryRun: options.dryRun });

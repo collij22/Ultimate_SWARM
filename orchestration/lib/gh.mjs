@@ -172,6 +172,7 @@ async function createPullRequestWithRest(options) {
       throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
     }
 
+    /** @type {any} */
     const prData = await response.json();
 
     // Add labels if provided
@@ -182,8 +183,8 @@ async function createPullRequestWithRest(options) {
     const prResult = {
       url: prData.html_url,
       number: prData.number,
-      sha: prData.head.sha,
-      headRef: prData.head.ref,
+      sha: prData.head?.sha,
+      headRef: prData.head?.ref,
       created_at: prData.created_at,
     };
 

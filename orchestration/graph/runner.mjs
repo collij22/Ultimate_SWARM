@@ -28,6 +28,9 @@ export class GraphRunnerError extends Error {
     super(message);
     this.name = 'GraphRunnerError';
     this.code = code;
+    this.stdout = '';
+    this.stderr = '';
+    this.exitCode = 0;
   }
 }
 
@@ -142,13 +145,14 @@ class ResourceLockManager {
  * Implementations for each node type
  */
 class NodeExecutors {
-  constructor(env = {}) {
+  constructor(env = {}, runId = null) {
     this.baseEnv = {
       STAGING_URL: process.env.STAGING_URL || 'http://127.0.0.1:3000',
       API_BASE: process.env.API_BASE || 'http://127.0.0.1:3000/api',
       SWARM_ACTIVE: 'true',
       ...env,
     };
+    this.runId = runId;
     // Track a server we started so we can terminate it on graph completion
     this.serverProc = null;
     this.serverStartedByRunner = false;
@@ -163,7 +167,7 @@ class NodeExecutors {
     // Derive base AUV id (e.g., "AUV-0101") from node params or id
     const auvFromParams = node.params?.auv;
     const auvFromId = (node.id.match(/^AUV-\d{4}/) || [])[0];
-    const AUV_ID = auvFromParams || auvFromId || this.baseEnv.AUV_ID;
+    const AUV_ID = auvFromParams || auvFromId || this.baseEnv?.AUV_ID;
     const nodeEnv = { ...this.baseEnv, ...node.env, ...(AUV_ID ? { AUV_ID } : {}) };
 
     // Router preview (read-only for Phase 4)
@@ -464,7 +468,7 @@ export class GraphRunner {
     this.runId = options.runId || `RUN-${gen()}`;
     this.stateFile = options.stateFile || `runs/graph/${this.runId}/state.json`;
     this.lockManager = new ResourceLockManager();
-    this.executors = new NodeExecutors(options.env);
+    this.executors = new NodeExecutors(options.env, this.runId);
     this.state = null;
     this.graph = null;
     this.adjacency = new Map();

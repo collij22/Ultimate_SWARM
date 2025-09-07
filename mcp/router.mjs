@@ -177,14 +177,14 @@ export function planTools({
 
       // Safety policy enforcement
       const safety = policies?.safety || {};
-      const isProd = env.NODE_ENV === 'production';
+      const isProd = env && env['NODE_ENV'] === 'production';
 
       // Block risky tools in production unless explicitly allowed
       if (isProd && !safety.allow_production_mutations) {
         const riskyEffects = ['exec', 'file_write', 'database'];
         const hasRiskyEffects = (tool.side_effects || []).some((e) => riskyEffects.includes(e));
 
-        if (hasRiskyEffects && env.SAFETY_ALLOW_PROD !== 'true') {
+        if (hasRiskyEffects && env && env['SAFETY_ALLOW_PROD'] !== 'true') {
           decision.rejected.push({
             tool_id: toolId,
             reason: 'blocked by safety policy in production',
@@ -201,7 +201,7 @@ export function planTools({
           return (tool.capabilities || []).some((cap) => cap.includes(domain));
         });
 
-        if (requiresTestMode && env.TEST_MODE !== 'true') {
+        if (requiresTestMode && env && env['TEST_MODE'] !== 'true') {
           decision.rejected.push({
             tool_id: toolId,
             reason: 'requires test mode for restricted domain',

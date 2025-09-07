@@ -5,7 +5,7 @@ import path from 'path';
  * Invoke the Requirements Analyst agent to analyze a brief
  * @param {string} briefPath - Path to the brief file
  * @param {object} options - Options { dryRun: boolean }
- * @returns {object} Structured requirements analysis
+ * @returns {Promise<object>} Structured requirements analysis
  */
 export async function invokeRequirementsAnalyst(briefPath, options = {}) {
   const briefContent = fs.readFileSync(briefPath, 'utf8');
@@ -48,7 +48,7 @@ export async function invokeRequirementsAnalyst(briefPath, options = {}) {
  * Heuristic requirements extraction for dry-run mode
  * @param {string} content - Brief content
  * @param {string} briefPath - Path to brief file
- * @returns {object} Extracted requirements
+ * @returns {Promise<object>} Extracted requirements
  */
 async function extractRequirementsHeuristic(content, briefPath) {
   const requirements = {
@@ -275,7 +275,7 @@ async function extractRequirementsHeuristic(content, briefPath) {
  * Enhanced requirements extraction (simulates agent analysis)
  * @param {string} content - Brief content
  * @param {string} briefPath - Path to brief file
- * @returns {object} Extracted requirements
+ * @returns {Promise<object>} Extracted requirements
  */
 async function extractRequirementsEnhanced(content, briefPath) {
   // Start with heuristic extraction
