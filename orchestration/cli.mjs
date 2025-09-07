@@ -6,6 +6,8 @@
  *   node orchestration/cli.mjs <AUV-ID>                    - Run AUV autopilot
  *   node orchestration/cli.mjs plan <brief-path> [--dry-run] - Generate AUVs from brief
  *   node orchestration/cli.mjs validate auv <AUV-ID>       - Validate AUV spec
+ *   node orchestration/cli.mjs run-graph <graph.yaml> [--resume <RUN-ID>] - Run DAG graph
+ *   node orchestration/cli.mjs graph-from-backlog <backlog.yaml> [-o output.yaml] - Compile backlog to graph
  *   node orchestration/cli.mjs help                        - Show help
  *
  * Exit codes:
@@ -17,10 +19,16 @@
  *   103 - CVF gate failed
  *   104 - Test authoring failed
  *   105 - Server startup failed
+ *   201 - Graph usage error
+ *   202 - Graph schema invalid
+ *   203 - Graph cycle detected
+ *   204 - Graph node failed
  */
 import { runAuv, RunbookError } from './runbooks/auv_delivery.mjs';
 import { compileBrief, validateAuv } from './lib/auv_compiler.mjs';
 import { validateBriefCLI } from './lib/validate_brief.mjs';
+import { GraphRunner } from './graph/runner.mjs';
+import { compileBacklogToGraph, loadBacklog, saveGraph } from './graph/compile_from_backlog.mjs';
 import fs from 'fs';
 import path from 'path';
 
@@ -33,11 +41,13 @@ function showHelp() {
 Swarm1 Orchestration CLI
 
 Commands:
-  <AUV-ID>                     Run AUV autopilot (e.g., AUV-0003)
-  plan <brief-path> [--dry-run] Generate AUVs from brief
-  validate brief <brief-path>   Validate brief against schema
-  validate auv <AUV-ID>        Validate AUV spec
-  help                         Show this help message
+  <AUV-ID>                                        Run AUV autopilot (e.g., AUV-0003)
+  plan <brief-path> [--dry-run]                   Generate AUVs from brief
+  validate brief <brief-path>                     Validate brief against schema
+  validate auv <AUV-ID>                           Validate AUV spec
+  run-graph <graph.yaml> [--resume <RUN-ID>]      Run DAG graph with parallel execution
+  graph-from-backlog <backlog.yaml> [-o output]   Compile backlog to executable graph
+  help                                             Show this help message
 
 Examples:
   node orchestration/cli.mjs AUV-0003
@@ -45,6 +55,9 @@ Examples:
   node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run
   node orchestration/cli.mjs validate brief briefs/demo-01/brief.md
   node orchestration/cli.mjs validate auv AUV-0101
+  node orchestration/cli.mjs run-graph orchestration/graph/projects/demo-01.yaml
+  node orchestration/cli.mjs run-graph orchestration/graph/projects/demo-01.yaml --resume RUN-abc123
+  node orchestration/cli.mjs graph-from-backlog capabilities/backlog.yaml -o graph.yaml
 
 Environment Variables:
   STAGING_URL    Staging server URL (default: http://127.0.0.1:3000)
@@ -148,6 +161,101 @@ async function main() {
     
     console.error('Usage: node orchestration/cli.mjs validate <brief|auv> <target>');
     process.exit(2);
+  }
+  
+  // Handle run-graph command
+  if (command === 'run-graph') {
+    const graphPath = args[1];
+    if (!graphPath) {
+      console.error('Usage: node orchestration/cli.mjs run-graph <graph.yaml> [--resume <RUN-ID>] [--concurrency N]');
+      process.exit(201);
+    }
+    
+    const resumeIdx = args.indexOf('--resume');
+    const resumeId = resumeIdx > -1 ? args[resumeIdx + 1] : null;
+    
+    const concurrencyIdx = args.indexOf('--concurrency');
+    const concurrency = concurrencyIdx > -1 ? parseInt(args[concurrencyIdx + 1]) : 3;
+    
+    console.log(`[cli] Running graph: ${graphPath}`);
+    if (resumeId) console.log(`[cli] Resuming from run: ${resumeId}`);
+    
+    const runner = new GraphRunner({
+      concurrency,
+      runId: resumeId
+    });
+    
+    try {
+      await runner.loadGraph(graphPath);
+      console.log(`[cli] Graph loaded: ${runner.graph.project_id} with ${runner.graph.nodes.length} nodes`);
+      
+      const result = await runner.run(!!resumeId);
+      
+      console.log('\n📊 Graph execution complete:');
+      console.log(`  Run ID: ${result.runId}`);
+      console.log(`  Success: ${result.success ? '✅' : '❌'}`);
+      console.log(`  Duration: ${(result.duration / 1000).toFixed(2)}s`);
+      console.log(`  Completed: ${result.completed.length}`);
+      console.log(`  Failed: ${result.failed.length}`);
+      console.log(`  State: ${result.stateFile}`);
+      
+      process.exit(result.success ? 0 : 204);
+    } catch (error) {
+      console.error(`[cli] Graph execution error: ${error.message}`);
+      
+      if (error.code === 'CYCLE_DETECTED') {
+        process.exit(203);
+      } else if (error.code === 'INVALID_SCHEMA') {
+        process.exit(202);
+      } else {
+        process.exit(204);
+      }
+    }
+  }
+  
+  // Handle graph-from-backlog command
+  if (command === 'graph-from-backlog') {
+    const backlogPath = args[1];
+    if (!backlogPath) {
+      console.error('Usage: node orchestration/cli.mjs graph-from-backlog <backlog.yaml> [-o output.yaml] [--concurrency N]');
+      process.exit(201);
+    }
+    
+    const outputIdx = args.indexOf('-o');
+    const outputPath = outputIdx > -1 
+      ? args[outputIdx + 1] 
+      : `orchestration/graph/projects/${path.basename(backlogPath, '.yaml')}.graph.yaml`;
+    
+    const concurrencyIdx = args.indexOf('--concurrency');
+    const concurrency = concurrencyIdx > -1 ? parseInt(args[concurrencyIdx + 1]) : 3;
+    
+    try {
+      console.log(`[cli] Loading backlog from: ${backlogPath}`);
+      const backlog = await loadBacklog(backlogPath);
+      
+      console.log(`[cli] Compiling graph for ${backlog.auvs?.length || 0} AUVs`);
+      const graph = compileBacklogToGraph(backlog, {
+        projectId: backlog.brief_id || path.basename(backlogPath, '.yaml'),
+        concurrency
+      });
+      
+      console.log(`[cli] Writing graph to: ${outputPath}`);
+      await saveGraph(graph, outputPath);
+      
+      console.log('\n✅ Graph compilation complete:');
+      console.log(`  Project ID: ${graph.project_id}`);
+      console.log(`  Nodes: ${graph.nodes.length}`);
+      console.log(`  Edges: ${graph.edges.length}`);
+      console.log(`  Concurrency: ${graph.concurrency}`);
+      console.log(`  Output: ${outputPath}`);
+      
+      console.log(`\nNext step: node orchestration/cli.mjs run-graph ${outputPath}`);
+      
+      process.exit(0);
+    } catch (error) {
+      console.error(`[cli] Graph compilation error: ${error.message}`);
+      process.exit(201);
+    }
   }
   
   // Default: treat as AUV ID for backwards compatibility

@@ -1,0 +1,175 @@
+# Swarm1 DAG Graph Specification Schema
+# Version 1.0
+# This schema defines the structure for DAG execution graphs
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: "Swarm1 Graph Specification"
+type: object
+required:
+  - version
+  - project_id
+  - nodes
+properties:
+  version:
+    type: string
+    enum: ["1.0"]
+    description: "Schema version"
+  
+  project_id:
+    type: string
+    pattern: "^[a-zA-Z0-9-_]+$"
+    description: "Unique identifier for this graph/project"
+  
+  nodes:
+    type: array
+    description: "List of nodes in the graph"
+    items:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          pattern: "^[a-zA-Z0-9-_]+$"
+          description: "Unique node identifier"
+        
+        type:
+          type: string
+          enum:
+            - server
+            - playwright
+            - lighthouse
+            - cvf
+            - agent_task
+            - package
+            - report
+          description: "Node execution type"
+        
+        params:
+          type: object
+          description: "Type-specific parameters"
+          properties:
+            # Server params
+            url:
+              type: string
+            
+            # Playwright params
+            specs:
+              type: array
+              items:
+                type: string
+            
+            # Lighthouse params
+            out:
+              type: string
+              description: "Output path for lighthouse results"
+            
+            # CVF params
+            auv:
+              type: string
+              pattern: "^AUV-[0-9]+$"
+            
+            # Agent task params
+            agent:
+              type: string
+            task:
+              type: string
+            allowlist:
+              type: array
+              items:
+                type: string
+        
+        requires:
+          type: array
+          description: "Node IDs that must complete before this node"
+          items:
+            type: string
+        
+        retries:
+          type: object
+          properties:
+            max:
+              type: integer
+              minimum: 0
+              maximum: 10
+              default: 1
+            backoff_ms:
+              type: integer
+              minimum: 100
+              maximum: 60000
+              default: 1000
+        
+        resources:
+          type: array
+          description: "Resource locks required by this node"
+          items:
+            type: string
+            enum:
+              - server
+              - build
+              - "db:migrations"
+        
+        timeout_ms:
+          type: integer
+          minimum: 1000
+          maximum: 600000
+          description: "Node execution timeout in milliseconds"
+        
+        env:
+          type: object
+          description: "Environment variables for this node"
+          additionalProperties:
+            type: string
+  
+  edges:
+    type: array
+    description: "Explicit edges between nodes (optional, can be inferred from requires)"
+    items:
+      type: array
+      minItems: 2
+      maxItems: 2
+      items:
+        type: string
+  
+  concurrency:
+    type: integer
+    minimum: 1
+    maximum: 10
+    default: 3
+    description: "Maximum concurrent node executions"
+  
+  locks:
+    type: object
+    description: "Global lock configuration"
+    properties:
+      serialize_globs:
+        type: array
+        items:
+          type: string
+        description: "File globs that require serialization"
+  
+  defaults:
+    type: object
+    description: "Default values for all nodes"
+    properties:
+      retries:
+        type: object
+        properties:
+          max:
+            type: integer
+            minimum: 0
+            maximum: 10
+            default: 1
+          backoff_ms:
+            type: integer
+            minimum: 100
+            maximum: 60000
+            default: 1000
+      timeout_ms:
+        type: integer
+        minimum: 1000
+        maximum: 600000
+        default: 180000
+
+additionalProperties: false

@@ -38,10 +38,98 @@ node orchestration/cli.mjs validate brief briefs/demo-01/brief.md
 7. **Finalize**: docs/runbooks, changelog, readiness checklist
 8. **DevOps**: staging deploy, observability, rollback rehearsal; optional promotion
 
+## DAG Execution (Phase 3 - Completed)
+
+### Graph-Based Parallel Execution
+
+The DAG runner enables parallel execution of multiple AUVs with dependency management, retries, and resumability.
+
+#### Compile Backlog to Graph
+
+```bash
+# Convert backlog.yaml to executable graph
+node orchestration/cli.mjs graph-from-backlog capabilities/backlog.yaml \
+  -o orchestration/graph/projects/demo-01.yaml \
+  --concurrency 3
+```
+
+This generates a graph with:
+- One `server` node (shared resource)
+- For each AUV: `ui`, `perf`, and `cvf` nodes
+- Dependency edges based on `depends_on` relationships
+- Concurrency limit for parallel execution
+
+#### Run Graph
+
+```bash
+# Execute graph with parallel processing
+node orchestration/cli.mjs run-graph orchestration/graph/projects/demo-01.yaml
+
+# Resume after failure/crash
+node orchestration/cli.mjs run-graph orchestration/graph/projects/demo-01.yaml \
+  --resume RUN-abc123xyz
+
+# Custom concurrency
+node orchestration/cli.mjs run-graph orchestration/graph/projects/demo-01.yaml \
+  --concurrency 5
+```
+
+#### Graph Features
+
+- **Parallel Execution**: Up to N nodes run concurrently (default: 3)
+- **Resource Locks**: Serialize access to shared resources (e.g., server startup)
+- **Dependency Management**: Topological ordering with cycle detection
+- **Retry Logic**: Transient failures retry with exponential backoff
+- **State Persistence**: `runs/graph/<RUN-ID>/state.json` tracks progress
+- **Resume Capability**: Continue from last checkpoint after crash
+- **Observability**: Events logged to `runs/observability/hooks.jsonl`
+
+#### Graph Schema
+
+Graphs follow `orchestration/graph/spec.schema.yaml`:
+
+```yaml
+version: "1.0"
+project_id: demo-01
+concurrency: 3
+defaults:
+  retries: { max: 1, backoff_ms: 1000 }
+  timeout_ms: 180000
+nodes:
+  - id: server
+    type: server
+    resources: [server]
+  - id: AUV-0101-ui
+    type: playwright
+    requires: [server]
+    params:
+      specs: [tests/robot/playwright/auv-0101.spec.ts]
+edges:
+  - [server, AUV-0101-ui]
+  - [AUV-0101-ui, AUV-0101-perf]
+```
+
+Node types:
+- `server`: Ensure mock server is running
+- `playwright`: Execute UI tests
+- `lighthouse`: Run performance audit
+- `cvf`: Validate capability artifacts
+- `agent_task`: Placeholder for agent execution
+- `package`/`report`: Future packaging/reporting
+
+#### Performance Benefits
+
+With dependency-aware parallel execution:
+- Serial: 8 AUVs × 30s avg = 4 minutes
+- Parallel (concurrency=3): ~1.5 minutes (60%+ reduction)
+- Resource locks prevent conflicts
+- Failed nodes don't block independent lanes
+
 ## Parallelization
 
-- **Default parallel** across independent lanes
+- **Default parallel** across independent lanes in DAG
 - **Serialize on**: lockfiles, `db/migrations/**`, build system switches, and releases
+- **Resource locks**: Managed by DAG runner for shared resources
 - See `orchestration/policies.yaml` for globs and rules
 
 ## Inputs/Outputs (per lane)

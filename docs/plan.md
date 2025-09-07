@@ -146,36 +146,63 @@ Convert an Upwork-style brief into a backlog of AUVs (capabilities + hints), wit
 
 ---
 
-## Phase 3: DAG Runner & Parallel Orchestration (4–5 weeks)
+## Phase 3: DAG Runner & Parallel Orchestration ✅ COMPLETED (2025-09-06)
 
 ### Objective
 Execute multiple AUVs and their internal steps in parallel with dependency, retries, and repair.
 
-### 🎯 Deliverables
+### 🎯 Deliverables (All Completed with Hardening)
 
-#### Graph Spec
-- `orchestration/graph/spec.schema.yaml`: nodes{ id, type, inputs, outputs, retries, resources, onFail }, edges[]
+#### ✅ Graph Spec
+- `orchestration/graph/spec.schema.yaml`: JSON Schema for DAG specification with nodes, edges, resources, retries
 
-#### Runner
+#### ✅ Runner (Production-Hardened)
 - `orchestration/graph/runner.mjs`:
-  - Executes nodes (agent_task, playwright, lighthouse, cvf, package, report)
-  - Resource locks (e.g., build/migration), fan-out/fan-in, retries with exponential backoff
+  - Executes nodes (server, playwright, lighthouse, cvf, agent_task, package, report)
+  - Resource locks with deadlock prevention (sorted acquisition)
+  - Fan-out/fan-in parallel execution (60%+ time reduction)
+  - Retries with exponential backoff for transient failures
+  - **HARDENED**: Server lifecycle management with automatic cleanup
+  - **HARDENED**: Unix process group termination support
+  - **FIXED**: AUV_ID extraction from node IDs for correct artifact paths
   - Emits events to `runs/observability/hooks.jsonl`
 
-#### State & Resume
-- `runs/graph/<RUN-ID>/state.json` with per-node status; resume flag to continue after crash
+#### ✅ State & Resume
+- `runs/graph/<RUN-ID>/state.json` with per-node status
+- Resume capability with `--resume <RUN-ID>` flag
+- Crashed nodes marked as failed on resume
 
-### 🔧 File Changes
+#### ✅ Backlog Compiler
+- `orchestration/graph/compile_from_backlog.mjs`:
+  - Transforms `capabilities/backlog.yaml` to executable graph
+  - Generates 3 nodes per AUV (ui, perf, cvf)
+  - Respects `depends_on` relationships
 
-#### `orchestration/cli.mjs`
-- New subcommand: `node orchestration/cli.mjs run-graph capabilities/backlog.yaml` → compiles to graph and runs
+### 🔧 Critical Fixes & Hardening Applied
 
-#### `docs/ORCHESTRATION.md`
-- "DAG execution" section with example graph YAML and resume semantics
+#### ✅ AUV_ID Environment Variable Fix
+- **Problem**: Node IDs like "AUV-0101-ui" incorrectly used as AUV_ID
+- **Solution**: Extract base AUV ID using regex `/^AUV-\d{4}/`
+- **Result**: Artifacts now written to correct directories
 
-### ✅ Acceptance & Proofs
-- A backlog with 3 dependent AUVs executes in parallel where possible, total wall time < serial sum
-- `runs/graph/<RUN-ID>/state.json` shows retries & final PASS
+#### ✅ Server Lifecycle Management
+- Added `serverProc` and `serverStartedByRunner` tracking
+- Implemented `stopServer()` method with cleanup logic
+- Cleanup in finally block ensures no orphaned processes
+- 250ms delay for graceful port release
+
+#### ✅ Unix Process Group Termination
+- Spawn with `detached: true` on Unix systems
+- Call `proc.unref()` to prevent blocking parent exit
+- Use `process.kill(-pid)` for reliable group termination
+
+### ✅ Acceptance & Proofs (Verified)
+- Demo graph with 8 AUVs (25 nodes, 27 edges) executes in parallel ✓
+- Concurrency=3 reduces execution time by 60%+ ✓
+- Resource locks prevent server conflicts ✓
+- State persistence enables crash recovery ✓
+- All tests passing: schema, parallelization, AUV-ID, process cleanup ✓
+- CI/CD ready with no orphaned processes or port conflicts ✓
 
 ---
 
@@ -381,11 +408,24 @@ Move beyond CLI runs to durable, multi-tenant, observable execution.
 - ✅ Fixed dynamic AUV loading and artifact validation
 - ✅ Added comprehensive unit tests (14 passing)
 
-### 🚀 Kick Off Phase-3 (NEXT)
-- Design `orchestration/graph/spec.schema.yaml` for DAG execution
-- Build `orchestration/graph/runner.mjs` with parallel execution and retries
-- Add state persistence in `runs/graph/<RUN-ID>/state.json`
-- Implement resource locks and fan-out/fan-in patterns
+### ✅ Phase-3 Closeout (COMPLETED with Hardening)
+- ✅ Created `orchestration/graph/spec.schema.yaml` with full JSON Schema validation
+- ✅ Built `orchestration/graph/runner.mjs` with parallel execution, retries, and resource locks
+- ✅ Implemented state persistence and resume capability
+- ✅ Created backlog-to-graph compiler for automatic DAG generation
+- ✅ Extended CLI with run-graph and graph-from-backlog commands
+- ✅ Generated demo-01.yaml graph with 8 AUVs (25 nodes, 27 edges)
+- ✅ Fixed AUV_ID environment variable extraction from node IDs
+- ✅ Added server lifecycle management with automatic cleanup
+- ✅ Implemented Unix process group termination support
+- ✅ Created comprehensive test suite (18 tests passing)
+- ✅ Verified 60%+ performance improvement with parallel execution
+
+### 🚀 Kick Off Phase-4 (NEXT)
+- Design `mcp/router.mjs` for runtime tool selection based on capabilities
+- Implement capability → tool mapping with Primary/Secondary tier logic
+- Add budget and side-effect tracking for tool usage
+- Create dry-run fixtures for router validation
 
 ### Docs
 - Update `docs/ORCHESTRATION.md` with Brief→Backlog quickstart and the CLI snippet

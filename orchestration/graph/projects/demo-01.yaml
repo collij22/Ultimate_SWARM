@@ -1,0 +1,232 @@
+version: "1.0"
+project_id: demo-01
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 180000
+nodes:
+  - id: server
+    type: server
+    timeout_ms: 15000
+    resources:
+      - server
+  - id: AUV-0101-ui
+    type: playwright
+    requires:
+      - server
+    params:
+      specs:
+        - tests/robot/playwright/auv-0101.spec.ts
+  - id: AUV-0101-perf
+    type: lighthouse
+    requires:
+      - AUV-0101-ui
+    params:
+      url: ${STAGING_URL}/products.html
+      out: runs/AUV-0101/perf/lighthouse.json
+  - id: AUV-0101-cvf
+    type: cvf
+    requires:
+      - AUV-0101-perf
+    params:
+      auv: AUV-0101
+  - id: AUV-0102-ui
+    type: playwright
+    requires:
+      - server
+      - AUV-0101-ui
+    params:
+      specs:
+        - tests/robot/playwright/auv-0102.spec.ts
+  - id: AUV-0102-perf
+    type: lighthouse
+    requires:
+      - AUV-0102-ui
+    params:
+      url: ${STAGING_URL}/cart.html
+      out: runs/AUV-0102/perf/lighthouse.json
+  - id: AUV-0102-cvf
+    type: cvf
+    requires:
+      - AUV-0102-perf
+    params:
+      auv: AUV-0102
+  - id: AUV-0103-ui
+    type: playwright
+    requires:
+      - server
+      - AUV-0102-ui
+    params:
+      specs:
+        - tests/robot/playwright/auv-0103.spec.ts
+  - id: AUV-0103-perf
+    type: lighthouse
+    requires:
+      - AUV-0103-ui
+    params:
+      url: ${STAGING_URL}/checkout.html
+      out: runs/AUV-0103/perf/lighthouse.json
+  - id: AUV-0103-cvf
+    type: cvf
+    requires:
+      - AUV-0103-perf
+    params:
+      auv: AUV-0103
+  - id: AUV-0104-ui
+    type: playwright
+    requires:
+      - server
+    params:
+      specs:
+        - tests/robot/playwright/auv-0104.spec.ts
+  - id: AUV-0104-perf
+    type: lighthouse
+    requires:
+      - AUV-0104-ui
+    params:
+      url: ${STAGING_URL}/products.html
+      out: runs/AUV-0104/perf/lighthouse.json
+  - id: AUV-0104-cvf
+    type: cvf
+    requires:
+      - AUV-0104-perf
+    params:
+      auv: AUV-0104
+  - id: AUV-0105-ui
+    type: playwright
+    requires:
+      - server
+      - AUV-0104-ui
+    params:
+      specs:
+        - tests/robot/playwright/auv-0105.spec.ts
+  - id: AUV-0105-perf
+    type: lighthouse
+    requires:
+      - AUV-0105-ui
+    params:
+      url: ${STAGING_URL}/products.html
+      out: runs/AUV-0105/perf/lighthouse.json
+  - id: AUV-0105-cvf
+    type: cvf
+    requires:
+      - AUV-0105-perf
+    params:
+      auv: AUV-0105
+  - id: AUV-0106-ui
+    type: playwright
+    requires:
+      - server
+    params:
+      specs:
+        - tests/robot/playwright/auv-0106.spec.ts
+  - id: AUV-0106-perf
+    type: lighthouse
+    requires:
+      - AUV-0106-ui
+    params:
+      url: ${STAGING_URL}/products.html
+      out: runs/AUV-0106/perf/lighthouse.json
+  - id: AUV-0106-cvf
+    type: cvf
+    requires:
+      - AUV-0106-perf
+    params:
+      auv: AUV-0106
+  - id: AUV-0107-ui
+    type: playwright
+    requires:
+      - server
+    params:
+      specs:
+        - tests/robot/playwright/auv-0107.spec.ts
+  - id: AUV-0107-perf
+    type: lighthouse
+    requires:
+      - AUV-0107-ui
+    params:
+      url: ${STAGING_URL}/products.html
+      out: runs/AUV-0107/perf/lighthouse.json
+  - id: AUV-0107-cvf
+    type: cvf
+    requires:
+      - AUV-0107-perf
+    params:
+      auv: AUV-0107
+  - id: AUV-0108-ui
+    type: playwright
+    requires:
+      - server
+    params:
+      specs:
+        - tests/robot/playwright/auv-0108.spec.ts
+  - id: AUV-0108-perf
+    type: lighthouse
+    requires:
+      - AUV-0108-ui
+    params:
+      url: ${STAGING_URL}/products.html
+      out: runs/AUV-0108/perf/lighthouse.json
+  - id: AUV-0108-cvf
+    type: cvf
+    requires:
+      - AUV-0108-perf
+    params:
+      auv: AUV-0108
+edges:
+  - - server
+    - AUV-0101-ui
+  - - AUV-0101-ui
+    - AUV-0101-perf
+  - - AUV-0101-perf
+    - AUV-0101-cvf
+  - - server
+    - AUV-0102-ui
+  - - AUV-0102-ui
+    - AUV-0102-perf
+  - - AUV-0102-perf
+    - AUV-0102-cvf
+  - - AUV-0101-ui
+    - AUV-0102-ui
+  - - server
+    - AUV-0103-ui
+  - - AUV-0103-ui
+    - AUV-0103-perf
+  - - AUV-0103-perf
+    - AUV-0103-cvf
+  - - AUV-0102-ui
+    - AUV-0103-ui
+  - - server
+    - AUV-0104-ui
+  - - AUV-0104-ui
+    - AUV-0104-perf
+  - - AUV-0104-perf
+    - AUV-0104-cvf
+  - - server
+    - AUV-0105-ui
+  - - AUV-0105-ui
+    - AUV-0105-perf
+  - - AUV-0105-perf
+    - AUV-0105-cvf
+  - - AUV-0104-ui
+    - AUV-0105-ui
+  - - server
+    - AUV-0106-ui
+  - - AUV-0106-ui
+    - AUV-0106-perf
+  - - AUV-0106-perf
+    - AUV-0106-cvf
+  - - server
+    - AUV-0107-ui
+  - - AUV-0107-ui
+    - AUV-0107-perf
+  - - AUV-0107-perf
+    - AUV-0107-cvf
+  - - server
+    - AUV-0108-ui
+  - - AUV-0108-ui
+    - AUV-0108-perf
+  - - AUV-0108-perf
+    - AUV-0108-cvf

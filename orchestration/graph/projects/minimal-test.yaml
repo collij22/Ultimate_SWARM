@@ -1,0 +1,21 @@
+version: "1.0"
+project_id: minimal-test
+concurrency: 2
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 30000
+nodes:
+  - id: server
+    type: server
+    timeout_ms: 15000
+    resources:
+      - server
+  
+  - id: AUV-0003-cvf
+    type: cvf
+    requires:
+      - server
+    params:
+      auv: AUV-0003
