@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Sequential test runner to avoid hanging issues with Node.js test runner
+ * Cross-platform sequential test runner for CI reliability
  */
 import { spawn } from 'child_process';
 import fs from 'fs';
@@ -13,6 +13,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const testFiles = fs
   .readdirSync(__dirname)
   .filter((f) => f.endsWith('.test.mjs'))
+  .sort() // Ensure consistent order
   .map((f) => path.join(__dirname, f));
 
 console.log('TAP version 13');
@@ -25,15 +26,21 @@ async function runTest(file) {
     const testName = path.basename(file);
     console.log(`# Running ${testName}`);
 
-    const proc = spawn(process.execPath, ['--test', file], {
+    // Use forward slashes for cross-platform compatibility
+    const testPath = file.replace(/\\/g, '/');
+
+    const proc = spawn(process.execPath, ['--test', testPath], {
       stdio: ['inherit', 'pipe', 'pipe'],
-      env: process.env,
+      env: { ...process.env, NODE_ENV: 'test' },
+      shell: false,
     });
 
     let output = '';
+    let timedOut = false;
 
     proc.stdout.on('data', (data) => {
-      output += data.toString();
+      const text = data.toString();
+      output += text;
       process.stdout.write(data);
     });
 
@@ -41,39 +48,70 @@ async function runTest(file) {
       process.stderr.write(data);
     });
 
+    proc.on('error', (err) => {
+      console.error(`# Error spawning test process: ${err.message}`);
+      testIndex++;
+      console.log(`not ok ${testIndex} - ${testName} (spawn error)`);
+      totalFail++;
+      resolve();
+    });
+
+    // Kill hanging tests after 30 seconds
+    const timeout = setTimeout(() => {
+      if (!proc.killed) {
+        timedOut = true;
+        console.error(`# Test ${testName} timed out after 30s`);
+        // Use SIGKILL for more forceful termination
+        proc.kill(process.platform === 'win32' ? 'SIGKILL' : 'SIGTERM');
+      }
+    }, 30000);
+
     proc.on('close', (code) => {
+      clearTimeout(timeout);
+
+      if (timedOut) {
+        testIndex++;
+        console.log(`not ok ${testIndex} - ${testName} (timeout)`);
+        totalFail++;
+        resolve();
+        return;
+      }
+
       // Parse test results from output
       const passMatch = output.match(/# pass (\d+)/);
       const failMatch = output.match(/# fail (\d+)/);
 
-      if (passMatch) totalPass += parseInt(passMatch[1]);
-      if (failMatch) totalFail += parseInt(failMatch[1]);
+      if (passMatch) totalPass += parseInt(passMatch[1], 10);
+      if (failMatch) totalFail += parseInt(failMatch[1], 10);
 
       testIndex++;
       if (code !== 0) {
         console.log(`not ok ${testIndex} - ${testName}`);
-        totalFail++;
+        if (!failMatch) totalFail++; // Count as failure if not already counted
       } else {
         console.log(`ok ${testIndex} - ${testName}`);
       }
 
       resolve();
     });
-
-    // Kill hanging tests after 30 seconds
-    setTimeout(() => {
-      if (!proc.killed) {
-        console.error(`# Test ${testName} timed out after 30s`);
-        proc.kill('SIGTERM');
-      }
-    }, 30000);
   });
 }
 
 // Run tests sequentially
 async function runAllTests() {
+  console.log(`# Found ${testFiles.length} test files`);
+  console.log(`# Platform: ${process.platform}`);
+  console.log(`# Node: ${process.version}`);
+
   for (const file of testFiles) {
-    await runTest(file);
+    try {
+      await runTest(file);
+    } catch (err) {
+      console.error(`# Fatal error running ${path.basename(file)}: ${err.message}`);
+      testIndex++;
+      console.log(`not ok ${testIndex} - ${path.basename(file)} (fatal error)`);
+      totalFail++;
+    }
   }
 
   // Print summary
@@ -83,10 +121,26 @@ async function runAllTests() {
   console.log(`# fail ${totalFail}`);
   console.log('# done');
 
-  process.exit(totalFail > 0 ? 1 : 0);
+  // Exit with proper code
+  const exitCode = totalFail > 0 ? 1 : 0;
+  console.log(`# Exit code: ${exitCode}`);
+  process.exit(exitCode);
 }
 
+// Handle uncaught errors
+process.on('uncaughtException', (err) => {
+  console.error('# Uncaught exception in test runner:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('# Unhandled rejection in test runner:', err);
+  process.exit(1);
+});
+
+// Start test execution
 runAllTests().catch((err) => {
-  console.error('Test runner failed:', err);
+  console.error('# Test runner failed:', err.message);
+  console.error(err.stack);
   process.exit(1);
 });

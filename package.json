@@ -36,6 +36,7 @@
     "plan:demo": "node orchestration/cli.mjs plan briefs/demo-01/brief.md",
     "plan:demo:dry": "node orchestration/cli.mjs plan briefs/demo-01/brief.md --dry-run",
     "test:unit": "node tests/unit/run-all.mjs",
+    "test:unit:timeout": "node --test --test-timeout=30000 tests/unit",
     "test:unit:native": "node --test tests/unit",
     "test:integration": "node --test tests/integration",
     "test:router": "node tests/router.test.mjs",
