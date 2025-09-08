@@ -64,10 +64,7 @@ describe('GraphRunner', () => {
       fs.writeFileSync(graphPath, yaml.stringify(invalidGraph));
 
       const runner = new GraphRunner();
-      await assert.rejects(
-        runner.loadGraph(graphPath),
-        GraphRunnerError
-      );
+      await assert.rejects(runner.loadGraph(graphPath), GraphRunnerError);
     });
 
     it('should detect cycles in graph', async () => {
@@ -85,10 +82,7 @@ describe('GraphRunner', () => {
       fs.writeFileSync(graphPath, yaml.stringify(cyclicGraph));
 
       const runner = new GraphRunner();
-      await assert.rejects(
-        runner.loadGraph(graphPath),
-        /Cycle detected/
-      );
+      await assert.rejects(runner.loadGraph(graphPath), /Cycle detected/);
     });
   });
 

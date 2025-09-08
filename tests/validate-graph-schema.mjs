@@ -38,16 +38,17 @@ for (const file of demoFiles) {
   const graphPath = path.join(__dirname, '../orchestration/graph/projects/', file);
 
   if (fs.existsSync(graphPath)) {
-    const graph = /** @type {any} */ (yaml.parse(fs.readFileSync(graphPath, 'utf8')));
+    const graph = yaml.parse(fs.readFileSync(graphPath, 'utf8'));
     const valid = validate(graph);
 
     if (valid) {
       console.log(`✅ ${file} is valid`);
+      const graphTyped = /** @type {{project_id: string, nodes: any[], edges?: any[]}} */ (graph);
       console.log(
-        `   Project: ${graph.project_id}, Nodes: ${graph.nodes.length}, Edges: ${graph.edges?.length || 0}`,
+        `   Project: ${graphTyped.project_id}, Nodes: ${graphTyped.nodes.length}, Edges: ${graphTyped.edges?.length || 0}`,
       );
       passed++;
-      results.push({ file, valid: true, project: graph.project_id });
+      results.push({ file, valid: true, project: graphTyped.project_id });
     } else {
       console.log(`❌ ${file} is invalid:`);
       validate.errors.forEach((err) => {

@@ -4,9 +4,5 @@
     "lib": ["ES2023", "DOM"],
     "types": ["node", "@playwright/test"]
   },
-  "include": [
-    "../tests/**/*.ts",
-    "../tests/**/*.mjs", 
-    "../orchestration/visual/**/*.mjs"
-  ]
+  "include": ["../tests/**/*.ts", "../tests/**/*.mjs", "../orchestration/visual/**/*.mjs"]
 }

@@ -61,7 +61,8 @@
       "Bash(tasklist)",
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(sed:*)"
     ],
     "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
     "ask": []

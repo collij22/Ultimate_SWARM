@@ -26,9 +26,9 @@
     "*.config.ts"
   ],
   "exclude": [
-    "node_modules", 
-    "dist", 
-    "runs", 
+    "node_modules",
+    "dist",
+    "runs",
     "test-results",
     "orchestration/visual/**/*.mjs",
     "tests/robot/playwright/**/*.ts",

@@ -84,7 +84,10 @@ describe('Graph Schema Validation', () => {
 
       const valid = validate(graph);
       assert.equal(valid, false);
-      assert.equal(validate.errors.some((e) => e.instancePath === '/version'), true);
+      assert.equal(
+        validate.errors.some((e) => e.instancePath === '/version'),
+        true,
+      );
     });
 
     it('should reject invalid node type', () => {
@@ -96,7 +99,10 @@ describe('Graph Schema Validation', () => {
 
       const valid = validate(graph);
       assert.equal(valid, false);
-      assert.equal(validate.errors.some((e) => e.message.includes('enum')), true);
+      assert.equal(
+        validate.errors.some((e) => e.message.includes('enum')),
+        true,
+      );
     });
 
     it('should validate resource constraints', () => {
