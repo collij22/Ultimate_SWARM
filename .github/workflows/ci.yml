@@ -238,8 +238,8 @@ jobs:
       - name: Verify package bundle exists
         shell: bash
         run: |
-          if [ ! -f "dist/AUV-0005/AUV-0005_bundle.zip" ]; then
-            echo "::error::Package bundle not found at dist/AUV-0005/AUV-0005_bundle.zip"
+          if [ ! -f "dist/AUV-0005/package.zip" ]; then
+            echo "::error::Package bundle not found at dist/AUV-0005/package.zip"
             exit 1
           fi
           echo "✅ Package bundle verified"
