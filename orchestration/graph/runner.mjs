@@ -410,7 +410,7 @@ class NodeExecutors {
     return { status: 'success', message: 'Agent task placeholder executed' };
   }
 
-  async package(node, env) {
+  async package(node, _env) {
     // Package generation using PackageBuilder
     const auv = node.params?.auv;
     if (!auv) {
@@ -444,7 +444,7 @@ class NodeExecutors {
     }
   }
 
-  async report(node, env) {
+  async report(node, _env) {
     // Report generation using ReportGenerator
     const auv = node.params?.auv;
     if (!auv) {

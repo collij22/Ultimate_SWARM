@@ -2,7 +2,7 @@
 
 import { readFile, writeFile, stat, mkdir, readdir } from 'fs/promises';
 import { createReadStream, createWriteStream, existsSync } from 'fs';
-import { join, dirname, basename, relative } from 'path';
+import { join, dirname } from 'path';
 import { createHash } from 'crypto';
 import { pipeline } from 'stream/promises';
 import yazl from 'yazl';
