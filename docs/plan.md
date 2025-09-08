@@ -226,6 +226,24 @@ Execute multiple AUVs and their internal steps in parallel with dependency, retr
 - Call `proc.unref()` to prevent blocking parent exit
 - Use `process.kill(-pid)` for reliable group termination
 
+#### ✅ CI Pipeline Hardening (2025-09-08)
+
+- **Test Runner Issues Fixed**:
+  - Resolved Node.js test runner hanging on report.test.mjs
+  - Removed directory deletion during test execution
+  - Added 30-second timeout to prevent infinite hangs
+  - Cross-platform compatibility ensured (Windows/Linux)
+
+- **Package Bundle Verification Fixed**:
+  - CI was checking for wrong filename (AUV-0005_bundle.zip vs package.zip)
+  - Updated CI workflow to verify correct bundle name
+  - All packaging steps now pass consistently
+
+- **Configuration File Management**:
+  - Fixed persistent Prettier formatting issues with .claude/settings.local.json
+  - Removed obsolete planning documents causing CI failures
+  - Ensured consistent line endings (LF) across all files
+
 ### ✅ Acceptance & Proofs (Verified)
 
 - Demo graph with 8 AUVs (25 nodes, 27 edges) executes in parallel ✓
