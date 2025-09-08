@@ -71,7 +71,8 @@
       "Bash(npx playwright test:*)",
       "Bash(STAGING_URL=http://127.0.0.1:3000 AUV_ID=AUV-0002 npx playwright test tests/robot/playwright/auv-0002-ui.spec.ts --reporter=list)",
       "Bash(set FORCE_REGEN=1)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git fetch:*)"
     ],
     "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
     "ask": []

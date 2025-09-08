@@ -5,7 +5,6 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 ## Load these references (skim, don't paraphrase them back)
 
 - `@CLAUDE.md`
-- `@docs/exec_summary_06sep2025.md` (summary at 06-Sep-2025)
 - `@docs/deep_technical_plan_06sep2025.md` (proposed technical moving forward, including current state and recent implementation)
 - `@docs/plan.md` (a high level plan to supplement the technical plan)
   IMPORTANT: other core documents
@@ -35,13 +34,14 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 ## Project TL;DR (internalize)
 
 - **Swarm1 delivers AUV units** with contract-first specs and CVF (functional, perf, security, visual) gates
-- **Proven locally**: AUV-0001..0005; CI green for 0002–0005; Brief compiler generates AUVs from requirements
+- **Proven locally**: AUV-0001..0005; CI/CD fully integrated; Brief compiler generates AUVs from requirements
 - **Runbook autopilot** (`orchestration/cli.mjs AUV-<ID>`) starts mock server → Playwright → Lighthouse → CVF → result card
-- **Auto-authoring** creates baseline tests from `capabilities/<AUV>.yaml`
+- **Auto-authoring** creates baseline tests from `capabilities/<AUV>.yaml` with FORCE_REGEN protection for manual files
 - **MCP**: agents request capabilities, not tool names. Router enforces Primary first, Secondary by consent+budget per policies
-- **DAG Runner**: Parallel execution with dependencies (`orchestration/graph/runner.mjs`)
+- **DAG Runner**: Parallel execution with dependencies, work_simulation nodes for testing (20-45% speedup verified)
 - **Build Lane**: Autonomous pipeline with QA gates and PR creation
 - **Security/Visual Gates**: Semgrep, Gitleaks, visual regression with baselines (Phase 6 complete)
+- **Packaging & Delivery**: Client-ready bundles with manifests, HTML reports, and semantic versioning (Phase 7 complete)
 - **Hooks/Observability**: JSONL logs + result cards under `runs/`; artifacts are the source of truth for "done"
 
 ## House rules
@@ -89,8 +89,9 @@ Reply with exactly this structure:
   </menus>
 
   <notes>
-    - Phases 1-6 complete: Foundation, Brief Compiler, DAG Runner, MCP Router, Build Lane, Security/Visual Gates
-    - Auto-authoring will create missing specs from capability hints
+    - Phases 1-7 complete: Foundation, Brief Compiler, DAG Runner, MCP Router, Build Lane, Security/Visual Gates, Packaging & Delivery
+    - CI/CD fully integrated with GitHub Actions; all AUVs passing consistently
+    - Auto-authoring protects manual test files; use FORCE_REGEN_OVERRIDE_MANUAL=1 only when necessary
     - Use the MCP router by **capability**, not tool name; policies/registry are the source of truth
     - Security waivers expire after 30 days; visual baselines in tests/robot/visual/baselines/
     - Keep output diffs/patches minimal and reproducible; attach artifacts in runs/
