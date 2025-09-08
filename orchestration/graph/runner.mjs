@@ -265,7 +265,7 @@ class NodeExecutors {
 
     // Start server
     const serverPath = path.resolve('mock/server.js');
-    const proc = spawn('node', [serverPath], {
+    const proc = spawn(process.execPath, [serverPath], {
       env,
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: process.platform !== 'win32',
@@ -355,7 +355,12 @@ class NodeExecutors {
     }
 
     const scriptPath = 'scripts/perf_lighthouse.mjs';
-    return await this._runCommand('node', [scriptPath, url, out], env, node.timeout_ms || 90000);
+    return await this._runCommand(
+      process.execPath,
+      [scriptPath, url, out],
+      env,
+      node.timeout_ms || 90000,
+    );
   }
 
   async cvf(node, env) {
@@ -365,7 +370,12 @@ class NodeExecutors {
     }
 
     const scriptPath = 'orchestration/cvf-check.mjs';
-    return await this._runCommand('node', [scriptPath, auv], env, node.timeout_ms || 60000);
+    return await this._runCommand(
+      process.execPath,
+      [scriptPath, auv],
+      env,
+      node.timeout_ms || 60000,
+    );
   }
 
   async agent_task(node) {

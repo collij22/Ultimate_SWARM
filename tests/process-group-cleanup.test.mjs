@@ -46,7 +46,7 @@ function createTestServer() {
     });
     
     // Also spawn a child process to test group termination
-    const child = spawn('node', ['-e', 'setInterval(() => {}, 1000)'], {
+    const child = spawn(process.execPath, ['-e', 'setInterval(() => {}, 1000)'], {
       stdio: 'ignore'
     });
     
@@ -64,7 +64,7 @@ function createTestServer() {
     });
   `;
 
-  const proc = spawn('node', ['-e', serverCode], {
+  const proc = spawn(process.execPath, ['-e', serverCode], {
     stdio: ['ignore', 'pipe', 'pipe'],
     detached: process.platform !== 'win32',
   });
@@ -142,7 +142,7 @@ async function main() {
     fs.writeFileSync(graphPath, JSON.stringify(testGraph));
 
     // Run the graph
-    const runnerProc = spawn('node', ['orchestration/graph/runner.mjs', graphPath], {
+    const runnerProc = spawn(process.execPath, ['orchestration/graph/runner.mjs', graphPath], {
       env: {
         ...process.env,
         STAGING_URL: 'http://127.0.0.1:3003',

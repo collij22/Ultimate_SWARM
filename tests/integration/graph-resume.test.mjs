@@ -67,7 +67,7 @@ async function runGraphWithInterrupt() {
     console.log('Starting graph execution (will interrupt after 2 nodes)...');
 
     const proc = spawn(
-      'node',
+      process.execPath,
       ['orchestration/graph/runner.mjs', tempGraphPath, '--concurrency', '1'],
       {
         env: {
