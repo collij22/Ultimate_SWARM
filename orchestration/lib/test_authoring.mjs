@@ -78,12 +78,22 @@ export function ensureTests(auvId) {
       writeIfDifferent(file, content);
       return;
     }
-    // Only touch files we own (banner present)
+    
     const cur = fs.readFileSync(file, 'utf8');
-    if (!hasAutogenBanner(cur) && !force) return;
-
+    const hasAutogen = hasAutogenBanner(cur);
+    
+    // CRITICAL: Never overwrite manual files without explicit override
+    if (!hasAutogen) {
+      // Only overwrite manual files with explicit second override
+      if (process.env.FORCE_REGEN_OVERRIDE_MANUAL === '1') {
+        const next = gen();
+        writeIfDifferent(file, next);
+      }
+      return; // Otherwise, never touch manual files
+    }
+    
+    // File has autogen banner - safe to regenerate
     const next = gen();
-    // If force=1, always write; else only when hash changed
     if (force) {
       writeIfDifferent(file, next);
     } else {
