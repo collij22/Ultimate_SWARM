@@ -365,12 +365,14 @@ Add security and visual parity with machine-readable reports and enforceable bud
 During final CI integration (2025-09-08), the following critical fixes were applied to ensure pipeline stability:
 
 #### TypeScript & Test Framework Fixes
+
 - Created `tests/tsconfig.json` extending root config with DOM types for Playwright compatibility
 - Migrated from Jest assertions to Node.js built-in test runner for consistency
 - Fixed all type errors related to document/window references in tests
 - Replaced `spawn('node', ...)` with `spawn(process.execPath, ...)` for cross-platform compatibility
 
 #### CVF & Artifact Management
+
 - **Important Concession**: Added clearing of `runs/security/` and `runs/visual/` before autopilot runs
   - Prevents CVF failures from stale results of earlier CI steps
   - Security and visual tests still run independently with full validation
@@ -378,6 +380,7 @@ During final CI integration (2025-09-08), the following critical fixes were appl
 - Fixed graph parallelization tests to use placeholder nodes avoiding artifact dependencies
 
 #### Result
+
 - **Full CI pipeline passing** with all quality gates enforced
 - Security scanning (Semgrep/Gitleaks) runs as independent CI step
 - Visual regression testing captures and compares screenshots successfully
