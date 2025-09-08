@@ -249,7 +249,8 @@ async function maybeRepair(auvId, err) {
 // Re-export for backward compatibility (if needed)
 export { expectedArtifacts };
 
-export async function runAuv(auvId, { stagingUrl, apiBase } = {}) {
+export async function runAuv(auvId, options = {}) {
+  const { stagingUrl, apiBase } = options;
   const cfg = getAuvConfig(auvId);
   if (!cfg) throw new RunbookError(`Unknown AUV id: ${auvId}`, 'config', 1);
 

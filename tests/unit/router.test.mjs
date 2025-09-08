@@ -261,7 +261,7 @@ describe('MCP Router - planTools', () => {
     const result = planTools({
       agentId: 'B7.rapid_builder',
       requestedCapabilities: ['browser.automation'],
-      // budgetUsd not specified - should use default
+      budgetUsd: undefined, // Use default budget
       secondaryConsent: false,
       env: {},
       registry: mockRegistry,

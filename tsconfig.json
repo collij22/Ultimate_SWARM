@@ -23,8 +23,15 @@
     "tests/**/*.mjs",
     "mcp/**/*.mjs",
     "scripts/**/*.mjs",
-    "tests/**/*.ts",
     "*.config.ts"
   ],
-  "exclude": ["node_modules", "dist", "runs", "test-results"]
+  "exclude": [
+    "node_modules", 
+    "dist", 
+    "runs", 
+    "test-results",
+    "orchestration/visual/**/*.mjs",
+    "tests/robot/playwright/**/*.ts",
+    "tests/robot/playwright/**/*.spec.ts"
+  ]
 }

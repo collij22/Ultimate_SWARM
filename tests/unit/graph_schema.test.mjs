@@ -3,7 +3,8 @@
  * Validates demo graphs against the schema
  */
 
-import { describe, it, expect, beforeAll } from '@jest/globals';
+import { describe, it, before } from 'node:test';
+import assert from 'node:assert';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'yaml';
@@ -16,7 +17,7 @@ describe('Graph Schema Validation', () => {
   let ajv;
   let validate;
 
-  beforeAll(() => {
+  before(() => {
     // Load the schema
     const schemaPath = path.join(__dirname, '../../orchestration/graph/spec.schema.yaml');
     const schema = yaml.parse(fs.readFileSync(schemaPath, 'utf8'));
@@ -38,10 +39,10 @@ describe('Graph Schema Validation', () => {
         console.error('Validation errors:', validate.errors);
       }
 
-      expect(valid).toBe(true);
-      expect(graph.version).toBe('1.0');
-      expect(graph.nodes).toBeDefined();
-      expect(graph.nodes.length).toBeGreaterThan(0);
+      assert.equal(valid, true);
+      assert.equal(graph.version, '1.0');
+      assert(graph.nodes !== undefined);
+      assert(graph.nodes.length > 0);
     });
 
     it('should validate working-demo.yaml', () => {
@@ -52,8 +53,8 @@ describe('Graph Schema Validation', () => {
       const graph = yaml.parse(fs.readFileSync(graphPath, 'utf8'));
 
       const valid = validate(graph);
-      expect(valid).toBe(true);
-      expect(graph.concurrency).toBe(3);
+      assert.equal(valid, true);
+      assert.equal(graph.concurrency, 3);
     });
 
     it('should validate compiled-demo.yaml if exists', () => {
@@ -66,9 +67,9 @@ describe('Graph Schema Validation', () => {
         const graph = yaml.parse(fs.readFileSync(graphPath, 'utf8'));
 
         const valid = validate(graph);
-        expect(valid).toBe(true);
-        expect(graph.nodes.length).toBe(25); // 1 server + 8 AUVs × 3 nodes
-        expect(graph.edges.length).toBe(27);
+        assert.equal(valid, true);
+        assert.equal(graph.nodes.length, 25); // 1 server + 8 AUVs × 3 nodes
+        assert.equal(graph.edges.length, 27);
       }
     });
   });
@@ -82,8 +83,8 @@ describe('Graph Schema Validation', () => {
       };
 
       const valid = validate(graph);
-      expect(valid).toBe(false);
-      expect(validate.errors.some((e) => e.instancePath === '/version')).toBe(true);
+      assert.equal(valid, false);
+      assert.equal(validate.errors.some((e) => e.instancePath === '/version'), true);
     });
 
     it('should reject invalid node type', () => {
@@ -94,8 +95,8 @@ describe('Graph Schema Validation', () => {
       };
 
       const valid = validate(graph);
-      expect(valid).toBe(false);
-      expect(validate.errors.some((e) => e.message.includes('enum'))).toBe(true);
+      assert.equal(valid, false);
+      assert.equal(validate.errors.some((e) => e.message.includes('enum')), true);
     });
 
     it('should validate resource constraints', () => {
@@ -111,8 +112,8 @@ describe('Graph Schema Validation', () => {
         nodes: [{ id: 'test', type: 'server', resources: ['invalid_resource'] }],
       };
 
-      expect(validate(validGraph)).toBe(true);
-      expect(validate(invalidGraph)).toBe(false);
+      assert.equal(validate(validGraph), true);
+      assert.equal(validate(invalidGraph), false);
     });
 
     it('should validate retry constraints', () => {
@@ -128,14 +129,14 @@ describe('Graph Schema Validation', () => {
         nodes: [],
       };
 
-      expect(validate(graph)).toBe(true);
+      assert.equal(validate(graph), true);
 
       // Test max bounds
       graph.defaults.retries.max = 11;
-      expect(validate(graph)).toBe(false);
+      assert.equal(validate(graph), false);
 
       graph.defaults.retries.max = -1;
-      expect(validate(graph)).toBe(false);
+      assert.equal(validate(graph), false);
     });
 
     it('should validate concurrency bounds', () => {
@@ -146,13 +147,13 @@ describe('Graph Schema Validation', () => {
         nodes: [],
       };
 
-      expect(validate(graph)).toBe(true);
+      assert.equal(validate(graph), true);
 
       graph.concurrency = 11;
-      expect(validate(graph)).toBe(false);
+      assert.equal(validate(graph), false);
 
       graph.concurrency = 0;
-      expect(validate(graph)).toBe(false);
+      assert.equal(validate(graph), false);
     });
   });
 
@@ -172,7 +173,7 @@ describe('Graph Schema Validation', () => {
         ],
       };
 
-      expect(validate(graph)).toBe(true);
+      assert.equal(validate(graph), true);
     });
 
     it('should validate lighthouse node params', () => {
@@ -191,7 +192,7 @@ describe('Graph Schema Validation', () => {
         ],
       };
 
-      expect(validate(graph)).toBe(true);
+      assert.equal(validate(graph), true);
     });
 
     it('should validate cvf node params', () => {
@@ -209,11 +210,11 @@ describe('Graph Schema Validation', () => {
         ],
       };
 
-      expect(validate(graph)).toBe(true);
+      assert.equal(validate(graph), true);
 
       // Invalid AUV format
       graph.nodes[0].params.auv = 'INVALID';
-      expect(validate(graph)).toBe(false);
+      assert.equal(validate(graph), false);
     });
   });
 });

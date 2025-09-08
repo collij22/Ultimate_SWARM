@@ -8,7 +8,7 @@ test.describe('AUV-0101 API — custom', () => {
   test.skip(!API_BASE, 'API_BASE env var not set');
 
   test('list products', async ({ request }) => {
-    const method = 'GET';
+    const method: string = 'GET';
     const rawPath = '/';
     const normPath = rawPath.replace(/^\/api(?=\/|$)/, '');
     const url = `${API_BASE}${normPath}`;
@@ -30,7 +30,7 @@ test.describe('AUV-0101 API — custom', () => {
   });
 
   test('search products', async ({ request }) => {
-    const method = 'GET';
+    const method: string = 'GET';
     const rawPath = '/?q=3';
     const normPath = rawPath.replace(/^\/api(?=\/|$)/, '');
     const url = `${API_BASE}${normPath}`;

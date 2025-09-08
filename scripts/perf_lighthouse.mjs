@@ -28,8 +28,8 @@ const chrome = await launch({
 });
 
 const options = {
-  logLevel: 'error',
-  output: 'json',
+  logLevel: /** @type {'error'} */ ('error'),
+  output: /** @type {'json'} */ ('json'),
   onlyCategories: ['performance'],
   port: chrome.port,
 };

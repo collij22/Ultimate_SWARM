@@ -38,7 +38,7 @@ for (const file of demoFiles) {
   const graphPath = path.join(__dirname, '../orchestration/graph/projects/', file);
 
   if (fs.existsSync(graphPath)) {
-    const graph = yaml.parse(fs.readFileSync(graphPath, 'utf8'));
+    const graph = /** @type {any} */ (yaml.parse(fs.readFileSync(graphPath, 'utf8')));
     const valid = validate(graph);
 
     if (valid) {

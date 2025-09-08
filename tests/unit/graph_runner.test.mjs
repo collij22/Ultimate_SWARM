@@ -3,7 +3,8 @@
  * Tests graph validation, topological sorting, and execution logic
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, beforeEach, afterEach } from 'node:test';
+import assert from 'node:assert';
 import fs from 'fs';
 import path from 'path';
 import yaml from 'yaml';
@@ -49,8 +50,8 @@ describe('GraphRunner', () => {
       const runner = new GraphRunner({ runId: 'test-run' });
       const loaded = await runner.loadGraph(graphPath);
 
-      expect(loaded.project_id).toBe('test-project');
-      expect(loaded.nodes).toHaveLength(2);
+      assert.equal(/** @type {any} */ (loaded).project_id, 'test-project');
+      assert.equal(/** @type {any} */ (loaded).nodes.length, 2);
     });
 
     it('should reject invalid graph schema', async () => {
@@ -63,7 +64,10 @@ describe('GraphRunner', () => {
       fs.writeFileSync(graphPath, yaml.stringify(invalidGraph));
 
       const runner = new GraphRunner();
-      await expect(runner.loadGraph(graphPath)).rejects.toThrow(GraphRunnerError);
+      await assert.rejects(
+        runner.loadGraph(graphPath),
+        GraphRunnerError
+      );
     });
 
     it('should detect cycles in graph', async () => {
@@ -81,7 +85,10 @@ describe('GraphRunner', () => {
       fs.writeFileSync(graphPath, yaml.stringify(cyclicGraph));
 
       const runner = new GraphRunner();
-      await expect(runner.loadGraph(graphPath)).rejects.toThrow('Cycle detected');
+      await assert.rejects(
+        runner.loadGraph(graphPath),
+        /Cycle detected/
+      );
     });
   });
 
@@ -98,16 +105,16 @@ describe('GraphRunner', () => {
 
       const graph = compileBacklogToGraph(backlog);
 
-      expect(graph.project_id).toBe('test-brief');
-      expect(graph.nodes).toHaveLength(10); // 1 server + 3 AUVs × 3 nodes each
-      expect(graph.nodes[0].type).toBe('server');
+      assert.equal(graph.project_id, 'test-brief');
+      assert.equal(graph.nodes.length, 10); // 1 server + 3 AUVs × 3 nodes each
+      assert.equal(graph.nodes[0].type, 'server');
 
       // Check dependencies
       const auv2ui = graph.nodes.find((n) => n.id === 'AUV-0002-ui');
-      expect(auv2ui.requires).toContain('AUV-0001-ui');
+      assert(auv2ui.requires.includes('AUV-0001-ui'));
 
       const auv3ui = graph.nodes.find((n) => n.id === 'AUV-0003-ui');
-      expect(auv3ui.requires).toContain('AUV-0002-ui');
+      assert(auv3ui.requires.includes('AUV-0002-ui'));
     });
 
     it('should handle both auvs and backlog field names', () => {
@@ -122,8 +129,8 @@ describe('GraphRunner', () => {
       const graph1 = compileBacklogToGraph(backlog1);
       const graph2 = compileBacklogToGraph(backlog2);
 
-      expect(graph1.nodes).toHaveLength(4); // server + 3 nodes
-      expect(graph2.nodes).toHaveLength(4); // server + 3 nodes
+      assert.equal(graph1.nodes.length, 4); // server + 3 nodes
+      assert.equal(graph2.nodes.length, 4); // server + 3 nodes
     });
   });
 
@@ -146,11 +153,11 @@ describe('GraphRunner', () => {
       await runner.loadGraph(graphPath);
       await runner.loadState(false);
 
-      expect(runner.state.run_id).toBe('state-test-run');
-      expect(runner.state.nodes.node1.status).toBe('queued');
+      assert.equal(runner.state.run_id, 'state-test-run');
+      assert.equal(runner.state.nodes.node1.status, 'queued');
 
       // Check state file was created
-      expect(fs.existsSync(path.join(tempDir, 'state.json'))).toBe(true);
+      assert.equal(fs.existsSync(path.join(tempDir, 'state.json')), true);
     });
 
     it('should resume from existing state', async () => {
@@ -189,10 +196,10 @@ describe('GraphRunner', () => {
       await runner.loadGraph(graphPath);
       await runner.loadState(true);
 
-      expect(runner.completed.has('node1')).toBe(true);
-      expect(runner.failed.has('node2')).toBe(true);
-      expect(runner.failed.has('node3')).toBe(true); // Running → failed on resume
-      expect(runner.state.nodes.node3.error).toContain('Crashed');
+      assert.equal(runner.completed.has('node1'), true);
+      assert.equal(runner.failed.has('node2'), true);
+      assert.equal(runner.failed.has('node3'), true); // Running → failed on resume
+      assert(runner.state.nodes.node3.error.includes('Crashed'));
     });
   });
 
@@ -218,21 +225,21 @@ describe('GraphRunner', () => {
 
       // Initially only A is ready
       let ready = runner.getReadyNodes();
-      expect(ready).toHaveLength(1);
-      expect(ready[0].id).toBe('A');
+      assert.equal(ready.length, 1);
+      assert.equal(ready[0].id, 'A');
 
       // After A completes, B and C are ready
       runner.completed.add('A');
       ready = runner.getReadyNodes();
-      expect(ready).toHaveLength(2);
-      expect(ready.map((n) => n.id).sort()).toEqual(['B', 'C']);
+      assert.equal(ready.length, 2);
+      assert.deepEqual(ready.map((n) => n.id).sort(), ['B', 'C']);
 
       // After B and C complete, D is ready
       runner.completed.add('B');
       runner.completed.add('C');
       ready = runner.getReadyNodes();
-      expect(ready).toHaveLength(1);
-      expect(ready[0].id).toBe('D');
+      assert.equal(ready.length, 1);
+      assert.equal(ready[0].id, 'D');
     });
   });
 
@@ -240,14 +247,14 @@ describe('GraphRunner', () => {
     it('should identify transient errors', () => {
       const runner = new GraphRunner();
 
-      expect(runner.isTransientError(new Error('Connection timeout'))).toBe(true);
-      expect(runner.isTransientError(new Error('ETIMEDOUT'))).toBe(true);
-      expect(runner.isTransientError(new Error('HTTP 503 Service Unavailable'))).toBe(true);
-      expect(runner.isTransientError(new Error('Browser crashed'))).toBe(true);
+      assert.equal(runner.isTransientError(new Error('Connection timeout')), true);
+      assert.equal(runner.isTransientError(new Error('ETIMEDOUT')), true);
+      assert.equal(runner.isTransientError(new Error('HTTP 503 Service Unavailable')), true);
+      assert.equal(runner.isTransientError(new Error('Browser crashed')), true);
 
-      expect(runner.isTransientError(new Error('Assertion failed'))).toBe(false);
-      expect(runner.isTransientError(new Error('File not found'))).toBe(false);
-      expect(runner.isTransientError(new Error('HTTP 404 Not Found'))).toBe(false);
+      assert.equal(runner.isTransientError(new Error('Assertion failed')), false);
+      assert.equal(runner.isTransientError(new Error('File not found')), false);
+      assert.equal(runner.isTransientError(new Error('HTTP 404 Not Found')), false);
     });
   });
 });
@@ -272,7 +279,7 @@ describe('Graph Schema Validation', () => {
       };
 
       // This should not throw
-      expect(() => yaml.stringify(graph)).not.toThrow();
+      assert.doesNotThrow(() => yaml.stringify(graph));
     });
   });
 
@@ -286,7 +293,7 @@ describe('Graph Schema Validation', () => {
         nodes: [{ id: 'test', type: 'server', resources: [resource] }],
       };
 
-      expect(() => yaml.stringify(graph)).not.toThrow();
+      assert.doesNotThrow(() => yaml.stringify(graph));
     });
   });
 });

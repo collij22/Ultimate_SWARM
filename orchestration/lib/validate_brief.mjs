@@ -13,7 +13,7 @@ const ajv = new Ajv({
   strict: false,
   allErrors: true,
   verbose: true,
-  schemaId: 'auto',
+  schemaId: '$id',
 });
 addFormats(ajv);
 
