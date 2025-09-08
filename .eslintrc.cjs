@@ -4,7 +4,7 @@ module.exports = {
     es2023: true,
     node: true,
   },
-  extends: ['eslint:recommended'],
+  extends: ['eslint:recommended', 'prettier'],
   parserOptions: {
     ecmaVersion: 2023,
     sourceType: 'module',
@@ -21,7 +21,6 @@ module.exports = {
     quotes: ['error', 'single', { avoidEscape: true }],
     semi: ['error', 'always'],
     'comma-dangle': ['error', 'always-multiline'],
-    indent: ['error', 2, { SwitchCase: 1 }],
     'no-trailing-spaces': 'error',
     'eol-last': 'error',
   },

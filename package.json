@@ -7,6 +7,7 @@
     "ajv-cli": "^5.0.0",
     "chrome-launcher": "^1.2.0",
     "eslint": "^8.50.0",
+    "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "js-yaml": "^4.1.0",
     "lighthouse": "^12.8.2",
@@ -52,10 +53,15 @@
     "package": "node orchestration/cli.mjs package",
     "report": "node orchestration/cli.mjs report",
     "deliver:full": "node orchestration/cli.mjs deliver",
-    "prepare": "husky"
+    "prepare": "husky",
+    "pre-push": "npm run lint && npm run typecheck && npm run test:unit"
   },
   "lint-staged": {
-    "*.{js,mjs,cjs,ts,tsx,json,html,css,md,yml,yaml}": [
+    "*.{js,mjs,cjs,ts,tsx}": [
+      "eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "*.{json,html,css,md,yml,yaml}": [
       "prettier --write"
     ]
   }
