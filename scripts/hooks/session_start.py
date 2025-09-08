@@ -6,6 +6,8 @@ Swarm1 - Claude Code SessionStart hook
 """
 from __future__ import annotations
 import sys, os, json, time, pathlib
+sys.path.insert(0, os.path.dirname(__file__))
+import common  # type: ignore
 
 def _find_project_root(start):
   cur = os.path.abspath(start)
@@ -28,23 +30,11 @@ def _mkdirs():
   pathlib.Path(LEDGER_DIR).mkdir(parents=True, exist_ok=True)
 
 def _read_stdin_json() -> dict:
-    try:
-        # If stdin is a TTY (no pipe), don't read or we'll block the terminal.
-        if getattr(sys.stdin, "isatty", lambda: False)():
-            return {}
-    except Exception:
-        return {}
-    data = sys.stdin.read()
-    try:
-        return json.loads(data) if data else {}
-    except Exception:
-        return {}
+    return common.safe_read_stdin_json()
 
 
 def _log(obj: dict) -> None:
-  _mkdirs()
-  with open(LOG_PATH, "a", encoding="utf-8") as f:
-    f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+  common.safe_append_jsonl(obj)
 
 def _session_ledger(session_id: str | None) -> str:
   sid = session_id or "unknown"
@@ -55,18 +45,22 @@ def main() -> int:
   session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
   agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
   auv = os.getenv("AUV_ID")
-  
-  # SWARM MODE GATE: Only initialize ledgers during orchestration workflows
-  swarm_active = bool(auv) or os.getenv("SWARM_ACTIVE", "").lower() in ("1", "true", "yes")
-  if not swarm_active:
-    # Skip ledger creation for regular Claude Code usage to avoid file system overhead
+
+  # Strict gating
+  if common.disabled() or (not common.is_swarm()):
+    return 0
+  mode = common.get_mode()
+  if mode == "off":
     return 0
 
-  # Initialize ledger (reset per session)
+  # Initialize ledger (reset per session) only in warn/block
   _mkdirs()
   ledger_path = _session_ledger(session_id)
   with open(ledger_path, "w", encoding="utf-8") as f:
     json.dump({"cost_usd": 0.0, "events": 0}, f)
+
+  # Record offset to avoid heavy scans later
+  common.save_offset(session_id)
 
   # Log start
   _log({

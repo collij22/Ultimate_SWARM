@@ -6,6 +6,8 @@ Swarm1 - Claude Code SubagentStop hook
 """
 from __future__ import annotations
 import sys, os, json, time, pathlib
+sys.path.insert(0, os.path.dirname(__file__))
+import common  # type: ignore
 
 def _find_project_root(start):
     cur = os.path.abspath(start)
@@ -24,17 +26,7 @@ OBS_DIR = os.path.join(PROJECT_DIR, "runs", "observability")
 LOG_PATH = os.path.join(OBS_DIR, "hooks.jsonl")
 
 def _read_stdin_json() -> dict:
-    try:
-        # If stdin is a TTY (no pipe), don't read or we'll block the terminal.
-        if getattr(sys.stdin, "isatty", lambda: False)():
-            return {}
-    except Exception:
-        return {}
-    data = sys.stdin.read()
-    try:
-        return json.loads(data) if data else {}
-    except Exception:
-        return {}
+    return common.safe_read_stdin_json()
 
 def _iter_jsonl(path: str):
     try:
@@ -54,11 +46,12 @@ def main() -> int:
     session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
     agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
     auv = os.getenv("AUV_ID") or "AUV-unknown"
-    
-    # SWARM MODE GATE: Only create result cards during orchestration workflows
-    swarm_active = bool(os.getenv("AUV_ID")) or os.getenv("SWARM_ACTIVE", "").lower() in ("1", "true", "yes")
-    if not swarm_active:
-        # Skip result card creation for regular Claude Code usage to avoid file I/O overhead
+
+    # Strict gating
+    if common.disabled() or (not common.is_swarm()):
+        return 0
+    mode = common.get_mode()
+    if mode == "off":
         return 0
 
     per_tool = {}
@@ -84,32 +77,38 @@ def main() -> int:
     cards_dir = os.path.join(PROJECT_DIR, "runs", auv, "result-cards")
     pathlib.Path(cards_dir).mkdir(parents=True, exist_ok=True)
     card_path = os.path.join(cards_dir, f"subagent-{agent}-{session_id or int(time.time())}.json")
-    with open(card_path, "w", encoding="utf-8") as f:
-        json.dump({
-            "ts": time.time(),
-            "event": "SubagentStop",
-            "session_id": session_id,
-            "agent": agent,
-            "auv": auv,
-            "summary": {
-                "total_tools": total,
-                "failures": failures,
-                "per_tool": per_tool
-            }
-        }, f, indent=2)
+    try:
+        with open(card_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "ts": time.time(),
+                "event": "SubagentStop",
+                "session_id": session_id,
+                "agent": agent,
+                "auv": auv,
+                "summary": {
+                    "total_tools": total,
+                    "failures": failures,
+                    "per_tool": per_tool
+                }
+            }, f, indent=2)
+    except Exception:
+        pass
 
     # Also append a log line
     pathlib.Path(OBS_DIR).mkdir(parents=True, exist_ok=True)
-    with open(os.path.join(OBS_DIR, "hooks.jsonl"), "a", encoding="utf-8") as f:
-        f.write(json.dumps({
-            "ts": time.time(),
-            "event": "SubagentStop",
-            "session_id": session_id,
-            "agent": agent,
-            "auv": auv,
-            "summary_total": total,
-            "summary_failures": failures
-        }) + "\n")
+    try:
+        with open(os.path.join(OBS_DIR, "hooks.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({
+                "ts": time.time(),
+                "event": "SubagentStop",
+                "session_id": session_id,
+                "agent": agent,
+                "auv": auv,
+                "summary_total": total,
+                "summary_failures": failures
+            }) + "\n")
+    except Exception:
+        pass
 
     return 0
 
@@ -117,4 +116,10 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except Exception:
+        # Circuit breaker (session_id unknown here)
+        try:
+            if common.record_error(None):
+                common.trip_circuit_breaker()
+        except Exception:
+            pass
         sys.exit(0)

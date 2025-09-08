@@ -222,6 +222,38 @@ jobs:
         shell: bash
         run: node orchestration/cvf-check.mjs AUV-0005 --strict
 
+      # ---- Phase 7: Packaging & Delivery ----
+      - name: Package AUV-0005
+        shell: bash
+        run: node orchestration/cli.mjs package AUV-0005
+
+      - name: Validate AUV-0005 manifest
+        shell: bash
+        run: npm run validate:manifest
+
+      - name: Generate AUV-0005 report
+        shell: bash
+        run: node orchestration/cli.mjs report AUV-0005
+
+      - name: Verify package bundle exists
+        shell: bash
+        run: |
+          if [ ! -f "dist/AUV-0005/AUV-0005_bundle.zip" ]; then
+            echo "::error::Package bundle not found at dist/AUV-0005/AUV-0005_bundle.zip"
+            exit 1
+          fi
+          echo "✅ Package bundle verified"
+          ls -lh dist/AUV-0005/
+
+      - name: Verify report exists
+        shell: bash
+        run: |
+          if [ ! -f "dist/AUV-0005/report.html" ]; then
+            echo "::error::Report not found at dist/AUV-0005/report.html"
+            exit 1
+          fi
+          echo "✅ Report verified"
+
       - name: Upload artifacts (always)
         if: always()
         uses: actions/upload-artifact@v4
@@ -231,3 +263,4 @@ jobs:
             runs/**
             test-results/**
             reports/**
+            dist/**

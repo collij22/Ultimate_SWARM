@@ -410,16 +410,64 @@ class NodeExecutors {
     return { status: 'success', message: 'Agent task placeholder executed' };
   }
 
-  async package(node) {
-    // Placeholder for package generation
-    console.log(`[package] ${node.id}: Package generation placeholder`);
-    return { status: 'success', message: 'Package placeholder executed' };
+  async package(node, env) {
+    // Package generation using PackageBuilder
+    const auv = node.params?.auv;
+    if (!auv) {
+      throw new GraphRunnerError('Missing auv param for package node', 'INVALID_PARAMS');
+    }
+
+    console.log(`[package] ${node.id}: Creating package for ${auv}`);
+
+    try {
+      const { PackageBuilder } = await import('../package.mjs');
+      const builder = new PackageBuilder(auv);
+      const manifest = await builder.build();
+
+      console.log(`[package] ✅ Package created: ${manifest.bundle.path}`);
+      console.log(`[package]   Size: ${(manifest.bundle.size_bytes / 1024).toFixed(2)} KB`);
+      console.log(`[package]   Artifacts: ${manifest.artifacts.length}`);
+
+      return {
+        status: 'success',
+        message: `Package created: ${manifest.bundle.path}`,
+        manifest,
+      };
+    } catch (error) {
+      const err = new GraphRunnerError(`Package generation failed: ${error.message}`, 'PACKAGE_FAILED');
+      err.stderr = error.stack || error.message;
+      err.exitCode = 401;
+      throw err;
+    }
   }
 
-  async report(node) {
-    // Placeholder for report generation
-    console.log(`[report] ${node.id}: Report generation placeholder`);
-    return { status: 'success', message: 'Report placeholder executed' };
+  async report(node, env) {
+    // Report generation using ReportGenerator
+    const auv = node.params?.auv;
+    if (!auv) {
+      throw new GraphRunnerError('Missing auv param for report node', 'INVALID_PARAMS');
+    }
+
+    console.log(`[report] ${node.id}: Generating report for ${auv}`);
+
+    try {
+      const { ReportGenerator } = await import('../report.mjs');
+      const generator = new ReportGenerator(auv);
+      const reportPath = await generator.generate();
+
+      console.log(`[report] ✅ Report generated: ${reportPath}`);
+
+      return {
+        status: 'success',
+        message: `Report generated: ${reportPath}`,
+        reportPath,
+      };
+    } catch (error) {
+      const err = new GraphRunnerError(`Report generation failed: ${error.message}`, 'REPORT_FAILED');
+      err.stderr = error.stack || error.message;
+      err.exitCode = 402;
+      throw err;
+    }
   }
 
   async _runCommand(command, args, env, timeout) {

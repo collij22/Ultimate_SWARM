@@ -2,11 +2,13 @@
 
 Swarm1 uses **Claude Code hooks** to make runs observable, auditable, and budget-safe **during orchestration workflows only**. Hooks receive a JSON payload on **stdin**, and may **allow** (exit `0`) or **block** (exit `2`) a tool call. We log one JSON line per event to `runs/observability/hooks.jsonl` and emit small **Result Cards** to support gates.
 
+> Important: Hooks are strictly gated to AUV runs only and are disabled by default for normal coding sessions.
+
 ## ⚡ Performance Mode: Swarm-Only Activation
 
-**All hooks now use "Swarm Mode Gates"** - they only perform expensive operations during orchestration workflows, not regular Claude Code interactions:
+**All hooks now use strict AUV-only gates** — they only perform operations during orchestration workflows, not regular Claude Code interactions:
 
-- **Swarm Mode Active**: When `AUV_ID` is set OR `SWARM_ACTIVE=true`
+- **Swarm Mode Active**: When `AUV_ID` is set (strict; `SWARM_ACTIVE` no longer enables processing)
 - **Regular Claude Code**: Hooks exit immediately (0) without logging/processing
 
 This prevents performance overhead during simple file reads, questions, or general development.
@@ -23,6 +25,15 @@ This prevents performance overhead during simple file reads, questions, or gener
 
 **Logs:** `runs/observability/hooks.jsonl`  
 **Result Cards:** `runs/<AUV-ID>/result-cards/*.json`
+
+### Modes and gating
+
+- `AUV_ID` must be set for any hook processing.
+- `HOOKS_MODE` controls behavior:
+  - `off` (default): no-ops; immediate exit 0
+  - `warn`: logs but never blocks
+  - `block`: enforces policies (PreTool may exit 2 on violations)
+- Emergency disable: set `CLAUDE_DISABLE_HOOKS=true` or create `.claude/hooks.disabled`
 
 > **Exit codes:** `0` = continue; `2` = block (Claude Code displays stderr to the agent and skips the call)
 
@@ -64,7 +75,7 @@ Both are **evidence sources** for the CVF/QA gates and for troubleshooting.
   Warns/blocks if DSN appears production-ish (`prod`).
 
 **Budgets:** For secondary tools, the hook keeps a tiny per-session ledger at  
-`runs/observability/ledgers/session-<id>.json` and blocks if the **estimated** spend would exceed the budget in `mcp/policies.yaml → tiers.secondary`.
+`runs/observability/ledgers/session-<id>.json` and blocks if the **estimated** spend would exceed the budget in `mcp/policies.yaml → tiers.secondary` (in `block` mode); in `warn` mode it only logs.
 
 > Source of truth for routing remains **`mcp/policies.yaml`** (capabilities → tools, allowlists, budgets). Hooks only enforce local safety/consent/budget rules at the edge.
 
@@ -72,12 +83,14 @@ Both are **evidence sources** for the CVF/QA gates and for troubleshooting.
 
 ## Environment variables recognized
 
-- `AUV_ID` — tag evidence to a specific AUV run; **activates Swarm Mode**.
-- `SWARM_ACTIVE` — `"true"` / `"1"` to **force Swarm Mode** even without AUV_ID.
+- `AUV_ID` — tag evidence to a specific AUV run; required for processing
+- `HOOKS_MODE` — `off|warn|block` (default `off`)
 - `CLAUDE_AGENT_NAME` — logged with every event.
 - `SECONDARY_CONSENT` — `"true"` / `"1"` to allow secondary tools.
 - `STAGING_URL`, `API_BASE` — define allowed HTTP hosts.
 - `CLAUDE_PROJECT_DIR` — set by Claude Code; used for path safety & logs.
+- `HOOKS_MAX_LOG_MB` — cap for parsing large logs (default 10 MB)
+- `HOOKS_ERROR_TRIP` — consecutive errors to trip circuit breaker (default 3)
 
 ---
 

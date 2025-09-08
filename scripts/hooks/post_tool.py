@@ -7,6 +7,8 @@ Swarm1 - Claude Code PostTool hook
 """
 from __future__ import annotations
 import sys, os, json, time, re, pathlib
+sys.path.insert(0, os.path.dirname(__file__))
+import common  # type: ignore
 
 def _find_project_root(start):
     cur = os.path.abspath(start)
@@ -29,22 +31,10 @@ def _mkdirs():
     pathlib.Path(OBS_DIR).mkdir(parents=True, exist_ok=True)
 
 def _read_stdin_json() -> dict:
-    try:
-        # If stdin is a TTY (no pipe), don't read or we'll block the terminal.
-        if getattr(sys.stdin, "isatty", lambda: False)():
-            return {}
-    except Exception:
-        return {}
-    data = sys.stdin.read()
-    try:
-        return json.loads(data) if data else {}
-    except Exception:
-        return {}
+    return common.safe_read_stdin_json()
 
 def _log(obj: dict) -> None:
-    _mkdirs()
-    with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    common.safe_append_jsonl(obj)
 
 def redact_text(s: str) -> str:
     return SECRET_PAT.sub(r'\1:REDACTED', s)
@@ -56,13 +46,14 @@ def main() -> int:
     session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
     agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
     auv = os.getenv("AUV_ID")
-    
-    # SWARM MODE GATE: Only log during orchestration workflows
-    # Debug: let's see what we're getting
-    swarm_env = os.getenv("SWARM_ACTIVE", "")
-    swarm_active = bool(auv and auv.strip()) or swarm_env.lower() in ("1", "true", "yes")
-    if not swarm_active:
-        # Skip logging for regular Claude Code usage to avoid performance overhead
+
+    # Strict gating
+    if common.disabled() or (not common.is_swarm()):
+        return 0
+    mode = common.get_mode()
+    if mode == "off":
+        return 0
+    if not session_id:
         return 0
 
     response = inp.get("tool_response")
@@ -98,6 +89,12 @@ if __name__ == "__main__":
         # Never wedge the IDE
         try:
             _log({"ts": time.time(), "event": "PostToolUse", "error": str(e)})
+        except Exception:
+            pass
+        # Circuit breaker (best-effort, no session id available here)
+        try:
+            if common.record_error(None):
+                common.trip_circuit_breaker()
         except Exception:
             pass
         sys.exit(0)

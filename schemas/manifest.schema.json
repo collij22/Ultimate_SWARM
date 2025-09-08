@@ -1,0 +1,489 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Swarm1 Package Manifest",
+  "description": "Schema for AUV delivery package manifest with provenance and verification",
+  "type": "object",
+  "required": [
+    "version",
+    "auv_id",
+    "run_id",
+    "environment",
+    "timings_ms",
+    "cvf",
+    "artifacts",
+    "bundle",
+    "provenance"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Manifest schema version",
+      "enum": ["1.0", "1.1"],
+      "default": "1.1"
+    },
+    "auv_id": {
+      "type": "string",
+      "description": "Atomic Unit of Value identifier",
+      "pattern": "^AUV-\\d{4}$"
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique run identifier",
+      "minLength": 1
+    },
+    "commit": {
+      "type": "object",
+      "description": "Git commit information",
+      "required": ["sha"],
+      "properties": {
+        "sha": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{7,40}$"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "tag": {
+          "type": ["string", "null"]
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "description": "Cryptographic signature for manifest integrity (v1.1+)",
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["sha256-rsa", "sha384-rsa", "sha512-rsa", "ed25519"]
+        },
+        "publicKey": {
+          "type": "string",
+          "description": "Public key identifier or fingerprint"
+        },
+        "value": {
+          "type": "string",
+          "description": "Base64-encoded signature"
+        },
+        "timestamp": {
+          "type": "integer",
+          "description": "Unix timestamp of signing"
+        }
+      }
+    },
+    "sbom": {
+      "type": "object",
+      "description": "Software Bill of Materials (v1.1+)",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["spdx-2.3", "cyclonedx-1.4", "swid"]
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "version"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              },
+              "repository": {
+                "type": "string",
+                "description": "Repository URL"
+              }
+            }
+          }
+        },
+        "licenses": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "vulnerabilities": {
+          "type": "object",
+          "properties": {
+            "critical": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "medium": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "low": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "deliverable": {
+      "type": "object",
+      "description": "Deliverable versioning information (v1.1+)",
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9\\.]+)?(\\+[a-zA-Z0-9\\.]+)?$"
+        },
+        "compatibility": {
+          "type": "string",
+          "description": "Semantic version range for compatibility"
+        },
+        "changelog": {
+          "type": "string",
+          "description": "URL or path to changelog"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "Build environment information",
+      "required": ["node"],
+      "properties": {
+        "node": {
+          "type": "string",
+          "pattern": "^v\\d+\\.\\d+\\.\\d+$"
+        },
+        "os": {
+          "type": "string",
+          "enum": ["win32", "linux", "darwin", "freebsd", "sunos", "aix"]
+        },
+        "arch": {
+          "type": "string",
+          "enum": ["x64", "arm64", "ia32", "arm", "ppc64", "s390x"]
+        },
+        "ci": {
+          "type": "boolean",
+          "description": "Whether built in CI environment"
+        }
+      }
+    },
+    "tool_versions": {
+      "type": "object",
+      "description": "Versions of tools used in verification",
+      "properties": {
+        "playwright": {
+          "type": "string"
+        },
+        "lighthouse": {
+          "type": "string"
+        },
+        "semgrep": {
+          "type": "string"
+        },
+        "gitleaks": {
+          "type": "string"
+        },
+        "node": {
+          "type": "string"
+        },
+        "npm": {
+          "type": "string"
+        }
+      }
+    },
+    "timings_ms": {
+      "type": "object",
+      "description": "Execution timings in milliseconds",
+      "required": ["runbook"],
+      "properties": {
+        "runbook": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "packaging": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "report": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "cvf": {
+      "type": "object",
+      "description": "Capability Validation Framework results",
+      "required": ["passed"],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "perf_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "required_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "missing_artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "budgets": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["pass", "fail", "warn"]
+            },
+            "violations": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "metric": {
+                    "type": "string"
+                  },
+                  "budget": {
+                    "type": "number"
+                  },
+                  "actual": {
+                    "type": "number"
+                  },
+                  "severity": {
+                    "type": "string",
+                    "enum": ["low", "medium", "high"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "description": "Security scan results",
+      "properties": {
+        "semgrep": {
+          "type": "object",
+          "properties": {
+            "blocked": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "high": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "medium": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "low": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "report_path": {
+              "type": "string"
+            }
+          }
+        },
+        "gitleaks": {
+          "type": "object",
+          "properties": {
+            "blocked": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "findings": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "report_path": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "visual": {
+      "type": "object",
+      "description": "Visual regression test results",
+      "properties": {
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "routes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "report_path": {
+          "type": "string"
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "description": "List of included artifacts with checksums",
+      "items": {
+        "type": "object",
+        "required": ["path", "bytes", "sha256"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^[^\\.\\.]+$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["screenshot", "report", "config", "proof", "log"]
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "docs": {
+      "type": "array",
+      "description": "Documentation files included",
+      "items": {
+        "type": "object",
+        "required": ["path", "bytes", "sha256"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "diffs": {
+      "type": "array",
+      "description": "Code diffs or changesets included",
+      "items": {
+        "type": "object",
+        "required": ["path", "bytes", "sha256"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        }
+      }
+    },
+    "bundle": {
+      "type": "object",
+      "description": "Package bundle information",
+      "required": ["zip_path", "bytes", "sha256"],
+      "properties": {
+        "zip_path": {
+          "type": "string",
+          "pattern": "^dist/AUV-\\d{4}/package\\.zip$"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "compression": {
+          "type": "string",
+          "enum": ["deflate", "store", "bzip2"]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "description": "Build provenance information",
+      "required": ["built_at", "built_by"],
+      "properties": {
+        "built_at": {
+          "type": "integer",
+          "description": "Unix timestamp of build"
+        },
+        "built_by": {
+          "type": "string",
+          "description": "System or user that created the bundle"
+        },
+        "ci_run_id": {
+          "type": "string",
+          "description": "CI run identifier"
+        },
+        "ci_run_url": {
+          "type": "string",
+          "description": "URL to CI run"
+        },
+        "attestations": {
+          "type": "array",
+          "description": "Build attestations (SLSA, etc.)",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "uri": {
+                "type": "string",
+                "description": "Attestation URI"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

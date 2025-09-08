@@ -12,6 +12,8 @@ Add to .claude/settings.local.json under hooks.PreToolUse (command: python "$CLA
 
 from __future__ import annotations
 import sys, os, json, time, re, pathlib
+sys.path.insert(0, os.path.dirname(__file__))
+import common  # type: ignore
 from urllib.parse import urlparse
 
 # Optional dependency: PyYAML (policy/registry parsing).
@@ -45,23 +47,11 @@ def _mkdirs():
     pathlib.Path(LEDGER_DIR).mkdir(parents=True, exist_ok=True)
 
 def _read_stdin_json() -> dict:
-    try:
-        # If stdin is a TTY (no pipe), don't read or we'll block the terminal.
-        if getattr(sys.stdin, "isatty", lambda: False)():
-            return {}
-    except Exception:
-        return {}
-    data = sys.stdin.read()
-    try:
-        return json.loads(data) if data else {}
-    except Exception:
-        return {}
+    return common.safe_read_stdin_json()
 
 
 def _log(obj: dict) -> None:
-    _mkdirs()
-    with open(LOG_PATH, "a", encoding="utf-8") as f:
-        f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    common.safe_append_jsonl(obj)
 
 def _load_yaml(p: str) -> dict:
     if not yaml:
@@ -240,14 +230,14 @@ def main() -> int:
     session_id = inp.get("session_id") or inp.get("conversation_id") or inp.get("request_id")
     agent = os.getenv("CLAUDE_AGENT_NAME", "unknown")
     auv = os.getenv("AUV_ID")
-    
-    # SWARM MODE GATE: Only do full processing during orchestration workflows
-    # Exit early for regular Claude Code interactions to avoid performance overhead
-    swarm_env = os.getenv("SWARM_ACTIVE", "")
-    swarm_active = bool(auv and auv.strip()) or swarm_env.lower() in ("1", "true", "yes")
-    if not swarm_active:
-        # Allow all tools during regular Claude Code usage (exit 0 = continue)
+
+    # Global disables and strict gating
+    if common.disabled() or (not common.is_swarm()):
         return 0
+    mode = common.get_mode()
+    if mode == "off":
+        return 0
+    WARN_ONLY = (mode == "warn")
 
     registry = _read_registry()
     policies = _read_policies()
@@ -257,10 +247,11 @@ def main() -> int:
     if not ok:
         _log({
             "ts": _now(), "event": "PreToolUse", "agent": agent, "auv": auv,
-            "session_id": session_id, "tool": tool_id, "blocked": True, "reason": reason
+            "session_id": session_id, "tool": tool_id, "blocked": (not WARN_ONLY), "reason": reason
         })
-        sys.stderr.write(reason + "\n")
-        return 2  # Claude Code will show the reason and skip
+        if not WARN_ONLY:
+            sys.stderr.write(reason + "\n")
+            return 2
 
     # Tool-specific safety
     violations: list[str] = []
@@ -291,8 +282,7 @@ def main() -> int:
         if "prod" in (dsn or "").lower():
             violations.append("Refusing DB connection that appears to target production.")
 
-    # Enrich defaults (timeouts, headers) without mutating input (best-effort advice only)
-    # NOTE: Claude Code ignores stdout on success; we only log the enrichment for visibility.
+    # Enrich defaults (best-effort advisory only)
     enrichments = {}
     if tool_id.lower() in ("http", "fetch") and isinstance(params, dict):
         if "timeout" not in params:
@@ -300,9 +290,11 @@ def main() -> int:
         if "headers" not in params and os.getenv("API_BASE"):
             enrichments["headers"] = {"Accept": "application/json"}
 
-    # Cost estimate + budget guard (only meaningful for secondary; harmless otherwise)
+    # Cost estimate + budget guard
     est_cost = estimate_cost_usd(tool_id, params)
-    cost_ok, budget, budget_reason = budget_guard(session_id, est_cost if is_secondary_tool(tool_id, registry) else 0.0, policies, tool_id)
+    cost_ok, budget, budget_reason = budget_guard(
+        session_id, est_cost if is_secondary_tool(tool_id, registry) else 0.0, policies, tool_id
+    )
 
     # Decide
     blocked = False
@@ -322,7 +314,7 @@ def main() -> int:
         "auv": auv,
         "session_id": session_id,
         "tool": tool_id,
-        "blocked": blocked,
+        "blocked": (blocked and not WARN_ONLY),
         "reason": reason_final,
         "est_cost": round(est_cost, 6),
         "secondary": is_secondary_tool(tool_id, registry),
@@ -331,12 +323,11 @@ def main() -> int:
         "params_keys": list(params.keys()) if isinstance(params, dict) else None
     })
 
-    if blocked:
+    if blocked and not WARN_ONLY:
         if reason_final:
             sys.stderr.write(reason_final + "\n")
-        return 2  # block this tool call
+        return 2
 
-    # success → do not print anything (Claude ignores stdout), exit 0
     return 0
 
 if __name__ == "__main__":
@@ -344,5 +335,16 @@ if __name__ == "__main__":
         sys.exit(main())
     except Exception as e:
         # Never crash the IDE; log and allow (exit 0) to avoid wedging sessions.
-        _log({"ts": _now(), "event": "PreToolUse", "error": str(e)})
+        try:
+            err = str(e)
+            _log({"ts": _now(), "event": "PreToolUse", "error": err})
+        except Exception:
+            pass
+        # Circuit breaker
+        try:
+            # best-effort: session id not available here; use None
+            if common.record_error(None):
+                common.trip_circuit_breaker()
+        except Exception:
+            pass
         sys.exit(0)

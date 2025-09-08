@@ -533,3 +533,224 @@ npm run router:dry:secondary
 - Phase 5: Enforce router decisions in build lane
 - Phase 6: Add security tool integration
 - Phase 7: Package router decisions in delivery reports
+
+## Packaging & Client Delivery (Phase 7 - Completed)
+
+### Overview
+
+Phase 7 introduces professional packaging and delivery capabilities that transform AUV verification artifacts into client-ready bundles with cryptographic signatures, SBOM tracking, and visual reports.
+
+### Key Features
+
+- **Manifest v1.1**: Enhanced schema with signatures, SBOM, and deliverable versioning
+- **Deterministic Packaging**: Reproducible ZIP bundles with stable checksums
+- **HTML Reports**: Professional delivery reports with performance metrics and screenshots
+- **Full Pipeline**: Integrated run → package → report workflow
+
+### CLI Commands
+
+#### Package Command
+
+Create a distribution bundle from AUV artifacts:
+
+```bash
+# Package a specific AUV
+node orchestration/cli.mjs package AUV-0005
+
+# Output:
+# ✅ Package created successfully:
+#   AUV: AUV-0005
+#   Version: 1.1
+#   Bundle: dist/AUV-0005/AUV-0005_bundle.zip
+#   Size: 245.67 KB
+#   Artifacts: 42
+#   Manifest: dist/AUV-0005/manifest.json
+```
+
+#### Report Command
+
+Generate HTML report from manifest:
+
+```bash
+# Generate report for packaged AUV
+node orchestration/cli.mjs report AUV-0005
+
+# Output:
+# ✅ Report generated successfully:
+#   AUV: AUV-0005
+#   Report: dist/AUV-0005/report.html
+#   Open: file:///path/to/dist/AUV-0005/report.html
+```
+
+#### Deliver Command
+
+Run full delivery pipeline (test → package → report):
+
+```bash
+# Complete delivery pipeline
+node orchestration/cli.mjs deliver AUV-0005
+
+# Steps:
+# 📋 Step 1/3: Running AUV tests...
+#   ✅ AUV tests passed
+# 📦 Step 2/3: Creating package...
+#   ✅ Package created: dist/AUV-0005/AUV-0005_bundle.zip
+# 📊 Step 3/3: Generating report...
+#   ✅ Report generated: dist/AUV-0005/report.html
+# 
+# 🎉 Delivery complete!
+#   Total time: 45.23s
+#   Bundle: dist/AUV-0005/AUV-0005_bundle.zip
+#   Report: dist/AUV-0005/report.html
+```
+
+### Manifest Schema v1.1
+
+The enhanced manifest includes:
+
+```json
+{
+  "version": "1.1",
+  "auv_id": "AUV-0005",
+  "build_id": "build-abc123",
+  "timestamp": "2025-01-09T10:30:00Z",
+  "provenance": {
+    "git_commit": "abc123def",
+    "git_branch": "main",
+    "built_by": "user@example.com",
+    "ci_run": "https://github.com/org/repo/runs/123"
+  },
+  "signatures": {
+    "manifest": "sha256:signature...",
+    "artifacts": "sha256:merkle-root..."
+  },
+  "sbom": {
+    "bomFormat": "SPDX",
+    "specVersion": "2.3",
+    "packages": [...]
+  },
+  "artifacts": [...],
+  "bundle": {
+    "path": "dist/AUV-0005/AUV-0005_bundle.zip",
+    "size_bytes": 251576,
+    "sha256": "abc123..."
+  },
+  "deliverable": {
+    "level": 3,
+    "version": "0.0.1",
+    "capabilities": ["browser.automation", "web.perf_audit"]
+  }
+}
+```
+
+### Package Structure
+
+```
+dist/AUV-XXXX/
+├── manifest.json           # Package manifest with signatures
+├── AUV-XXXX_bundle.zip    # Compressed artifact bundle
+└── report.html            # Client-ready delivery report
+```
+
+#### Bundle Contents
+
+The ZIP bundle includes:
+- All test artifacts (videos, screenshots, traces)
+- Performance reports (Lighthouse)
+- Result cards (CVF validation)
+- Runbook and operate guides
+- SBOM with dependency tracking
+
+### Validation
+
+Validate manifest against schema:
+
+```bash
+# Validate all manifests
+npm run validate:manifest
+
+# Strict validation with all errors
+npm run validate:manifest:strict
+```
+
+### DAG Integration
+
+Package and report nodes can be used in graphs:
+
+```yaml
+nodes:
+  - id: package-auv-0005
+    type: package
+    params:
+      auv: AUV-0005
+    depends_on: [cvf-auv-0005]
+  
+  - id: report-auv-0005
+    type: report
+    params:
+      auv: AUV-0005
+    depends_on: [package-auv-0005]
+```
+
+### CI Integration
+
+The CI workflow automatically packages AUV-0005:
+
+1. Runs AUV tests
+2. Creates package bundle
+3. Validates manifest schema
+4. Generates HTML report
+5. Uploads artifacts to GitHub
+
+### Observability
+
+Packaging events are logged to `runs/observability/hooks.jsonl`:
+
+- `PackagingStarted`: Begin packaging
+- `ArtifactsCollected`: Number and size of artifacts
+- `ManifestCreated`: Manifest with checksums
+- `BundleCreated`: Final bundle path and size
+- `PackagingComplete`: Success with metrics
+
+### Security Features
+
+- **SHA-256 Checksums**: Every artifact and bundle
+- **Signature Placeholders**: Ready for cryptographic signing
+- **SBOM Generation**: Full dependency tracking
+- **Vulnerability Scanning**: Via SBOM integration
+
+### Report Features
+
+The HTML report includes:
+
+- **Executive Summary**: CVF status, performance score, security status
+- **Build Information**: Git commit, branch, CI details
+- **Performance Metrics**: Lighthouse scores, timing budgets
+- **Visual Proofs**: Screenshot gallery
+- **Artifacts Inventory**: Complete list with checksums
+- **Delivery Bundle**: Size, checksum, download link
+- **Provenance**: Build attestation
+
+### Testing
+
+```bash
+# Run packaging unit tests
+npm run test:unit tests/unit/package.test.mjs
+
+# Run report unit tests
+npm run test:unit tests/unit/report.test.mjs
+
+# End-to-end test
+node orchestration/cli.mjs deliver AUV-0005
+```
+
+### Exit Codes
+
+- `401`: Packaging failed
+- `402`: Report generation failed
+
+### Next Steps
+
+- Phase 8: Cryptographic signing with SLSA provenance
+- Phase 9: Automated vulnerability scanning via SBOM
+- Phase 10: Client portal with download authentication

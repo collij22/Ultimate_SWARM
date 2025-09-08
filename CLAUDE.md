@@ -21,6 +21,7 @@
 - **Gates:** Functional (Playwright), Perf (Lighthouse), plus optional Security (Semgrep – planned).
 - **MCP Policy:** Agents request **capabilities**; **Primary** tools preferred; **Secondary** only with budget/consent. Enforced by hooks + `mcp/policies.yaml` (`agents.allowlist` is source of truth).
 - **Artifacts:** All proofs under `runs/<AUV-ID>/...`; CI uploads them.
+- **Hooks:** AUV-only activation (requires `AUV_ID` env var). Normal coding stays inert. Modes: `off` (default), `warn` (log violations), `block` (enforce policies). Circuit breaker prevents IDE wedging. Set via `HOOKS_MODE=block` for orchestration runs.
 
 ## 2) Roles & Responsibilities
 

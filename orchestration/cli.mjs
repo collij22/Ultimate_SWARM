@@ -9,6 +9,9 @@
  *   node orchestration/cli.mjs run-graph <graph.yaml> [--resume <RUN-ID>] - Run DAG graph
  *   node orchestration/cli.mjs graph-from-backlog <backlog.yaml> [-o output.yaml] - Compile backlog to graph
  *   node orchestration/cli.mjs build-lane <AUV-ID> --patch <file> [options] - Run build lane
+ *   node orchestration/cli.mjs package <AUV-ID>            - Create distribution bundle
+ *   node orchestration/cli.mjs report <AUV-ID>             - Generate HTML report from manifest
+ *   node orchestration/cli.mjs deliver <AUV-ID>            - Full delivery pipeline (run → package → report)
  *   node orchestration/cli.mjs help                        - Show help
  *
  * Exit codes:
@@ -29,12 +32,16 @@
  *   207 - Git push failed (Build Lane)
  *   208 - PR creation failed (Build Lane)
  *   209 - Patch apply failed (Build Lane)
+ *   401 - Packaging failed
+ *   402 - Report generation failed
  */
 import { runAuv, RunbookError } from './runbooks/auv_delivery.mjs';
 import { compileBrief, validateAuv } from './lib/auv_compiler.mjs';
 import { validateBriefCLI } from './lib/validate_brief.mjs';
 import { GraphRunner } from './graph/runner.mjs';
 import { compileBacklogToGraph, loadBacklog, saveGraph } from './graph/compile_from_backlog.mjs';
+import { PackageBuilder } from './package.mjs';
+import { ReportGenerator } from './report.mjs';
 import fs from 'fs';
 import path from 'path';
 
@@ -54,6 +61,9 @@ Commands:
   run-graph <graph.yaml> [--resume <RUN-ID>]      Run DAG graph with parallel execution
   graph-from-backlog <backlog.yaml> [-o output]   Compile backlog to executable graph
   build-lane <AUV-ID> --patch <file> [options]    Run autonomous build lane
+  package <AUV-ID>                                Create distribution bundle for AUV
+  report <AUV-ID>                                 Generate HTML report from manifest
+  deliver <AUV-ID>                                Full delivery pipeline (run → package → report)
   help                                             Show this help message
 
 Examples:
@@ -67,6 +77,9 @@ Examples:
   node orchestration/cli.mjs graph-from-backlog capabilities/backlog.yaml -o graph.yaml
   node orchestration/cli.mjs build-lane AUV-0003 --patch changes.diff --open-pr
   node orchestration/cli.mjs build-lane AUV-0003 --patch changes.json --dry-run
+  node orchestration/cli.mjs package AUV-0005
+  node orchestration/cli.mjs report AUV-0005
+  node orchestration/cli.mjs deliver AUV-0005
 
 Environment Variables:
   STAGING_URL    Staging server URL (default: http://127.0.0.1:3000)
@@ -324,6 +337,115 @@ async function main() {
       });
 
     return; // Exit early to prevent fall-through
+  }
+
+  // Handle package command
+  if (command === 'package') {
+    const auvId = args[1];
+    if (!auvId) {
+      console.error('Usage: node orchestration/cli.mjs package <AUV-ID>');
+      process.exit(2);
+    }
+
+    console.log(`[cli] Creating package for ${auvId}`);
+
+    try {
+      const builder = new PackageBuilder(auvId);
+      const manifest = await builder.build();
+
+      console.log('\n✅ Package created successfully:');
+      console.log(`  AUV: ${manifest.auv_id}`);
+      console.log(`  Version: ${manifest.version}`);
+      console.log(`  Bundle: ${manifest.bundle.path}`);
+      console.log(`  Size: ${(manifest.bundle.size_bytes / 1024).toFixed(2)} KB`);
+      console.log(`  Artifacts: ${manifest.artifacts.length}`);
+      console.log(`  Manifest: dist/${auvId}/manifest.json`);
+
+      process.exit(0);
+    } catch (error) {
+      console.error(`[cli] Packaging failed: ${error.message}`);
+      process.exit(401);
+    }
+  }
+
+  // Handle report command
+  if (command === 'report') {
+    const auvId = args[1];
+    if (!auvId) {
+      console.error('Usage: node orchestration/cli.mjs report <AUV-ID>');
+      process.exit(2);
+    }
+
+    console.log(`[cli] Generating report for ${auvId}`);
+
+    try {
+      const generator = new ReportGenerator(auvId);
+      const reportPath = await generator.generate();
+
+      console.log('\n✅ Report generated successfully:');
+      console.log(`  AUV: ${auvId}`);
+      console.log(`  Report: ${reportPath}`);
+      console.log(`  Open: file://${path.resolve(reportPath)}`);
+
+      process.exit(0);
+    } catch (error) {
+      console.error(`[cli] Report generation failed: ${error.message}`);
+      process.exit(402);
+    }
+  }
+
+  // Handle deliver command (full pipeline)
+  if (command === 'deliver' || command === 'deliver:full') {
+    const auvId = args[1];
+    if (!auvId) {
+      console.error('Usage: node orchestration/cli.mjs deliver <AUV-ID>');
+      process.exit(2);
+    }
+
+    console.log(`[cli] Running full delivery pipeline for ${auvId}`);
+    const startTime = Date.now();
+
+    try {
+      // Step 1: Run AUV
+      console.log('\n📋 Step 1/3: Running AUV tests...');
+      await runAuv(auvId);
+      console.log('  ✅ AUV tests passed');
+
+      // Step 2: Create package
+      console.log('\n📦 Step 2/3: Creating package...');
+      const builder = new PackageBuilder(auvId);
+      const manifest = await builder.build();
+      console.log(`  ✅ Package created: ${manifest.bundle.path}`);
+
+      // Step 3: Generate report
+      console.log('\n📊 Step 3/3: Generating report...');
+      const generator = new ReportGenerator(auvId);
+      const reportPath = await generator.generate();
+      console.log(`  ✅ Report generated: ${reportPath}`);
+
+      const duration = Date.now() - startTime;
+
+      console.log('\n🎉 Delivery complete!');
+      console.log(`  Total time: ${(duration / 1000).toFixed(2)}s`);
+      console.log(`  Bundle: dist/${auvId}/${path.basename(manifest.bundle.path)}`);
+      console.log(`  Report: ${reportPath}`);
+      console.log(`  View: file://${path.resolve(reportPath)}`);
+
+      process.exit(0);
+    } catch (error) {
+      const duration = Date.now() - startTime;
+      console.error(`[cli] Delivery failed after ${(duration / 1000).toFixed(2)}s: ${error.message}`);
+
+      // Return appropriate exit code based on error type
+      if (error instanceof RunbookError) {
+        process.exit(error.exitCode);
+      } else if (error.message?.includes('Package')) {
+        process.exit(401);
+      } else if (error.message?.includes('Report')) {
+        process.exit(402);
+      }
+      process.exit(1);
+    }
   }
 
   // Handle graph-from-backlog command
