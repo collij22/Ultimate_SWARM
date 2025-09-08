@@ -34,41 +34,41 @@ const testGraph = {
     // Chain 1
     {
       id: 'chain1-step1',
-      type: 'cvf',
+      type: 'report',
       requires: ['server'],
-      params: { auv: 'AUV-0002' },
+      params: { label: 'chain1-step1' },
     },
     {
       id: 'chain1-step2',
-      type: 'cvf',
+      type: 'report',
       requires: ['chain1-step1'],
-      params: { auv: 'AUV-0002' },
+      params: { label: 'chain1-step2' },
     },
     // Chain 2
     {
       id: 'chain2-step1',
-      type: 'cvf',
+      type: 'report',
       requires: ['server'],
-      params: { auv: 'AUV-0003' },
+      params: { label: 'chain2-step1' },
     },
     {
       id: 'chain2-step2',
-      type: 'cvf',
+      type: 'report',
       requires: ['chain2-step1'],
-      params: { auv: 'AUV-0003' },
+      params: { label: 'chain2-step2' },
     },
     // Chain 3
     {
       id: 'chain3-step1',
-      type: 'cvf',
+      type: 'report',
       requires: ['server'],
-      params: { auv: 'AUV-0004' },
+      params: { label: 'chain3-step1' },
     },
     {
       id: 'chain3-step2',
-      type: 'cvf',
+      type: 'report',
       requires: ['chain3-step1'],
-      params: { auv: 'AUV-0004' },
+      params: { label: 'chain3-step2' },
     },
   ],
 };
