@@ -7,7 +7,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
@@ -126,7 +126,7 @@ describe('ReportGenerator', () => {
 
   it('should load manifest successfully', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     const generator = new ReportGenerator(TEST_AUV);
@@ -139,7 +139,7 @@ describe('ReportGenerator', () => {
 
   it('should prepare screenshots for report', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     const generator = new ReportGenerator(TEST_AUV);
@@ -153,7 +153,7 @@ describe('ReportGenerator', () => {
 
   it('should prepare performance metrics', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     const generator = new ReportGenerator(TEST_AUV);
@@ -168,7 +168,7 @@ describe('ReportGenerator', () => {
 
   it('should prepare artifacts table', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     const generator = new ReportGenerator(TEST_AUV);
@@ -184,7 +184,7 @@ describe('ReportGenerator', () => {
 
   it('should generate complete HTML report', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     const generator = new ReportGenerator(TEST_AUV);
@@ -203,7 +203,7 @@ describe('ReportGenerator', () => {
 
   it('should handle missing manifest gracefully', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     // Remove manifest file
@@ -220,7 +220,7 @@ describe('ReportGenerator', () => {
 
   it('should handle missing screenshots directory', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     // Remove screenshots directory
@@ -238,7 +238,7 @@ describe('ReportGenerator', () => {
 
   it('should handle missing Lighthouse report', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     // Remove Lighthouse report
@@ -253,7 +253,7 @@ describe('ReportGenerator', () => {
 
   it('should format dates correctly', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     const generator = new ReportGenerator(TEST_AUV);
@@ -269,7 +269,7 @@ describe('ReportGenerator', () => {
 
   it('should include embedded templates as fallback', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     // Remove template files
@@ -291,7 +291,7 @@ describe('ReportGenerator', () => {
 
   it('should escape HTML in manifest data', async () => {
     const { ReportGenerator } = await import(
-      path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')
+      pathToFileURL(path.join(PROJECT_ROOT, 'orchestration', 'report.mjs')).href
     );
 
     // Update manifest with potentially dangerous content

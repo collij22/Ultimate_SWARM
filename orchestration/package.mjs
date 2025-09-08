@@ -362,7 +362,18 @@ class PackageBuilder {
     }
 
     return {
+      bomFormat: 'SPDX',
+      specVersion: '2.3',
       format: 'spdx-2.3',
+      creationInfo: {
+        created: new Date().toISOString(),
+        creators: ['Tool: swarm1-package'],
+      },
+      packages: dependencies.map((dep) => ({
+        name: dep.name,
+        version: dep.version,
+        license: dep.license,
+      })),
       dependencies,
       licenses: ['MIT'],
       vulnerabilities: {
