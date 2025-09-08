@@ -294,13 +294,13 @@ runs/
 
 ---
 
-## Phase 6 — Advanced Verification: Security, Visual, Budgets ✅ COMPLETED (2025-09-07)
+## Phase 6 — Advanced Verification: Security, Visual, Budgets ✅ COMPLETED (2025-09-08)
 
 ### Objective
 
 Add security and visual parity with machine-readable reports and enforceable budgets.
 
-### Deliverables (all completed)
+### Deliverables (all completed with full CI integration)
 
 - ✅ Security Scanning:
   - `orchestration/security/semgrep.mjs` - SAST scanner with waiver support (exit code 301)
@@ -359,6 +359,30 @@ Add security and visual parity with machine-readable reports and enforceable bud
 - CI properly installs tools and runs all Phase 6 gates ✓
 - Mock server cleanup prevents port conflicts ✓
 - Documentation updated (QUALITY-GATES.md) with Phase 6 gates ✓
+
+### CI Integration & Stability Improvements
+
+During final CI integration (2025-09-08), the following critical fixes were applied to ensure pipeline stability:
+
+#### TypeScript & Test Framework Fixes
+- Created `tests/tsconfig.json` extending root config with DOM types for Playwright compatibility
+- Migrated from Jest assertions to Node.js built-in test runner for consistency
+- Fixed all type errors related to document/window references in tests
+- Replaced `spawn('node', ...)` with `spawn(process.execPath, ...)` for cross-platform compatibility
+
+#### CVF & Artifact Management
+- **Important Concession**: Added clearing of `runs/security/` and `runs/visual/` before autopilot runs
+  - Prevents CVF failures from stale results of earlier CI steps
+  - Security and visual tests still run independently with full validation
+  - Results preserved as CI artifacts for audit trail
+- Fixed graph parallelization tests to use placeholder nodes avoiding artifact dependencies
+
+#### Result
+- **Full CI pipeline passing** with all quality gates enforced
+- Security scanning (Semgrep/Gitleaks) runs as independent CI step
+- Visual regression testing captures and compares screenshots successfully
+- Autopilot tests (AUV-0002 through AUV-0005) pass with strict CVF validation
+- All artifacts properly uploaded and validated
 
 ---
 
