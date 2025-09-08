@@ -44,6 +44,7 @@ properties:
             - agent_task
             - package
             - report
+            - work_simulation
           description: 'Node execution type'
 
         params:
@@ -79,6 +80,16 @@ properties:
               type: array
               items:
                 type: string
+
+            # Work simulation params (for testing)
+            label:
+              type: string
+              description: 'Label for the simulated work'
+            duration_ms:
+              type: integer
+              minimum: 1
+              maximum: 10000
+              description: 'Duration of simulated work in milliseconds'
 
         requires:
           type: array

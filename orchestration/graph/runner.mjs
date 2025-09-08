@@ -476,6 +476,26 @@ class NodeExecutors {
     }
   }
 
+  async work_simulation(node, _env) {
+    // Simulated work for testing parallelization
+    const duration = node.params?.duration_ms || 200;
+    const label = node.params?.label || node.id;
+
+    console.log(`[work_simulation] ${node.id}: Starting work (${duration}ms)`);
+
+    const startTime = Date.now();
+    await new Promise((resolve) => setTimeout(resolve, duration));
+    const actualDuration = Date.now() - startTime;
+
+    console.log(`[work_simulation] ${node.id}: Completed in ${actualDuration}ms`);
+
+    return {
+      status: 'success',
+      message: `Work simulation completed: ${label}`,
+      duration_ms: actualDuration,
+    };
+  }
+
   async _runCommand(command, args, env, timeout) {
     return new Promise((resolve, reject) => {
       const proc = spawn(command, args, {
@@ -868,7 +888,9 @@ export class GraphRunner {
         const ready = this.getReadyNodes();
 
         // Start nodes up to concurrency limit
-        const toStart = ready.slice(0, this.graph.concurrency - this.running.size);
+        // Use runner's concurrency setting, or fall back to graph's if specified
+        const effectiveConcurrency = this.concurrency || this.graph.concurrency || 3;
+        const toStart = ready.slice(0, effectiveConcurrency - this.running.size);
 
         if (toStart.length === 0 && this.running.size === 0) {
           // No nodes can progress
