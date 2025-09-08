@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, copyFile } from 'fs/promises';
 import { existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -114,11 +114,13 @@ class ReportGenerator {
       version: manifest.version,
 
       // Timing
-      built_at: new Date(manifest.provenance.built_at * 1000).toISOString(),
-      built_by: manifest.provenance.built_by,
-      duration_total: this.formatDuration(manifest.timings_ms.total),
-      duration_runbook: this.formatDuration(manifest.timings_ms.runbook),
-      duration_packaging: this.formatDuration(manifest.timings_ms.packaging),
+      built_at: manifest.provenance?.built_at
+        ? new Date(manifest.provenance.built_at * 1000).toISOString()
+        : new Date().toISOString(),
+      built_by: manifest.provenance?.built_by || 'unknown',
+      duration_total: this.formatDuration(manifest.timings_ms?.total || 0),
+      duration_runbook: this.formatDuration(manifest.timings_ms?.runbook || 0),
+      duration_packaging: this.formatDuration(manifest.timings_ms?.packaging || 0),
 
       // Git info
       commit_sha: manifest.commit?.sha?.substring(0, 7) || 'unknown',
@@ -126,19 +128,19 @@ class ReportGenerator {
       commit_message: this.escapeHtml(manifest.commit?.message || ''),
 
       // Environment
-      node_version: manifest.environment.node,
-      os_platform: manifest.environment.os,
-      ci_environment: manifest.environment.ci ? 'CI' : 'Local',
+      node_version: manifest.environment?.node || process.version,
+      os_platform: manifest.environment?.os || process.platform,
+      ci_environment: manifest.environment?.ci ? 'CI' : 'Local',
 
       // CVF Status
-      cvf_status: manifest.cvf.passed ? '✅ PASSED' : '❌ FAILED',
-      cvf_status_class: manifest.cvf.passed ? 'status-pass' : 'status-fail',
-      perf_score: Math.round((manifest.cvf.perf_score || 0) * 100),
-      perf_score_class: this.getPerfScoreClass(manifest.cvf.perf_score),
+      cvf_status: manifest.cvf?.passed ? '✅ PASSED' : '❌ FAILED',
+      cvf_status_class: manifest.cvf?.passed ? 'status-pass' : 'status-fail',
+      perf_score: Math.round((manifest.cvf?.perf_score || 0) * 100),
+      perf_score_class: this.getPerfScoreClass(manifest.cvf?.perf_score || 0),
 
       // Artifacts count
       artifacts_count: manifest.artifacts?.length || 0,
-      missing_count: manifest.cvf.missing_artifacts?.length || 0,
+      missing_count: manifest.cvf?.missing_artifacts?.length || 0,
 
       // Security (if present)
       security_status: this.getSecurityStatus(manifest.security),
@@ -149,8 +151,8 @@ class ReportGenerator {
       visual_details: this.formatVisualDetails(manifest.visual),
 
       // Performance budgets
-      budget_status: manifest.cvf.budgets?.status || 'unknown',
-      budget_violations: this.formatBudgetViolations(manifest.cvf.budgets),
+      budget_status: manifest.cvf?.budgets?.status || 'unknown',
+      budget_violations: this.formatBudgetViolations(manifest.cvf?.budgets),
 
       // Screenshots
       screenshots: await this.prepareScreenshots(manifest),
@@ -162,15 +164,15 @@ class ReportGenerator {
       tool_versions: this.formatToolVersions(manifest.tool_versions),
 
       // Manifest link
-      manifest_json: JSON.stringify(manifest, null, 2),
+      manifest_json: this.escapeHtml(JSON.stringify(manifest, null, 2)),
 
       // Bundle info
       bundle_size: this.formatBytes(manifest.bundle?.bytes || 0),
       bundle_sha: manifest.bundle?.sha256?.substring(0, 12) || 'unknown',
 
       // CI link
-      ci_link: manifest.provenance.ci_run_url || '#',
-      ci_run_id: manifest.provenance.ci_run_id || 'N/A',
+      ci_link: manifest.provenance?.ci_run_url || '#',
+      ci_run_id: manifest.provenance?.ci_run_id || 'N/A',
     };
 
     return data;
@@ -205,26 +207,50 @@ class ReportGenerator {
    */
   async prepareScreenshots(manifest) {
     const screenshots = [];
+    const assetsDir = join(dirname(this.outputPath), 'assets');
+
+    // Create assets directory if we have large images
+    let hasLargeImages = false;
+    for (const artifact of manifest.artifacts || []) {
+      if (
+        artifact.type === 'screenshot' &&
+        artifact.path.endsWith('.png') &&
+        artifact.bytes >= 100000
+      ) {
+        hasLargeImages = true;
+        break;
+      }
+    }
+
+    if (hasLargeImages) {
+      await mkdir(assetsDir, { recursive: true });
+    }
 
     for (const artifact of manifest.artifacts || []) {
       if (artifact.type === 'screenshot' && artifact.path.endsWith('.png')) {
         const imagePath = join(PROJECT_ROOT, artifact.path);
+        const imageName = basename(artifact.path);
 
         if (existsSync(imagePath)) {
-          // For large files, use relative link; for small ones, embed as base64
+          // For large files, copy to assets and use relative link; for small ones, embed as base64
           if (artifact.bytes < 100000) {
             // 100KB threshold
             const imageData = await readFile(imagePath);
             const base64 = imageData.toString('base64');
             screenshots.push({
-              name: artifact.path.split('/').pop(),
+              name: imageName,
               src: `data:image/png;base64,${base64}`,
               embedded: true,
             });
           } else {
+            // Copy to assets directory preserving path structure to avoid collisions
+            const assetRelativePath = artifact.path.replace(/\\/g, '/');
+            const assetPath = join(assetsDir, assetRelativePath);
+            await mkdir(dirname(assetPath), { recursive: true });
+            await copyFile(imagePath, assetPath);
             screenshots.push({
-              name: artifact.path.split('/').pop(),
-              src: artifact.path,
+              name: imageName,
+              src: `./assets/${assetRelativePath}`,
               embedded: false,
             });
           }

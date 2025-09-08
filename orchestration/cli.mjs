@@ -356,8 +356,8 @@ async function main() {
       console.log('\n✅ Package created successfully:');
       console.log(`  AUV: ${manifest.auv_id}`);
       console.log(`  Version: ${manifest.version}`);
-      console.log(`  Bundle: ${manifest.bundle.path}`);
-      console.log(`  Size: ${(manifest.bundle.size_bytes / 1024).toFixed(2)} KB`);
+      console.log(`  Bundle: ${manifest.bundle.zip_path}`);
+      console.log(`  Size: ${(manifest.bundle.bytes / 1024).toFixed(2)} KB`);
       console.log(`  Artifacts: ${manifest.artifacts.length}`);
       console.log(`  Manifest: dist/${auvId}/manifest.json`);
 
@@ -415,7 +415,7 @@ async function main() {
       console.log('\n📦 Step 2/3: Creating package...');
       const builder = new PackageBuilder(auvId);
       const manifest = await builder.build();
-      console.log(`  ✅ Package created: ${manifest.bundle.path}`);
+      console.log(`  ✅ Package created: ${manifest.bundle.zip_path}`);
 
       // Step 3: Generate report
       console.log('\n📊 Step 3/3: Generating report...');
@@ -427,7 +427,7 @@ async function main() {
 
       console.log('\n🎉 Delivery complete!');
       console.log(`  Total time: ${(duration / 1000).toFixed(2)}s`);
-      console.log(`  Bundle: dist/${auvId}/${path.basename(manifest.bundle.path)}`);
+      console.log(`  Bundle: dist/${auvId}/${path.basename(manifest.bundle.zip_path)}`);
       console.log(`  Report: ${reportPath}`);
       console.log(`  View: file://${path.resolve(reportPath)}`);
 

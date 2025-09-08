@@ -3,7 +3,7 @@
 import { readFile, writeFile, stat, mkdir, readdir } from 'fs/promises';
 import { createReadStream, createWriteStream, existsSync } from 'fs';
 import { join, dirname } from 'path';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { pipeline } from 'stream/promises';
 import yazl from 'yazl';
 import { execSync } from 'child_process';
@@ -28,6 +28,7 @@ class PackageBuilder {
     this.strict = options.strict || false;
     this.outputPath = options.outputPath || join(PROJECT_ROOT, 'dist', auvId);
     this.startTime = Date.now();
+    this.generatedFiles = []; // Track files generated outside project root
   }
 
   /**
@@ -59,6 +60,9 @@ class PackageBuilder {
       // Step 7: Generate SBOM
       const sbom = await this.generateSBOM();
 
+      // Step 7.5: Read budget evaluation
+      const budgetEval = await this.readBudgetEvaluation();
+
       // Step 8: Create manifest
       const manifest = await this.createManifest({
         runbookSummary,
@@ -68,6 +72,7 @@ class PackageBuilder {
         docs,
         diffs,
         sbom,
+        budgetEval,
       });
 
       // Step 9: Create zip bundle
@@ -125,11 +130,19 @@ class PackageBuilder {
         latestTime = stats.mtimeMs;
         // Extract run ID from the runbook summary
         const content = JSON.parse(await readFile(filePath, 'utf8'));
-        this.runId = content.run_id || 'latest';
+        this.runId = content.run_id || null;
       }
     }
 
-    console.log(`Resolved to latest run ID: ${this.runId}`);
+    // If no run_id found, generate a deterministic one
+    if (!this.runId) {
+      const timestamp = Date.now();
+      const randomHex = randomBytes(4).toString('hex');
+      this.runId = `${this.auvId}-${timestamp}-${randomHex}`;
+      console.log(`Generated new run ID: ${this.runId}`);
+    } else {
+      console.log(`Resolved to latest run ID: ${this.runId}`);
+    }
   }
 
   /**
@@ -284,10 +297,17 @@ class PackageBuilder {
       await writeFile(verifyAuvPath, auvSection);
 
       const info = await this.getFileInfo(verifyAuvPath);
+      const relativePath = `docs/verify-${this.auvId}.md`;
       docs.push({
-        path: `docs/verify-${this.auvId}.md`,
+        path: relativePath,
         bytes: info.bytes,
         sha256: info.sha256,
+      });
+
+      // Track this generated file for bundling
+      this.generatedFiles.push({
+        sourcePath: verifyAuvPath,
+        destPath: relativePath,
       });
     }
 
@@ -344,6 +364,25 @@ class PackageBuilder {
   }
 
   /**
+   * Read budget evaluation if available
+   */
+  async readBudgetEvaluation() {
+    const budgetPath = join(PROJECT_ROOT, 'runs', this.auvId, 'perf', 'budget-evaluation.json');
+
+    if (!existsSync(budgetPath)) {
+      return null;
+    }
+
+    try {
+      const content = await readFile(budgetPath, 'utf8');
+      return JSON.parse(content);
+    } catch (error) {
+      console.warn(`Warning: Could not read budget evaluation: ${error.message}`);
+      return null;
+    }
+  }
+
+  /**
    * Generate Software Bill of Materials
    */
   async generateSBOM() {
@@ -389,7 +428,8 @@ class PackageBuilder {
    * Create manifest object
    */
   async createManifest(data) {
-    const { runbookSummary, artifacts, securityData, visualData, docs, diffs, sbom } = data;
+    const { runbookSummary, artifacts, securityData, visualData, docs, diffs, sbom, budgetEval } =
+      data;
 
     // Get git information
     const gitInfo = this.getGitInfo();
@@ -410,35 +450,41 @@ class PackageBuilder {
       },
       tool_versions: toolVersions,
       timings_ms: {
-        runbook: runbookSummary.durations?.total || 0,
+        runbook: runbookSummary.duration_ms || 0,
         packaging: Date.now() - this.startTime,
         total: 0, // Will be updated
       },
       cvf: {
         passed: runbookSummary.ok || false,
-        perf_score: runbookSummary.lighthouse_score || 0,
+        perf_score: runbookSummary.perf?.perf_score || 0,
+        lcp_ms: runbookSummary.perf?.lcp_ms || null,
         required_artifacts: expectedArtifacts(this.auvId),
         missing_artifacts: artifacts.missingArtifacts || [],
-        budgets: {
-          status: 'pass',
-          violations: [],
-        },
+        budgets: budgetEval
+          ? {
+              status: budgetEval.passed ? 'pass' : 'fail',
+              violations: budgetEval.violations || [],
+            }
+          : {
+              status: 'warn',
+              violations: [],
+            },
       },
       artifacts: artifacts.artifacts,
       docs,
       diffs,
       sbom,
       deliverable: {
-        version: `1.0.0-${this.auvId.toLowerCase()}`,
+        version: `1.0.0-${this.auvId.toLowerCase().replace(/-/g, '.')}`,
         compatibility: '^1.0.0',
       },
       provenance: {
         built_at: Math.floor(Date.now() / 1000),
         built_by: 'swarm1',
-        ci_run_id: process.env.GITHUB_RUN_ID || null,
+        ci_run_id: process.env.GITHUB_RUN_ID || 'local',
         ci_run_url: process.env.GITHUB_RUN_ID
           ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-          : null,
+          : '',
       },
     };
 
@@ -471,7 +517,7 @@ class PackageBuilder {
       mtime: new Date(manifest.provenance.built_at * 1000),
     });
 
-    // Add artifacts (sorted for determinism)
+    // Add artifacts from project root (sorted for determinism)
     const allFiles = [...artifacts.artifacts, ...docs, ...diffs].sort((a, b) =>
       a.path.localeCompare(b.path),
     );
@@ -481,6 +527,16 @@ class PackageBuilder {
       if (existsSync(sourcePath)) {
         const stream = createReadStream(sourcePath);
         zipfile.addReadStream(stream, file.path, {
+          mtime: new Date(manifest.provenance.built_at * 1000),
+        });
+      }
+    }
+
+    // Add generated files from output directory
+    for (const genFile of this.generatedFiles) {
+      if (existsSync(genFile.sourcePath)) {
+        const stream = createReadStream(genFile.sourcePath);
+        zipfile.addReadStream(stream, genFile.destPath, {
           mtime: new Date(manifest.provenance.built_at * 1000),
         });
       }

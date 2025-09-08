@@ -29,13 +29,23 @@ function lookupFromCapabilityYaml(auvId) {
 export function expectedArtifacts(auvId) {
   switch (auvId) {
     case 'AUV-0002':
-      return ['runs/AUV-0002/ui/products_search.png', 'runs/AUV-0002/perf/lighthouse.json'];
+      return [
+        'runs/AUV-0002/ui/products_grid.png',
+        'runs/AUV-0002/ui/product_detail.png',
+        'runs/AUV-0002/perf/lighthouse.json',
+      ];
     case 'AUV-0003':
       return ['runs/AUV-0003/ui/products_search.png', 'runs/AUV-0003/perf/lighthouse.json'];
     case 'AUV-0004':
       return ['runs/AUV-0004/ui/cart_summary.png', 'runs/AUV-0004/perf/lighthouse.json'];
     case 'AUV-0005':
       return ['runs/AUV-0005/ui/checkout_success.png', 'runs/AUV-0005/perf/lighthouse.json'];
+    case 'AUV-9999':
+      // Test AUV - minimal artifacts for unit tests
+      return ['runs/AUV-9999/result-cards/runbook-summary.json'];
+    case 'AUV-9998':
+      // Test AUV - minimal artifacts for unit tests
+      return ['runs/AUV-9998/result-cards/runbook-summary.json'];
     default: {
       // Dynamic fallback for generated AUVs
       const dyn = lookupFromCapabilityYaml(auvId);

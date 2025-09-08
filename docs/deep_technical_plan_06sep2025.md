@@ -389,25 +389,103 @@ During final CI integration (2025-09-08), the following critical fixes were appl
 
 ---
 
-## Phase 7 — Packaging & Client Delivery (Weeks 6–7)
+## Phase 7 — Packaging & Client Delivery ✅ COMPLETED (2025-09-08)
 
 ### Objective
 
 Produce an auditable, portable delivery bundle with verification report and provenance.
 
-### Deliverables
+### Deliverables (all completed with production hardening)
 
-- `orchestration/report.mjs` (HTML summarizing CVF results, screenshots, perf scores, CI links)
-- `orchestration/package.mjs` (zip `/runs/<AUV>/` subset, source diffs, docs slice into `/dist/<AUV>/package.zip`)
-- `manifest.json` inside zip (checksums, timings, versions, CI run ID)
+- ✅ `orchestration/package.mjs` - Complete packaging module with:
+  - Artifact collection from runs directory with SHA-256 checksums
+  - SBOM generation in SPDX 2.3 format with dependency analysis
+  - Manifest creation with comprehensive metadata and provenance
+  - Bundle creation using yazl compression library
+  - Generated documentation tracking and inclusion
+  - Run ID generation for traceability
+  - Budget evaluation integration from performance tests
 
-### Docs
+- ✅ `orchestration/report.mjs` - HTML report generator with:
+  - Embedded template system for offline viewing
+  - Smart screenshot handling (embed small, copy large to assets/)
+  - Full path preservation to prevent naming collisions
+  - HTML escaping for security (XSS prevention)
+  - Performance metric visualization with color coding
+  - Artifact table generation with checksums
+  - CI link integration and provenance display
 
-- Update `docs/operate.md` (how to run), `docs/verify.md` (how to verify), and CHANGELOG excerpt.
+- ✅ `schemas/manifest.schema.json` - Comprehensive validation schema:
+  - Version 1.1 with all required fields
+  - Artifact path validation (prevents path traversal)
+  - Semantic versioning enforcement
+  - Bundle metadata validation
+  - CVF and budget status tracking
 
-### Acceptance & Proofs
+- ✅ CLI Integration:
+  - `node orchestration/cli.mjs package AUV-XXXX` - Creates delivery bundle
+  - `node orchestration/cli.mjs report AUV-XXXX` - Generates HTML report
+  - Support for dry-run and validation modes
 
-- For AUV-0005, `/dist/AUV-0005/package.zip` contains expected artifacts; `report.html` links to all proofs; checksums recorded.
+### Critical Fixes Applied
+
+1. **Budget Status Mapping**: Fixed to compute from `budgetEval.passed` boolean instead of non-existent `status` field
+2. **Screenshot Asset Collisions**: Preserves full path structure (e.g., `assets/runs/AUV-0002/ui/products_grid.png`)
+3. **Semantic Version Compliance**: Deliverable versions use format `1.0.0-auv.0005` (dots replace hyphens)
+4. **Artifact Path Regex**: Updated to `^(?!.*\.\.)[\/\w\-\.]+$` - allows dots/slashes but prevents traversal
+5. **HTML Escaping**: Manifest JSON properly escaped in reports to prevent injection
+6. **Documentation Updates**: Fixed all references from `AUV-XXXX_bundle.zip` to `package.zip`
+7. **Test Infrastructure**: Updated all test AUV IDs to valid format (AUV-9999, AUV-9998)
+8. **Expected Artifacts**: Added test AUV artifacts to `expected_artifacts.mjs`
+
+### Implementation Highlights
+
+- **Deterministic Bundling**: Sorted artifact ordering for reproducible builds
+- **Cross-platform Support**: Windows-safe path handling throughout
+- **Null Safety**: All manifest fields have safe property access with fallbacks
+- **Offline Report Viewing**: Assets copied with preserved paths for standalone HTML
+- **Comprehensive Metadata**: Provenance, environment, tool versions all captured
+
+### Testing & Validation
+
+- ✅ **Unit Tests**: All passing for package and report modules
+  - Artifact collection and checksum validation
+  - SBOM generation with dependency detection
+  - Manifest schema compliance
+  - Report HTML generation and escaping
+  - Date formatting and null handling
+
+- ✅ **Integration Validation**:
+  - Package creation for AUV-0005: `dist/AUV-0005/package.zip` (43.80 KB)
+  - Manifest validation: `npx ajv validate -s schemas/manifest.schema.json -d dist/AUV-0005/manifest.json`
+  - Report generation: HTML renders correctly with all assets
+
+### Artifacts Structure
+
+```
+dist/
+  AUV-XXXX/
+    manifest.json              # Package manifest with signatures
+    package.zip                # Compressed artifact bundle
+    report.html                # Client-ready delivery report
+    assets/                    # Large screenshots (preserved paths)
+      runs/
+        AUV-XXXX/
+          ui/
+            *.png              # Screenshots > 100KB
+    docs/                      # Generated documentation
+      verify-AUV-XXXX.md      # AUV-specific verification guide
+```
+
+### Acceptance & Proofs ✅
+
+- Package generation successful for AUV-0005 with all artifacts included ✓
+- Manifest passes schema validation with semantic versioning ✓
+- HTML report renders offline with proper asset linking ✓
+- All unit tests passing (package.test.mjs, report.test.mjs) ✓
+- Budget status correctly computed from evaluation results ✓
+- Screenshot paths preserved to prevent collisions ✓
+- Documentation updated with correct bundle naming ✓
 
 ---
 

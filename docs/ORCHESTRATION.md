@@ -648,7 +648,7 @@ The enhanced manifest includes:
 ```
 dist/AUV-XXXX/
 ├── manifest.json           # Package manifest with signatures
-├── AUV-XXXX_bundle.zip    # Compressed artifact bundle
+├── package.zip            # Compressed artifact bundle
 └── report.html            # Client-ready delivery report
 ```
 

@@ -101,14 +101,14 @@ When receiving a Swarm1 delivery bundle, follow these steps to verify integrity 
 
 ```bash
 # Extract the bundle
-unzip dist/AUV-XXXX/AUV-XXXX_bundle.zip -d /tmp/verify/
+unzip dist/AUV-XXXX/package.zip -d /tmp/verify/
 
 # Verify manifest exists
 cat /tmp/verify/manifest.json | jq .version
 # Expected: "1.1"
 
 # Check bundle checksum
-sha256sum dist/AUV-XXXX/AUV-XXXX_bundle.zip
+sha256sum dist/AUV-XXXX/package.zip
 # Compare with manifest.bundle.sha256
 ```
 
@@ -196,7 +196,7 @@ To re-verify an AUV from its artifacts:
 
 ```bash
 # Re-run CVF check from artifacts
-node orchestration/cvf-check.mjs AUV-XXXX --from-bundle dist/AUV-XXXX/AUV-XXXX_bundle.zip
+node orchestration/cvf-check.mjs AUV-XXXX --from-bundle dist/AUV-XXXX/package.zip
 
 # Re-generate report from manifest
 node orchestration/cli.mjs report AUV-XXXX
@@ -209,7 +209,7 @@ node orchestration/cli.mjs report AUV-XXXX
 ```bash
 # Create release with bundle
 gh release create v1.0.0-AUV-XXXX \
-  dist/AUV-XXXX/AUV-XXXX_bundle.zip \
+  dist/AUV-XXXX/package.zip \
   dist/AUV-XXXX/manifest.json \
   dist/AUV-XXXX/report.html \
   --title "AUV-XXXX Delivery" \
@@ -223,7 +223,7 @@ gh release create v1.0.0-AUV-XXXX \
 aws s3 cp dist/AUV-XXXX/ s3://deliveries/AUV-XXXX/ \
   --recursive \
   --metadata-directive REPLACE \
-  --metadata sha256=$(sha256sum dist/AUV-XXXX/AUV-XXXX_bundle.zip | cut -d' ' -f1)
+  --metadata sha256=$(sha256sum dist/AUV-XXXX/package.zip | cut -d' ' -f1)
 ```
 
 ### Troubleshooting
@@ -248,7 +248,7 @@ If checksums don't match:
 
 ```bash
 # Check for file corruption
-file dist/AUV-XXXX/AUV-XXXX_bundle.zip
+file dist/AUV-XXXX/package.zip
 
 # Re-download if corrupted
 gh release download v1.0.0-AUV-XXXX
@@ -282,10 +282,10 @@ Set up monitoring for delivered bundles:
 
 ```bash
 # Check bundle age
-find dist/ -name "*_bundle.zip" -mtime +30 -exec echo "Old bundle: {}" \;
+find dist/ -name "package.zip" -mtime +30 -exec echo "Old bundle: {}" \;
 
 # Monitor bundle sizes
-du -sh dist/*/\*_bundle.zip | sort -h
+du -sh dist/*/package.zip | sort -h
 
 # Alert on missing reports
 for dir in dist/AUV-*; do
@@ -314,8 +314,7 @@ Clean up old bundles:
 
 ```bash
 # Remove bundles older than 30 days
-find dist/ -name "*_bundle.zip" -mtime +30 -delete
+find dist/ -name "package.zip" -mtime +30 -delete
 
-# Keep manifests and reports
-find dist/ -name "*_bundle.zip" -mtime +30 -delete
+# Keep manifests and reports (bundles already removed above)
 ```

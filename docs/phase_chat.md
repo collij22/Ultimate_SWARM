@@ -1,22 +1,40 @@
-<!-- Key mismatches: artifacts list for AUV-0002, manifest field mapping, report asset paths, and bundling of generated docs; fix these before Phase 7 delivery to ensure CVF passes and packages are self-contained. -->
+I reviewed the code to verify each claimed fix; here’s what’s truly done vs still missing before we call Phase 7 complete.
 
-_Must fix before Phase 7 delivery_
--AUV-0002 expectedArtifacts mismatch: expectedArtifacts('AUV-0002') points to products_search.png; docs/tests expect products_grid.png and product_detail.png. Why: strict CVF will fail, blocking autopilot/deliver. Fix: update orchestration/lib/expected_artifacts.mjs.
+_Confirmed implemented correctly_
+-AUV-0002 artifacts updated to products_grid.png, product_detail.png + perf in orchestration/lib/expected_artifacts.mjs.
 
--Manifest field mapping from runbook: package.mjs reads runbookSummary.durations?.total and lighthouse_score, but runbook writes duration_ms and perf.perf_score. Why: manifest currently records zeros; report shows wrong perf/timings. Fix: map to duration_ms and perf.perf_score (and include perf.lcp_ms).
+-Manifest mapping reads duration_ms and perf.perf_score in orchestration/package.mjs.
 
--Report image paths: report.html references runs/... relative to dist/AUV/..., which breaks when opening the report standalone. Why: screenshots won’t render offline. Fix: either embed all screenshots as base64 or rewrite src to a proper relative path (e.g., path.relative(dirname(outputPath), join(PROJECT_ROOT, artifact.path))) or copy assets into dist/AUV/assets.
+-Report copies large screenshots to dist/<AUV>/assets/ and embeds small ones; report renders offline.
 
--Bundling generated docs: extractDocumentation() writes dist/<AUV>/docs/verify-<AUV>.md, but createBundle() only zips files found under project root, so the verify doc isn’t included. Why: missing doc in package. Fix: source files from this.outputPath when present (or store sourcePath alongside path for bundling).
+-CLI now prints bundle.zip_path and bundle.bytes.
 
-_Should fix soon (not blocking)_
--CLI package output fields: CLI prints manifest.bundle.path and size_bytes; schema and package.mjs use zip_path and bytes. Why: confusing UX; easy fix in orchestration/cli.mjs.
--Run ID derivation: package.mjs falls back to "latest" because runbook summary lacks run_id. Why: weak provenance. Fix: generate a deterministic run id (e.g., timestamp or hash of runbook-summary.json).
--Manifest budgets section: Currently hard-coded pass. Why: under-reports real budget outcomes. Fix: read runs/<AUV>/perf/budget-evaluation.json and populate cvf.budgets with status/violations.
--Operate doc naming: docs/operate.md references AUV-XXXX_bundle.zip but code uses package.zip. Why: doc drift. Fix: align to package.zip.
+-Run ID is generated when absent.
 
-_Nice to have (later)_
--SBOM enrichment: Add license/repo via a light tool (e.g., license-checker) to replace placeholder MIT. Not required for Phase 7 acceptance.
--Consistent screenshot naming across tests/docs: Reduces future drift.
+-Packaging bundles generated verify-docs via tracked generatedFiles.
 
----
+_Claims not reflected in code (must fix now)_
+-Budget status mapping: still uses budgetEval.status || 'unknown'; compute from budgetEval.passed ? 'pass' : 'fail'.
+
+-Screenshot asset collisions: copies to assets/<basename>.png only; preserve subpaths (e.g., assets/runs/AUV-0002/ui/products_grid.png).
+
+-deliverable.version: remains 1.0.0-<auv-id>; fails schema if pre-release contains hyphen. Use e.g., 1.0.0-auv.0005 (replace hyphens inside the tag with dots).
+
+-Schema artifact path regex: schemas/manifest.schema.json still has a pattern that forbids dots ("^[^\\.\\.]+$"). Replace with a traversal-safe pattern that allows dots/slashes, e.g., ^(?!.*\.\.)[\w\-\/\.]+$.
+
+-Report manifest JSON escaping: {{manifest_json}} is injected unescaped; escape it (or render via JS using textContent) to prevent HTML injection in the pre block.
+
+-Docs drift: docs/ORCHESTRATION.md still references AUV-XXXX_bundle.zip; change to package.zip.
+
+-Drift test not removed: tests/robot/playwright/auv-0002-ui.spec.ts still exists (uses products_search.png).
+
+-Unit tests AUV IDs: tests/unit/package.test.mjs still uses TEST-0001 and sets zip_path under dist/TEST-0001, which violates the schema pattern ^dist/AUV-\d{4}/package\.zip$. Update to valid AUV-9999 etc.
+
+-“Added expected artifacts for test AUVs”: no such additions found in expected_artifacts.mjs or capabilities; tests shouldn’t assume missing artifacts.
+
+_Go/no‑go_
+-After applying the above fixes (budget status, path preservation, semver tag, schema regex, manifest JSON escaping, docs/test alignments), Phase 7 packaging/report will meet the plan’s deliverables and acceptance.
+-Quick acceptance checks:
+-Package + validate: run AUV (e.g., AUV-0005), then node orchestration/cli.mjs package AUV-0005 and validate manifest with Ajv.
+-Report: node orchestration/cli.mjs report AUV-0005; open dist/AUV-0005/report.html; screenshots must render offline from assets/ with preserved subpaths.
+-Tests: update unit tests to valid AUV IDs; ensure all tests pass locally

@@ -7,6 +7,7 @@
 import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
+import { randomBytes } from 'crypto';
 import YAML from 'yaml';
 import { ensureTests } from '../lib/test_authoring.mjs';
 import { expectedArtifacts } from '../lib/expected_artifacts.mjs';
@@ -410,6 +411,11 @@ export async function runAuv(auvId, options = {}) {
     const totalDuration = Date.now() - startTime;
     const cardPath = `runs/${auvId}/result-cards/runbook-summary.json`;
 
+    // Generate run ID
+    const timestamp = Date.now();
+    const randomHex = randomBytes(4).toString('hex');
+    const runId = `${auvId}-${timestamp}-${randomHex}`;
+
     // Observability breadcrumb
     appendHookLine({ ts: Date.now() / 1000, event: 'RunbookSucceeded', auv: auvId, steps });
 
@@ -427,6 +433,7 @@ export async function runAuv(auvId, options = {}) {
           ts: Date.now() / 1000,
           event: 'RunbookDone',
           auv: auvId,
+          run_id: runId,
           duration_ms: totalDuration,
           steps,
           repaired,
@@ -457,6 +464,12 @@ export async function runAuv(auvId, options = {}) {
     // Write failure result card
     const totalDuration = Date.now() - startTime;
     const cardPath = `runs/${auvId}/result-cards/runbook-summary.json`;
+
+    // Generate run ID for failure case
+    const timestamp = Date.now();
+    const randomHex = randomBytes(4).toString('hex');
+    const runId = `${auvId}-${timestamp}-${randomHex}`;
+
     try {
       fs.mkdirSync(path.dirname(cardPath), { recursive: true });
       fs.writeFileSync(
@@ -467,6 +480,7 @@ export async function runAuv(auvId, options = {}) {
             ts: Date.now() / 1000,
             event: 'RunbookFailed',
             auv: auvId,
+            run_id: runId,
             duration_ms: totalDuration,
             steps: steps,
             error: err.message,
