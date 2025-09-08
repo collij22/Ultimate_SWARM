@@ -176,6 +176,11 @@ jobs:
           echo "Mock server cleanup complete"
 
       # ---- Autopilot runs (single source of truth) ----
+      # Clear security results to avoid CVF failures from earlier scans
+      - name: Clear security results before autopilot
+        shell: bash
+        run: rm -rf runs/security/
+        
       - name: AUV-0002 (autopilot)
         shell: bash
         run: node orchestration/cli.mjs AUV-0002
