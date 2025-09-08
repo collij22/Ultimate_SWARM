@@ -20,7 +20,7 @@ test('AUV-0002 artifacts.required contains expected filenames', () => {
   for (const f of expected) {
     assert(
       required.includes(f),
-      `Missing expected artifact: ${f}\nFound: ${JSON.stringify(required, null, 2)}`
+      `Missing expected artifact: ${f}\nFound: ${JSON.stringify(required, null, 2)}`,
     );
   }
 

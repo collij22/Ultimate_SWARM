@@ -3,12 +3,14 @@
 ## Phase 8 — Durable Execution & Multi‑Tenant Ops (Enhanced Plan)
 
 ### Objectives
+
 - Durable, resumable execution of multi‑AUV briefs via a queue/worker engine.
 - Multi‑tenant namespacing for artifacts, budgets, and policies.
 - Live status and auditability via `reports/status.json` sourced from existing hooks.
 - DR/backups for `runs/` and `dist/` with safe, deterministic outputs.
 
 ### Decision Record (ADR-008): BullMQ + Redis
+
 - Chosen: BullMQ + Redis (Node-friendly, minimal deps, robust job semantics).
 - Not chosen: Temporal (heavier SDK, steeper learning, larger surface area).
 - Dependencies: `bullmq`, `ioredis`. No other runtime deps required.
@@ -30,6 +32,7 @@
 ## Implementation Plan (Milestones and Edits)
 
 ### M1 — Engine Skeleton and Configuration
+
 - New files:
   - `orchestration/engine/bullmq/config.mjs`:
     - Parse `REDIS_URL`, `ENGINE_CONCURRENCY` (default 3), `ENGINE_NAMESPACE` (default `swarm1`).
@@ -42,6 +45,7 @@
   - 401 RedisUnavailable, 409 InvalidJobPayload.
 
 ### M2 — Worker and Job Lifecycle
+
 - New files:
   - `orchestration/engine/bullmq/worker.mjs`:
     - Create BullMQ `Worker` on `graphQueue`.
@@ -64,6 +68,7 @@
     - Accept `TENANT_ID` and use it to prefix artifact roots (no breaking changes to file naming).
 
 ### M3 — Multi‑Tenant Namespacing
+
 - New files:
   - `orchestration/lib/tenant.mjs`:
     - `tenantPath(tenant: string, relative: string): string` → scoped path.
@@ -80,6 +85,7 @@
   - 405 PermissionDenied (tenant policy violation), 406 ResumeStateMissing.
 
 ### M4 — CLI Surface and Admin Commands
+
 - Edits:
   - `orchestration/cli.mjs`:
     - `engine start [--tenant <ID>] [--concurrency N]`
@@ -93,6 +99,7 @@
 - Windows‑safe: use `process.execPath` for subprocess calls; avoid shell-specific features.
 
 ### M5 — Status Aggregation and Reporting
+
 - New files:
   - `orchestration/engine/status_aggregator.mjs`:
     - Read BullMQ job states and `runs/observability/hooks.jsonl`.
@@ -105,6 +112,7 @@
   - Add CLI: `engine emit-status` (single-shot) and schedule from worker every 30s when active.
 
 ### M6 — DR/Backups (Safe by Default)
+
 - New files:
   - `orchestration/ops/backup.mjs`:
     - Zip and timestamp `runs/` and `dist/` to `backups/YYYYMMDDTHHMMSSZ/`.
@@ -115,6 +123,7 @@
   - Never include `node_modules/`, `.git/`, secrets; enforce allowlist.
 
 ### M7 — Policies, Budgets, and Safety
+
 - Edits:
   - `mcp/policies.yaml`:
     - Optional:
@@ -125,6 +134,7 @@
   - 408 Timeout (job exceeded max runtime), 407 CancelledByUser.
 
 ### M8 — Documentation and Guides
+
 - Edits:
   - `docs/ARCHITECTURE.md`: add queue/worker sequence diagrams, tenant namespace.
   - `docs/ORCHESTRATION.md`: CLI usage for engine, status, backups.

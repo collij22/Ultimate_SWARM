@@ -16,9 +16,7 @@ console.log('🚀 Graph Parallelization Integration Test\n');
 
 // Determine work duration based on environment
 const isCI = process.env.CI === 'true';
-const WORK_DURATION_MS = process.env.GRAPH_TEST_MS 
-  ? +process.env.GRAPH_TEST_MS 
-  : (isCI ? 1000 : 400); // Allow override via GRAPH_TEST_MS env var
+const WORK_DURATION_MS = process.env.GRAPH_TEST_MS ? +process.env.GRAPH_TEST_MS : isCI ? 1000 : 400; // Allow override via GRAPH_TEST_MS env var
 
 // Create a test graph with independent parallel paths
 const testGraph = {
@@ -132,7 +130,9 @@ async function main() {
     console.log('Testing graph parallelization...');
     console.log(`Environment: ${isCI ? 'CI' : 'Local'}`);
     console.log(`Work duration per node: ${WORK_DURATION_MS}ms`);
-    console.log(`Expected total work: 6 nodes × ${WORK_DURATION_MS}ms = ${6 * WORK_DURATION_MS}ms\n`);
+    console.log(
+      `Expected total work: 6 nodes × ${WORK_DURATION_MS}ms = ${6 * WORK_DURATION_MS}ms\n`,
+    );
 
     // Run with serial execution (concurrency=1)
     console.log('Running serial test (concurrency=1, best of 3)...');
@@ -219,7 +219,8 @@ async function main() {
     const success =
       parallelResult.success &&
       serialResult.success &&
-      (speedupAchieved >= minSpeedupRequired || (isCI && parallelismDetected && speedupAchieved > 10));
+      (speedupAchieved >= minSpeedupRequired ||
+        (isCI && parallelismDetected && speedupAchieved > 10));
 
     if (success) {
       console.log('\n✅ Test PASSED: Parallel execution shows significant improvement');
