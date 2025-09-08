@@ -65,11 +65,7 @@
       "Bash(sed:*)",
       "Bash(STAGING_URL=http://127.0.0.1:3000 API_BASE=http://127.0.0.1:3000/api node orchestration/cli.mjs AUV-0002)"
     ],
-    "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(./secrets/**)"
-    ],
+    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
     "ask": []
   },
   "enableAllProjectMcpServers": true,
