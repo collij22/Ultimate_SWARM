@@ -597,7 +597,7 @@ node orchestration/cli.mjs deliver AUV-0005
 #   ✅ Package created: dist/AUV-0005/AUV-0005_bundle.zip
 # 📊 Step 3/3: Generating report...
 #   ✅ Report generated: dist/AUV-0005/report.html
-# 
+#
 # 🎉 Delivery complete!
 #   Total time: 45.23s
 #   Bundle: dist/AUV-0005/AUV-0005_bundle.zip
@@ -655,6 +655,7 @@ dist/AUV-XXXX/
 #### Bundle Contents
 
 The ZIP bundle includes:
+
 - All test artifacts (videos, screenshots, traces)
 - Performance reports (Lighthouse)
 - Result cards (CVF validation)
@@ -684,7 +685,7 @@ nodes:
     params:
       auv: AUV-0005
     depends_on: [cvf-auv-0005]
-  
+
   - id: report-auv-0005
     type: report
     params:

@@ -27,38 +27,37 @@ class ReportGenerator {
    */
   async generate() {
     console.log(`📊 Generating report for ${this.auvId}`);
-    
+
     try {
       await this.emitHooks('ReportStart', {});
-      
+
       // Step 1: Load manifest
       const manifest = await this.loadManifest();
-      
+
       // Step 2: Load template
       const template = await this.loadTemplate();
       const styles = await this.loadStyles();
-      
+
       // Step 3: Prepare data for template
       const templateData = await this.prepareTemplateData(manifest);
-      
+
       // Step 4: Render template with token replacement
       const html = this.renderTemplate(template, templateData, styles);
-      
+
       // Step 5: Write report
       await this.writeReport(html);
-      
-      await this.emitHooks('ReportComplete', { 
-        ok: true, 
-        duration_ms: Date.now() - this.startTime 
+
+      await this.emitHooks('ReportComplete', {
+        ok: true,
+        duration_ms: Date.now() - this.startTime,
       });
-      
+
       console.log(`✅ Report generated at ${this.outputPath}`);
       return this.outputPath;
-      
     } catch (error) {
-      await this.emitHooks('ReportComplete', { 
-        ok: false, 
-        error: error.message 
+      await this.emitHooks('ReportComplete', {
+        ok: false,
+        error: error.message,
       });
       throw error;
     }
@@ -71,7 +70,7 @@ class ReportGenerator {
     if (!existsSync(this.manifestPath)) {
       throw new Error(`Manifest not found at ${this.manifestPath}`);
     }
-    
+
     const content = await readFile(this.manifestPath, 'utf8');
     return JSON.parse(content);
   }
@@ -81,12 +80,12 @@ class ReportGenerator {
    */
   async loadTemplate() {
     const templatePath = join(__dirname, 'report-templates', 'index.html');
-    
+
     // Use embedded template if file doesn't exist
     if (!existsSync(templatePath)) {
       return this.getEmbeddedTemplate();
     }
-    
+
     return await readFile(templatePath, 'utf8');
   }
 
@@ -95,12 +94,12 @@ class ReportGenerator {
    */
   async loadStyles() {
     const stylesPath = join(__dirname, 'report-templates', 'styles.css');
-    
+
     // Use embedded styles if file doesn't exist
     if (!existsSync(stylesPath)) {
       return this.getEmbeddedStyles();
     }
-    
+
     return await readFile(stylesPath, 'utf8');
   }
 
@@ -113,67 +112,67 @@ class ReportGenerator {
       auv_id: manifest.auv_id,
       run_id: manifest.run_id,
       version: manifest.version,
-      
+
       // Timing
       built_at: new Date(manifest.provenance.built_at * 1000).toISOString(),
       built_by: manifest.provenance.built_by,
       duration_total: this.formatDuration(manifest.timings_ms.total),
       duration_runbook: this.formatDuration(manifest.timings_ms.runbook),
       duration_packaging: this.formatDuration(manifest.timings_ms.packaging),
-      
+
       // Git info
       commit_sha: manifest.commit?.sha?.substring(0, 7) || 'unknown',
       commit_branch: manifest.commit?.branch || 'unknown',
       commit_message: this.escapeHtml(manifest.commit?.message || ''),
-      
+
       // Environment
       node_version: manifest.environment.node,
       os_platform: manifest.environment.os,
       ci_environment: manifest.environment.ci ? 'CI' : 'Local',
-      
+
       // CVF Status
       cvf_status: manifest.cvf.passed ? '✅ PASSED' : '❌ FAILED',
       cvf_status_class: manifest.cvf.passed ? 'status-pass' : 'status-fail',
       perf_score: Math.round((manifest.cvf.perf_score || 0) * 100),
       perf_score_class: this.getPerfScoreClass(manifest.cvf.perf_score),
-      
+
       // Artifacts count
       artifacts_count: manifest.artifacts?.length || 0,
       missing_count: manifest.cvf.missing_artifacts?.length || 0,
-      
+
       // Security (if present)
       security_status: this.getSecurityStatus(manifest.security),
       security_details: this.formatSecurityDetails(manifest.security),
-      
+
       // Visual (if present)
       visual_status: this.getVisualStatus(manifest.visual),
       visual_details: this.formatVisualDetails(manifest.visual),
-      
+
       // Performance budgets
       budget_status: manifest.cvf.budgets?.status || 'unknown',
       budget_violations: this.formatBudgetViolations(manifest.cvf.budgets),
-      
+
       // Screenshots
       screenshots: await this.prepareScreenshots(manifest),
-      
+
       // Artifacts table
       artifacts_table: this.generateArtifactsTable(manifest.artifacts),
-      
+
       // Tool versions
       tool_versions: this.formatToolVersions(manifest.tool_versions),
-      
+
       // Manifest link
       manifest_json: JSON.stringify(manifest, null, 2),
-      
+
       // Bundle info
       bundle_size: this.formatBytes(manifest.bundle?.bytes || 0),
       bundle_sha: manifest.bundle?.sha256?.substring(0, 12) || 'unknown',
-      
+
       // CI link
       ci_link: manifest.provenance.ci_run_url || '#',
-      ci_run_id: manifest.provenance.ci_run_id || 'N/A'
+      ci_run_id: manifest.provenance.ci_run_id || 'N/A',
     };
-    
+
     return data;
   }
 
@@ -183,13 +182,13 @@ class ReportGenerator {
   renderTemplate(template, data, styles) {
     // Inject styles
     let html = template.replace('{{styles}}', `<style>${styles}</style>`);
-    
+
     // Replace all tokens
     for (const [key, value] of Object.entries(data)) {
       const token = `{{${key}}}`;
       html = html.split(token).join(value);
     }
-    
+
     return html;
   }
 
@@ -206,43 +205,48 @@ class ReportGenerator {
    */
   async prepareScreenshots(manifest) {
     const screenshots = [];
-    
+
     for (const artifact of manifest.artifacts || []) {
       if (artifact.type === 'screenshot' && artifact.path.endsWith('.png')) {
         const imagePath = join(PROJECT_ROOT, artifact.path);
-        
+
         if (existsSync(imagePath)) {
           // For large files, use relative link; for small ones, embed as base64
-          if (artifact.bytes < 100000) { // 100KB threshold
+          if (artifact.bytes < 100000) {
+            // 100KB threshold
             const imageData = await readFile(imagePath);
             const base64 = imageData.toString('base64');
             screenshots.push({
               name: artifact.path.split('/').pop(),
               src: `data:image/png;base64,${base64}`,
-              embedded: true
+              embedded: true,
             });
           } else {
             screenshots.push({
               name: artifact.path.split('/').pop(),
               src: artifact.path,
-              embedded: false
+              embedded: false,
             });
           }
         }
       }
     }
-    
+
     // Generate HTML for screenshots gallery
     if (screenshots.length === 0) {
       return '<p>No screenshots available</p>';
     }
-    
-    return screenshots.map(img => `
+
+    return screenshots
+      .map(
+        (img) => `
       <div class="screenshot">
         <img src="${img.src}" alt="${img.name}" />
         <div class="screenshot-caption">${img.name}</div>
       </div>
-    `).join('');
+    `,
+      )
+      .join('');
   }
 
   /**
@@ -252,15 +256,19 @@ class ReportGenerator {
     if (!artifacts || artifacts.length === 0) {
       return '<tr><td colspan="4">No artifacts</td></tr>';
     }
-    
-    return artifacts.map(artifact => `
+
+    return artifacts
+      .map(
+        (artifact) => `
       <tr>
         <td>${artifact.path}</td>
         <td>${artifact.type || 'unknown'}</td>
         <td>${this.formatBytes(artifact.bytes)}</td>
         <td class="checksum">${artifact.sha256.substring(0, 12)}...</td>
       </tr>
-    `).join('');
+    `,
+      )
+      .join('');
   }
 
   /**
@@ -268,17 +276,19 @@ class ReportGenerator {
    */
   formatSecurityDetails(security) {
     if (!security) return 'No security scans performed';
-    
+
     const parts = [];
-    
+
     if (security.semgrep) {
-      parts.push(`Semgrep: ${security.semgrep.high || 0} high, ${security.semgrep.medium || 0} medium`);
+      parts.push(
+        `Semgrep: ${security.semgrep.high || 0} high, ${security.semgrep.medium || 0} medium`,
+      );
     }
-    
+
     if (security.gitleaks) {
       parts.push(`Gitleaks: ${security.gitleaks.findings || 0} findings`);
     }
-    
+
     return parts.join(' | ') || 'No issues found';
   }
 
@@ -287,7 +297,7 @@ class ReportGenerator {
    */
   formatVisualDetails(visual) {
     if (!visual) return 'No visual tests performed';
-    
+
     return `${visual.passed || 0} passed, ${visual.failed || 0} failed (threshold: ${(visual.threshold * 100).toFixed(2)}%)`;
   }
 
@@ -298,12 +308,16 @@ class ReportGenerator {
     if (!budgets?.violations || budgets.violations.length === 0) {
       return '<li>No budget violations</li>';
     }
-    
-    return budgets.violations.map(v => `
+
+    return budgets.violations
+      .map(
+        (v) => `
       <li class="violation-${v.severity}">
         ${v.metric}: ${v.actual} (budget: ${v.budget})
       </li>
-    `).join('');
+    `,
+      )
+      .join('');
   }
 
   /**
@@ -311,7 +325,7 @@ class ReportGenerator {
    */
   formatToolVersions(versions) {
     if (!versions) return 'N/A';
-    
+
     return Object.entries(versions)
       .map(([tool, version]) => `${tool}: ${version}`)
       .join(', ');
@@ -322,8 +336,8 @@ class ReportGenerator {
    */
   getSecurityStatus(security) {
     if (!security) return '⚪ Not Run';
-    
-    const hasIssues = (security.semgrep?.high > 0) || (security.gitleaks?.findings > 0);
+
+    const hasIssues = security.semgrep?.high > 0 || security.gitleaks?.findings > 0;
     return hasIssues ? '⚠️ Issues Found' : '✅ Clean';
   }
 
@@ -371,9 +385,9 @@ class ReportGenerator {
       '<': '&lt;',
       '>': '&gt;',
       '"': '&quot;',
-      "'": '&#039;'
+      "'": '&#039;',
     };
-    return text.replace(/[&<>"']/g, m => map[m]);
+    return text.replace(/[&<>"']/g, (m) => map[m]);
   }
 
   /**
@@ -741,7 +755,7 @@ class ReportGenerator {
       module: 'report',
       auv_id: this.auvId,
       run_id: this.runId,
-      ...data
+      ...data,
     };
 
     const hooksPath = join(PROJECT_ROOT, 'runs', 'observability', 'hooks.jsonl');
@@ -755,7 +769,7 @@ class ReportGenerator {
  */
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length < 1) {
     console.error('Usage: node report.mjs <AUV-ID> [options]');
     console.error('Options:');

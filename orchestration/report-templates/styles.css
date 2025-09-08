@@ -8,7 +8,8 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
   color: #2c3e50;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -121,7 +122,9 @@ h3 {
   border-radius: 8px;
   padding: 25px;
   text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .summary-card:hover {
@@ -333,7 +336,9 @@ h3 {
   border: 1px solid #dee2e6;
   border-radius: 8px;
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .screenshot:hover {
@@ -588,20 +593,20 @@ footer {
     background: white;
     padding: 0;
   }
-  
+
   .container {
     box-shadow: none;
     border-radius: 0;
   }
-  
+
   .footer-actions {
     display: none;
   }
-  
+
   .modal {
     display: none !important;
   }
-  
+
   section {
     page-break-inside: avoid;
   }
@@ -613,16 +618,16 @@ footer {
     flex-direction: column;
     gap: 10px;
   }
-  
+
   .info-grid,
   .perf-container {
     grid-template-columns: 1fr;
   }
-  
+
   .summary-grid {
     grid-template-columns: 1fr;
   }
-  
+
   section {
     padding: 25px;
   }

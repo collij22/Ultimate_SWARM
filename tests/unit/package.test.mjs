@@ -39,10 +39,7 @@ describe('PackageBuilder', () => {
       path.join(TEST_RUN_DIR, 'lighthouse', 'report.html'),
       '<html><body>Test Report</body></html>',
     );
-    fs.writeFileSync(
-      path.join(TEST_RUN_DIR, 'README.md'),
-      '# Test AUV\n\nThis is a test.',
-    );
+    fs.writeFileSync(path.join(TEST_RUN_DIR, 'README.md'), '# Test AUV\n\nThis is a test.');
   });
 
   afterEach(() => {
@@ -167,7 +164,7 @@ describe('PackageBuilder', () => {
     fs.rmSync(TEST_RUN_DIR, { recursive: true, force: true });
 
     const builder = new PackageBuilder(TEST_AUV);
-    
+
     await assert.rejects(
       async () => await builder.build(),
       /not found|does not exist/i,
@@ -204,14 +201,14 @@ describe('PackageBuilder', () => {
     );
 
     const builder = new PackageBuilder(TEST_AUV);
-    
+
     // Mock the build process to test determinism
     const artifacts = await builder.collectArtifacts();
-    
+
     // Sort artifacts to ensure deterministic ordering
     const sorted1 = [...artifacts].sort((a, b) => a.path.localeCompare(b.path));
     const sorted2 = [...artifacts].sort((a, b) => a.path.localeCompare(b.path));
-    
+
     assert.deepEqual(sorted1, sorted2, 'Artifacts should be sorted deterministically');
   });
 

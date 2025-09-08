@@ -89,14 +89,8 @@ describe('ReportGenerator', () => {
     );
 
     // Create mock screenshots
-    fs.writeFileSync(
-      path.join(TEST_RUN_DIR, 'screenshots', 'home.png'),
-      'mock-screenshot-data',
-    );
-    fs.writeFileSync(
-      path.join(TEST_RUN_DIR, 'screenshots', 'cart.png'),
-      'mock-screenshot-data',
-    );
+    fs.writeFileSync(path.join(TEST_RUN_DIR, 'screenshots', 'home.png'), 'mock-screenshot-data');
+    fs.writeFileSync(path.join(TEST_RUN_DIR, 'screenshots', 'cart.png'), 'mock-screenshot-data');
 
     // Create mock Lighthouse report
     const mockLighthouseReport = {
@@ -301,14 +295,9 @@ describe('ReportGenerator', () => {
     );
 
     // Update manifest with potentially dangerous content
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(TEST_DIST_DIR, 'manifest.json'), 'utf8'),
-    );
+    const manifest = JSON.parse(fs.readFileSync(path.join(TEST_DIST_DIR, 'manifest.json'), 'utf8'));
     manifest.provenance.git_message = '<script>alert("XSS")</script>';
-    fs.writeFileSync(
-      path.join(TEST_DIST_DIR, 'manifest.json'),
-      JSON.stringify(manifest, null, 2),
-    );
+    fs.writeFileSync(path.join(TEST_DIST_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2));
 
     const generator = new ReportGenerator(TEST_AUV);
     const reportPath = await generator.generate();

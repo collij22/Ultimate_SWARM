@@ -25,14 +25,14 @@ node orchestration/cli.mjs AUV-0003
 
 ### Environment Variables
 
-| Variable | Purpose | Default | Example |
-|----------|---------|---------|---------|
-| `AUV_ID` | Activates hooks for this AUV | none | `AUV-0003` |
-| `HOOKS_MODE` | Control enforcement | `off` | `off`, `warn`, `block` |
-| `SECONDARY_CONSENT` | Allow paid/external tools | false | `true` |
-| `HOOKS_MAX_LOG_MB` | Max log size to scan | 10 | `20` |
-| `HOOKS_ERROR_TRIP` | Errors before circuit break | 3 | `5` |
-| `CLAUDE_DISABLE_HOOKS` | Emergency disable | false | `true` |
+| Variable               | Purpose                      | Default | Example                |
+| ---------------------- | ---------------------------- | ------- | ---------------------- |
+| `AUV_ID`               | Activates hooks for this AUV | none    | `AUV-0003`             |
+| `HOOKS_MODE`           | Control enforcement          | `off`   | `off`, `warn`, `block` |
+| `SECONDARY_CONSENT`    | Allow paid/external tools    | false   | `true`                 |
+| `HOOKS_MAX_LOG_MB`     | Max log size to scan         | 10      | `20`                   |
+| `HOOKS_ERROR_TRIP`     | Errors before circuit break  | 3       | `5`                    |
+| `CLAUDE_DISABLE_HOOKS` | Emergency disable            | false   | `true`                 |
 
 ### Monitoring Hooks Activity
 
@@ -132,7 +132,7 @@ for artifact in $(jq -r '.artifacts[] | "\(.path):\(.sha256)"' manifest.json); d
   path=$(echo $artifact | cut -d: -f1)
   expected=$(echo $artifact | cut -d: -f2)
   actual=$(sha256sum "/tmp/verify/$path" | cut -d' ' -f1)
-  
+
   if [ "$expected" = "$actual" ]; then
     echo "✅ $path"
   else
@@ -183,6 +183,7 @@ python3 -m http.server 8080 --directory dist/AUV-XXXX/
 ```
 
 Report sections to review:
+
 - **Executive Summary**: Overall status and scores
 - **Build Information**: Git commit, branch, CI details
 - **Performance Metrics**: Lighthouse scores vs budgets
@@ -303,8 +304,9 @@ done
 ### Retention Policy
 
 Recommended retention:
+
 - **Development bundles**: 7 days
-- **Staging bundles**: 30 days  
+- **Staging bundles**: 30 days
 - **Production bundles**: 90 days
 - **Manifests only**: Indefinite
 

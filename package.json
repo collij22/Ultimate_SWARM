@@ -7,8 +7,10 @@
     "ajv-cli": "^5.0.0",
     "chrome-launcher": "^1.2.0",
     "eslint": "^8.50.0",
+    "husky": "^9.1.7",
     "js-yaml": "^4.1.0",
     "lighthouse": "^12.8.2",
+    "lint-staged": "^16.1.6",
     "pixelmatch": "^5.3.0",
     "playwright": "^1.55.0",
     "pngjs": "^7.0.0",
@@ -49,6 +51,12 @@
     "validate:manifest:strict": "node ./node_modules/ajv-cli/dist/index.js validate -s schemas/manifest.schema.json -d \"dist/*/manifest.json\" --verbose --strict --all-errors",
     "package": "node orchestration/cli.mjs package",
     "report": "node orchestration/cli.mjs report",
-    "deliver:full": "node orchestration/cli.mjs deliver"
+    "deliver:full": "node orchestration/cli.mjs deliver",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,mjs,cjs,ts,tsx,json,html,css,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

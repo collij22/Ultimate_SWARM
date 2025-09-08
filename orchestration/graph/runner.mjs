@@ -434,7 +434,10 @@ class NodeExecutors {
         manifest,
       };
     } catch (error) {
-      const err = new GraphRunnerError(`Package generation failed: ${error.message}`, 'PACKAGE_FAILED');
+      const err = new GraphRunnerError(
+        `Package generation failed: ${error.message}`,
+        'PACKAGE_FAILED',
+      );
       err.stderr = error.stack || error.message;
       err.exitCode = 401;
       throw err;
@@ -463,7 +466,10 @@ class NodeExecutors {
         reportPath,
       };
     } catch (error) {
-      const err = new GraphRunnerError(`Report generation failed: ${error.message}`, 'REPORT_FAILED');
+      const err = new GraphRunnerError(
+        `Report generation failed: ${error.message}`,
+        'REPORT_FAILED',
+      );
       err.stderr = error.stack || error.message;
       err.exitCode = 402;
       throw err;

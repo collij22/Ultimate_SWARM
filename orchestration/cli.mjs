@@ -434,7 +434,9 @@ async function main() {
       process.exit(0);
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(`[cli] Delivery failed after ${(duration / 1000).toFixed(2)}s: ${error.message}`);
+      console.error(
+        `[cli] Delivery failed after ${(duration / 1000).toFixed(2)}s: ${error.message}`,
+      );
 
       // Return appropriate exit code based on error type
       if (error instanceof RunbookError) {

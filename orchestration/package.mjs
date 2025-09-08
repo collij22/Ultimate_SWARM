@@ -35,30 +35,30 @@ class PackageBuilder {
    */
   async build() {
     console.log(`📦 Starting package build for ${this.auvId}`);
-    
+
     try {
       // Step 1: Resolve run ID (latest if not supplied)
       await this.resolveRunId();
-      
+
       // Step 2: Read runbook summary card
       const runbookSummary = await this.readRunbookSummary();
-      
+
       // Step 3: Collect required artifacts
       const artifacts = await this.collectArtifacts();
-      
+
       // Step 4: Gather optional security/visual summaries
       const securityData = this.includeSecurity ? await this.gatherSecuritySummary() : null;
       const visualData = this.includeVisual ? await this.gatherVisualSummary() : null;
-      
+
       // Step 5: Extract AUV documentation
       const docs = await this.extractDocumentation();
-      
+
       // Step 6: Collect diffs if present
       const diffs = await this.collectDiffs();
-      
+
       // Step 7: Generate SBOM
       const sbom = await this.generateSBOM();
-      
+
       // Step 8: Create manifest
       const manifest = await this.createManifest({
         runbookSummary,
@@ -67,24 +67,26 @@ class PackageBuilder {
         visualData,
         docs,
         diffs,
-        sbom
+        sbom,
       });
-      
+
       // Step 9: Create zip bundle
       const bundlePath = await this.createBundle(manifest, artifacts, docs, diffs);
-      
+
       // Step 10: Update manifest with bundle info
       manifest.bundle = await this.getBundleInfo(bundlePath);
-      
+
       // Step 11: Write and validate manifest
       await this.writeManifest(manifest);
-      
+
       // Step 12: Emit observability events
-      await this.emitHooks('PackagingComplete', { ok: true, duration_ms: Date.now() - this.startTime });
-      
+      await this.emitHooks('PackagingComplete', {
+        ok: true,
+        duration_ms: Date.now() - this.startTime,
+      });
+
       console.log(`✅ Package created successfully at ${this.outputPath}`);
       return manifest;
-      
     } catch (error) {
       await this.emitHooks('PackagingComplete', { ok: false, error: error.message });
       throw error;
@@ -102,14 +104,14 @@ class PackageBuilder {
 
     const runDir = join(PROJECT_ROOT, 'runs', this.auvId);
     const resultCardsDir = join(runDir, 'result-cards');
-    
+
     if (!existsSync(resultCardsDir)) {
       throw new Error(`No runs found for ${this.auvId}`);
     }
 
     const files = await readdir(resultCardsDir);
-    const summaryFiles = files.filter(f => f === 'runbook-summary.json');
-    
+    const summaryFiles = files.filter((f) => f === 'runbook-summary.json');
+
     if (summaryFiles.length === 0) {
       throw new Error(`No runbook summary found for ${this.auvId}`);
     }
@@ -134,8 +136,14 @@ class PackageBuilder {
    * Read runbook summary card
    */
   async readRunbookSummary() {
-    const summaryPath = join(PROJECT_ROOT, 'runs', this.auvId, 'result-cards', 'runbook-summary.json');
-    
+    const summaryPath = join(
+      PROJECT_ROOT,
+      'runs',
+      this.auvId,
+      'result-cards',
+      'runbook-summary.json',
+    );
+
     if (!existsSync(summaryPath)) {
       throw new Error(`Runbook summary not found at ${summaryPath}`);
     }
@@ -154,14 +162,14 @@ class PackageBuilder {
 
     for (const artifactPath of required) {
       const fullPath = join(PROJECT_ROOT, artifactPath.replace('${AUV}', this.auvId));
-      
+
       if (existsSync(fullPath)) {
         const info = await this.getFileInfo(fullPath);
         artifacts.push({
           path: artifactPath.replace('${AUV}', this.auvId),
           bytes: info.bytes,
           sha256: info.sha256,
-          type: this.classifyArtifact(artifactPath)
+          type: this.classifyArtifact(artifactPath),
         });
       } else {
         missingArtifacts.push(artifactPath);
@@ -169,14 +177,20 @@ class PackageBuilder {
     }
 
     // Always include runbook summary
-    const summaryPath = join(PROJECT_ROOT, 'runs', this.auvId, 'result-cards', 'runbook-summary.json');
+    const summaryPath = join(
+      PROJECT_ROOT,
+      'runs',
+      this.auvId,
+      'result-cards',
+      'runbook-summary.json',
+    );
     if (existsSync(summaryPath)) {
       const info = await this.getFileInfo(summaryPath);
       artifacts.push({
         path: `runs/${this.auvId}/result-cards/runbook-summary.json`,
         bytes: info.bytes,
         sha256: info.sha256,
-        type: 'report'
+        type: 'report',
       });
     }
 
@@ -188,7 +202,7 @@ class PackageBuilder {
         path: 'runs/router_preview.json',
         bytes: info.bytes,
         sha256: info.sha256,
-        type: 'config'
+        type: 'config',
       });
     }
 
@@ -205,7 +219,7 @@ class PackageBuilder {
   async gatherSecuritySummary() {
     const security = {
       semgrep: { blocked: 0, high: 0, medium: 0, low: 0 },
-      gitleaks: { blocked: 0, findings: 0 }
+      gitleaks: { blocked: 0, findings: 0 },
     };
 
     const semgrepPath = join(PROJECT_ROOT, 'runs', 'security', 'semgrep.json');
@@ -216,7 +230,7 @@ class PackageBuilder {
         high: content.high || 0,
         medium: content.medium || 0,
         low: content.low || 0,
-        report_path: 'runs/security/semgrep.json'
+        report_path: 'runs/security/semgrep.json',
       };
     }
 
@@ -226,7 +240,7 @@ class PackageBuilder {
       security.gitleaks = {
         blocked: content.blocked || 0,
         findings: content.findings || 0,
-        report_path: 'runs/security/gitleaks.json'
+        report_path: 'runs/security/gitleaks.json',
       };
     }
 
@@ -238,7 +252,7 @@ class PackageBuilder {
    */
   async gatherVisualSummary() {
     const visualPath = join(PROJECT_ROOT, 'runs', 'visual', this.auvId, 'visual.json');
-    
+
     if (!existsSync(visualPath)) {
       return null;
     }
@@ -249,7 +263,7 @@ class PackageBuilder {
       passed: content.passed || 0,
       threshold: content.threshold || 0.001,
       routes: content.routes || 0,
-      report_path: `runs/visual/${this.auvId}/visual.json`
+      report_path: `runs/visual/${this.auvId}/visual.json`,
     };
   }
 
@@ -258,22 +272,22 @@ class PackageBuilder {
    */
   async extractDocumentation() {
     const docs = [];
-    
+
     // Extract AUV section from verify.md
     const verifyPath = join(PROJECT_ROOT, 'docs', 'verify.md');
     if (existsSync(verifyPath)) {
       const content = await readFile(verifyPath, 'utf8');
       const auvSection = this.extractAuvSection(content, this.auvId);
-      
+
       const verifyAuvPath = join(this.outputPath, 'docs', `verify-${this.auvId}.md`);
       await mkdir(dirname(verifyAuvPath), { recursive: true });
       await writeFile(verifyAuvPath, auvSection);
-      
+
       const info = await this.getFileInfo(verifyAuvPath);
       docs.push({
         path: `docs/verify-${this.auvId}.md`,
         bytes: info.bytes,
-        sha256: info.sha256
+        sha256: info.sha256,
       });
     }
 
@@ -284,7 +298,7 @@ class PackageBuilder {
       docs.push({
         path: 'docs/operate.md',
         bytes: info.bytes,
-        sha256: info.sha256
+        sha256: info.sha256,
       });
     }
 
@@ -297,7 +311,7 @@ class PackageBuilder {
   async collectDiffs() {
     const diffs = [];
     const patchesDir = join(PROJECT_ROOT, 'runs', this.auvId, 'patches');
-    
+
     if (!existsSync(patchesDir)) {
       return diffs;
     }
@@ -310,7 +324,7 @@ class PackageBuilder {
         diffs.push({
           path: `runs/${this.auvId}/patches/${file}`,
           bytes: info.bytes,
-          sha256: info.sha256
+          sha256: info.sha256,
         });
       }
     }
@@ -322,7 +336,7 @@ class PackageBuilder {
       diffs.push({
         path: `runs/${this.auvId}/changeset.json`,
         bytes: info.bytes,
-        sha256: info.sha256
+        sha256: info.sha256,
       });
     }
 
@@ -335,15 +349,15 @@ class PackageBuilder {
   async generateSBOM() {
     const packageJsonPath = join(PROJECT_ROOT, 'package.json');
     const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
-    
+
     const dependencies = [];
     const allDeps = { ...packageJson.dependencies, ...packageJson.devDependencies };
-    
+
     for (const [name, version] of Object.entries(allDeps)) {
       dependencies.push({
         name,
         version: version.replace(/[\^~]/, ''),
-        license: 'MIT' // Would need to look this up properly
+        license: 'MIT', // Would need to look this up properly
       });
     }
 
@@ -355,8 +369,8 @@ class PackageBuilder {
         critical: 0,
         high: 0,
         medium: 0,
-        low: 0
-      }
+        low: 0,
+      },
     };
   }
 
@@ -365,13 +379,13 @@ class PackageBuilder {
    */
   async createManifest(data) {
     const { runbookSummary, artifacts, securityData, visualData, docs, diffs, sbom } = data;
-    
+
     // Get git information
     const gitInfo = this.getGitInfo();
-    
+
     // Get tool versions
     const toolVersions = await this.getToolVersions();
-    
+
     const manifest = {
       version: '1.1',
       auv_id: this.auvId,
@@ -381,13 +395,13 @@ class PackageBuilder {
         node: process.version,
         os: process.platform,
         arch: process.arch,
-        ci: process.env.CI === 'true'
+        ci: process.env.CI === 'true',
       },
       tool_versions: toolVersions,
       timings_ms: {
         runbook: runbookSummary.durations?.total || 0,
         packaging: Date.now() - this.startTime,
-        total: 0 // Will be updated
+        total: 0, // Will be updated
       },
       cvf: {
         passed: runbookSummary.ok || false,
@@ -396,8 +410,8 @@ class PackageBuilder {
         missing_artifacts: artifacts.missingArtifacts || [],
         budgets: {
           status: 'pass',
-          violations: []
-        }
+          violations: [],
+        },
       },
       artifacts: artifacts.artifacts,
       docs,
@@ -405,15 +419,16 @@ class PackageBuilder {
       sbom,
       deliverable: {
         version: `1.0.0-${this.auvId.toLowerCase()}`,
-        compatibility: '^1.0.0'
+        compatibility: '^1.0.0',
       },
       provenance: {
         built_at: Math.floor(Date.now() / 1000),
         built_by: 'swarm1',
         ci_run_id: process.env.GITHUB_RUN_ID || null,
-        ci_run_url: process.env.GITHUB_RUN_ID ? 
-          `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}` : null
-      }
+        ci_run_url: process.env.GITHUB_RUN_ID
+          ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+          : null,
+      },
     };
 
     // Add optional security data
@@ -427,7 +442,7 @@ class PackageBuilder {
     }
 
     manifest.timings_ms.total = manifest.timings_ms.runbook + manifest.timings_ms.packaging;
-    
+
     return manifest;
   }
 
@@ -439,31 +454,34 @@ class PackageBuilder {
     await mkdir(this.outputPath, { recursive: true });
 
     const zipfile = new yazl.ZipFile();
-    
+
     // Add manifest
     zipfile.addBuffer(Buffer.from(JSON.stringify(manifest, null, 2)), 'manifest.json', {
-      mtime: new Date(manifest.provenance.built_at * 1000)
+      mtime: new Date(manifest.provenance.built_at * 1000),
     });
 
     // Add artifacts (sorted for determinism)
-    const allFiles = [...artifacts.artifacts, ...docs, ...diffs].sort((a, b) => a.path.localeCompare(b.path));
-    
+    const allFiles = [...artifacts.artifacts, ...docs, ...diffs].sort((a, b) =>
+      a.path.localeCompare(b.path),
+    );
+
     for (const file of allFiles) {
       const sourcePath = join(PROJECT_ROOT, file.path);
       if (existsSync(sourcePath)) {
         const stream = createReadStream(sourcePath);
         zipfile.addReadStream(stream, file.path, {
-          mtime: new Date(manifest.provenance.built_at * 1000)
+          mtime: new Date(manifest.provenance.built_at * 1000),
         });
       }
     }
 
     // Create the zip file
     return new Promise((resolve, reject) => {
-      zipfile.outputStream.pipe(createWriteStream(zipPath))
+      zipfile.outputStream
+        .pipe(createWriteStream(zipPath))
         .on('close', () => resolve(zipPath))
         .on('error', reject);
-      
+
       zipfile.end();
     });
   }
@@ -475,14 +493,14 @@ class PackageBuilder {
     const stats = await stat(bundlePath);
     const hash = createHash('sha256');
     const stream = createReadStream(bundlePath);
-    
+
     await pipeline(stream, hash);
-    
+
     return {
       zip_path: `dist/${this.auvId}/package.zip`,
       bytes: stats.size,
       sha256: hash.digest('hex'),
-      compression: 'deflate'
+      compression: 'deflate',
     };
   }
 
@@ -496,17 +514,17 @@ class PackageBuilder {
     // Validate against schema
     const schemaPath = join(PROJECT_ROOT, 'schemas', 'manifest.schema.json');
     const schema = JSON.parse(await readFile(schemaPath, 'utf8'));
-    
+
     const ajv = new Ajv({ allErrors: true });
     const validate = ajv.compile(schema);
-    
+
     if (!validate(manifest)) {
       console.error('Manifest validation errors:', validate.errors);
       if (this.strict) {
         throw new Error(`Manifest validation failed: ${JSON.stringify(validate.errors)}`);
       }
     }
-    
+
     console.log('✓ Manifest validated successfully');
   }
 
@@ -517,12 +535,12 @@ class PackageBuilder {
     const stats = await stat(filePath);
     const hash = createHash('sha256');
     const stream = createReadStream(filePath);
-    
+
     await pipeline(stream, hash);
-    
+
     return {
       bytes: stats.size,
-      sha256: hash.digest('hex')
+      sha256: hash.digest('hex'),
     };
   }
 
@@ -544,7 +562,7 @@ class PackageBuilder {
     const lines = content.split('\n');
     const section = [];
     let inSection = false;
-    
+
     for (const line of lines) {
       if (line.includes(auvId)) {
         inSection = true;
@@ -557,7 +575,7 @@ class PackageBuilder {
         }
       }
     }
-    
+
     return section.join('\n') || `# ${auvId} Verification\n\nNo specific documentation found.`;
   }
 
@@ -569,19 +587,19 @@ class PackageBuilder {
       const sha = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
       const branch = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim();
       const message = execSync('git log -1 --pretty=%B', { encoding: 'utf8' }).trim();
-      
+
       return {
         sha: sha.substring(0, 40),
         branch,
         tag: null,
-        message: message.substring(0, 500)
+        message: message.substring(0, 500),
       };
     } catch {
       return {
         sha: 'unknown',
         branch: 'unknown',
         tag: null,
-        message: 'Git information not available'
+        message: 'Git information not available',
       };
     }
   }
@@ -591,7 +609,7 @@ class PackageBuilder {
    */
   async getToolVersions() {
     const versions = {
-      node: process.version.replace('v', '')
+      node: process.version.replace('v', ''),
     };
 
     try {
@@ -599,13 +617,15 @@ class PackageBuilder {
     } catch {}
 
     try {
-      versions.playwright = execSync('npx playwright --version', { encoding: 'utf8' }).trim().split(' ')[1];
+      versions.playwright = execSync('npx playwright --version', { encoding: 'utf8' })
+        .trim()
+        .split(' ')[1];
     } catch {}
 
     // Read from package.json for other tools
     const packageJsonPath = join(PROJECT_ROOT, 'package.json');
     const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'));
-    
+
     if (packageJson.devDependencies?.lighthouse) {
       versions.lighthouse = packageJson.devDependencies.lighthouse.replace(/[\^~]/, '');
     }
@@ -623,7 +643,7 @@ class PackageBuilder {
       module: 'package',
       auv_id: this.auvId,
       run_id: this.runId,
-      ...data
+      ...data,
     };
 
     const hooksPath = join(PROJECT_ROOT, 'runs', 'observability', 'hooks.jsonl');
@@ -637,7 +657,7 @@ class PackageBuilder {
  */
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length < 1) {
     console.error('Usage: node package.mjs <AUV-ID> [options]');
     console.error('Options:');
