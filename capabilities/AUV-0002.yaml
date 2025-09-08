@@ -31,6 +31,40 @@ acceptance:
 proofs:
   required: [http_trace, playwright_screenshot_grid, playwright_screenshot_detail, lighthouse_json]
 
+artifacts:
+  required:
+    - runs/AUV-0002/ui/products_grid.png
+    - runs/AUV-0002/ui/product_detail.png
+    - runs/AUV-0002/perf/lighthouse.json
+
+tests:
+  playwright:
+    - tests/robot/playwright/auv-0002-ui.spec.ts
+  api:
+    - tests/robot/playwright/api/auv-0002-api.spec.ts
+
+authoring_hints:
+  ui:
+    page: /products.html
+    search_input: '#q'
+    apply_button_text: 'Apply'
+    card_selector: '[data-testid="product-card"]'
+    screenshot: 'products_grid.png'
+    # new: detail navigation & capture hints for generator
+    detail_link_selector: '[data-testid="product-card"]'
+    detail_title_selector: '[data-testid="product-detail-title"]'
+    detail_price_selector: '[data-testid="product-detail-price"]'
+    detail_screenshot: 'product_detail.png'
+  api:
+    base_path: /products
+    cases:
+      - name: list returns 200 and array
+        query: ''
+        expect: list_ok
+      - name: q=3 filters
+        query: '?q=3'
+        expect: 'id=demo-3'
+
 contracts:
   http:
     openapi: contracts/openapi.yaml

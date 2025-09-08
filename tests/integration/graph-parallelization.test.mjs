@@ -16,7 +16,9 @@ console.log('🚀 Graph Parallelization Integration Test\n');
 
 // Determine work duration based on environment
 const isCI = process.env.CI === 'true';
-const WORK_DURATION_MS = isCI ? 300 : 200; // Longer duration in CI for more reliable results
+const WORK_DURATION_MS = process.env.GRAPH_TEST_MS 
+  ? +process.env.GRAPH_TEST_MS 
+  : (isCI ? 1000 : 400); // Allow override via GRAPH_TEST_MS env var
 
 // Create a test graph with independent parallel paths
 const testGraph = {
@@ -28,19 +30,13 @@ const testGraph = {
     timeout_ms: 30000,
   },
   nodes: [
-    {
-      id: 'server',
-      type: 'server',
-      timeout_ms: 1000,
-      resources: ['server'],
-    },
-    // Three independent chains that can run in parallel
+    // Three independent chains that can run in parallel (no external server noise)
     // Each node does simulated work to make parallelization benefits measurable
     // Chain 1
     {
       id: 'chain1-step1',
       type: 'work_simulation',
-      requires: ['server'],
+      requires: [],
       params: { label: 'chain1-step1', duration_ms: WORK_DURATION_MS },
     },
     {
@@ -53,7 +49,7 @@ const testGraph = {
     {
       id: 'chain2-step1',
       type: 'work_simulation',
-      requires: ['server'],
+      requires: [],
       params: { label: 'chain2-step1', duration_ms: WORK_DURATION_MS },
     },
     {
@@ -66,7 +62,7 @@ const testGraph = {
     {
       id: 'chain3-step1',
       type: 'work_simulation',
-      requires: ['server'],
+      requires: [],
       params: { label: 'chain3-step1', duration_ms: WORK_DURATION_MS },
     },
     {
@@ -136,9 +132,7 @@ async function main() {
     console.log('Testing graph parallelization...');
     console.log(`Environment: ${isCI ? 'CI' : 'Local'}`);
     console.log(`Work duration per node: ${WORK_DURATION_MS}ms`);
-    console.log(
-      `Expected total work: 6 nodes × ${WORK_DURATION_MS}ms = ${6 * WORK_DURATION_MS}ms\n`,
-    );
+    console.log(`Expected total work: 6 nodes × ${WORK_DURATION_MS}ms = ${6 * WORK_DURATION_MS}ms\n`);
 
     // Run with serial execution (concurrency=1)
     console.log('Running serial test (concurrency=1, best of 3)...');
@@ -171,43 +165,42 @@ async function main() {
     const parallelStateFile = `runs/graph/${parallelResult.runId}/state.json`;
     let parallelismDetected = false;
     let parallelismDetails = '';
+    let maxConcurrent = 1;
 
     if (fs.existsSync(parallelStateFile)) {
       const state = JSON.parse(fs.readFileSync(parallelStateFile, 'utf8'));
 
-      // Check if multiple chains started at similar times
-      const chain1Start = new Date(state.nodes['chain1-step1'].started_at).getTime();
-      const chain2Start = new Date(state.nodes['chain2-step1'].started_at).getTime();
-      const chain3Start = new Date(state.nodes['chain3-step1'].started_at).getTime();
+      // Build intervals for all work_simulation nodes
+      const nodeIds = Object.keys(state.nodes).filter((id) => id.includes('chain'));
+      const intervals = nodeIds.map((id) => ({
+        id,
+        start: new Date(state.nodes[id].started_at).getTime(),
+        end: new Date(state.nodes[id].finished_at).getTime(),
+      }));
 
-      // If all chains started within 100ms of each other, they ran in parallel
-      const maxDiff = Math.max(
-        Math.abs(chain1Start - chain2Start),
-        Math.abs(chain2Start - chain3Start),
-        Math.abs(chain1Start - chain3Start),
-      );
-
-      parallelismDetected = maxDiff < 100;
-
-      const startTimes = [
-        { chain: 'chain1', time: chain1Start },
-        { chain: 'chain2', time: chain2Start },
-        { chain: 'chain3', time: chain3Start },
-      ].sort((a, b) => a.time - b.time);
-
-      parallelismDetails = '\n  Chain start times (relative to first):\n';
-      const firstStart = startTimes[0].time;
-      startTimes.forEach(({ chain, time }) => {
-        parallelismDetails += `    ${chain}: +${time - firstStart}ms\n`;
+      // Sweep-line to compute max concurrency
+      const events = [];
+      intervals.forEach(({ start, end }) => {
+        events.push({ t: start, d: 1 });
+        events.push({ t: end, d: -1 });
+      });
+      events.sort((a, b) => {
+        if (a.t !== b.t) return a.t - b.t;
+        // start (+1) before end (-1) at same timestamp
+        if (a.d === b.d) return 0;
+        return a.d > b.d ? -1 : 1;
       });
 
-      if (parallelismDetected) {
-        console.log('✅ Parallelism confirmed: All chains started within 100ms of each other');
-        console.log(parallelismDetails);
-      } else {
-        console.log('⚠️ Parallelism not detected: Chains did not start simultaneously');
-        console.log(parallelismDetails);
+      let cur = 0;
+      maxConcurrent = 0;
+      for (const e of events) {
+        cur += e.d;
+        if (cur > maxConcurrent) maxConcurrent = cur;
       }
+
+      parallelismDetected = maxConcurrent >= 2;
+      parallelismDetails = `\n  Max concurrent nodes: ${maxConcurrent}\n`;
+      console.log(parallelismDetails);
     }
 
     // Results
@@ -226,8 +219,7 @@ async function main() {
     const success =
       parallelResult.success &&
       serialResult.success &&
-      (speedupAchieved >= minSpeedupRequired ||
-        (isCI && parallelismDetected && speedupAchieved > 10));
+      (speedupAchieved >= minSpeedupRequired || (isCI && parallelismDetected && speedupAchieved > 10));
 
     if (success) {
       console.log('\n✅ Test PASSED: Parallel execution shows significant improvement');

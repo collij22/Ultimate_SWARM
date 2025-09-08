@@ -27,6 +27,11 @@ function lookupFromCapabilityYaml(auvId) {
  * @returns {string[]} Array of expected artifact paths
  */
 export function expectedArtifacts(auvId) {
+  // Prefer dynamic artifacts defined in the capability YAML if present
+  const dyn = lookupFromCapabilityYaml(auvId);
+  if (Array.isArray(dyn) && dyn.length) return dyn;
+
+  // Fallback to static mappings for legacy AUVs
   switch (auvId) {
     case 'AUV-0002':
       return [
@@ -47,9 +52,8 @@ export function expectedArtifacts(auvId) {
       // Test AUV - minimal artifacts for unit tests
       return ['runs/AUV-9998/result-cards/runbook-summary.json'];
     default: {
-      // Dynamic fallback for generated AUVs
-      const dyn = lookupFromCapabilityYaml(auvId);
-      return Array.isArray(dyn) ? dyn : [];
+      // No dynamic definition available
+      return [];
     }
   }
 }
