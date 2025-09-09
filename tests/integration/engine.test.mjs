@@ -30,7 +30,6 @@ describe('Phase 8 - Engine Integration Tests', { timeout: TEST_TIMEOUT }, () => 
   let redis;
   let queue;
   let queueEvents;
-  let worker;
 
   before(async () => {
     // Check Redis connectivity
@@ -59,7 +58,6 @@ describe('Phase 8 - Engine Integration Tests', { timeout: TEST_TIMEOUT }, () => 
 
   after(async () => {
     // Clean up
-    if (worker) await worker.close();
     if (queueEvents) await queueEvents.close();
     if (queue) await queue.close();
     if (redis) redis.disconnect();

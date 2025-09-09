@@ -154,7 +154,7 @@ export async function listJobs(
   }
 
   // Sort by creation time
-  jobs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  jobs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return jobs.slice(0, end - start + 1);
 }

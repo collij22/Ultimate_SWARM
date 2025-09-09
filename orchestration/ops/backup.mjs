@@ -167,6 +167,7 @@ async function uploadToS3(localPath, s3Key) {
 
   try {
     // Check if AWS SDK is available
+    // @ts-ignore - optional dependency
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
 
     const client = new S3Client({
@@ -390,7 +391,7 @@ export async function listBackups() {
   }
 
   // Sort by creation time (newest first)
-  backups.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  backups.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return backups;
 }

@@ -50,12 +50,12 @@ export async function evaluateAgent({
     const start = Date.now();
     try {
       if (type === 'agent-output-schema') {
-        r = scoreAgentOutputSchema(spec);
+        r = { ...scoreAgentOutputSchema(spec), duration_ms: 0 };
       } else {
-        r = { ok: false, score: 0, violations: [`Unknown task type: ${type}`] };
+        r = { ok: false, score: 0, violations: [`Unknown task type: ${type}`], duration_ms: 0 };
       }
     } catch (err) {
-      r = { ok: false, score: 0, violations: [err.message] };
+      r = { ok: false, score: 0, violations: [err.message], duration_ms: 0 };
     }
     r.duration_ms = Date.now() - start;
     results.push({ task_id: t.id, capability: spec.capability || 'unknown', ...r });

@@ -45,9 +45,17 @@ export async function verifyToken(token) {
     }
 
     const payload = result?.payload || {};
+    // @ts-ignore - JWT payload can have various shapes
+    const realmAccess =
+      typeof payload === 'object' && payload !== null ? payload.realm_access : undefined;
+    // @ts-ignore - realm_access.roles access
+    const realmRoles =
+      typeof realmAccess === 'object' && realmAccess !== null && Array.isArray(realmAccess?.roles)
+        ? realmAccess.roles
+        : [];
     return {
       subject: payload.sub || null,
-      roles: Array.isArray(payload.roles) ? payload.roles : payload.realm_access?.roles || [],
+      roles: Array.isArray(payload.roles) ? payload.roles : realmRoles,
       tenant: payload.tenant || payload.org || null,
       issuer: payload.iss || null,
       audience: payload.aud || null,

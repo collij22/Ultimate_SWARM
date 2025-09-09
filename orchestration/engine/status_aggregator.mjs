@@ -100,7 +100,7 @@ async function getTenantRecentJobs(tenant, limit = 10) {
   }
 
   // Sort by creation time (newest first)
-  recentJobs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  recentJobs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return recentJobs.slice(0, limit);
 }
