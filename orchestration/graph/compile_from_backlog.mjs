@@ -8,6 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import yaml from 'yaml';
+import { tenantPath } from '../lib/tenant.mjs';
 
 /**
  * Compile backlog to graph
@@ -76,7 +77,7 @@ export function compileBacklogToGraph(backlog, options = {}) {
       requires: [`${auvId}-ui`],
       params: {
         url: '${STAGING_URL}' + _getPageForAuv(auv),
-        out: `runs/${auvId}/perf/lighthouse.json`,
+        out: tenantPath(process.env.TENANT_ID || 'default', `${auvId}/perf/lighthouse.json`),
       },
     };
 

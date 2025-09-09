@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/agent-escalation.schema.json",
+  "title": "AgentEscalation",
+  "type": "object",
+  "required": ["reason", "requests"],
+  "properties": {
+    "reason": { "type": "string", "minLength": 3 },
+    "requests": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "blocked_on": { "type": "string" },
+    "impact": { "type": "string" },
+    "proposed_next_actions": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": false
+}

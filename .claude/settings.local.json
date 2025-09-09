@@ -77,7 +77,22 @@
       "Bash(dir:*)",
       "Bash(NODE_OPTIONS=\"--max-old-space-size=4096\" timeout 30 npm run test:unit)",
       "Bash(git checkout:*)",
-      "Bash(NODE_OPTIONS=\"--test-reporter=tap --test-timeout=5000\" node --test tests/unit)"
+      "Bash(NODE_OPTIONS=\"--test-reporter=tap --test-timeout=5000\" node --test tests/unit)",
+      "Bash(npm:*)",
+      "Bash(if [ -d \"orchestration/engine\" ])",
+      "Bash(then echo \"Engine directory exists\")",
+      "Bash(else echo \"Engine directory MISSING\")",
+      "Bash(test_phase8_e2e.bat)",
+      "Bash(cmd /c:*)",
+      "Bash(docker run:*)",
+      "Bash(docker stop:*)",
+      "Bash(set AUTH_REQUIRED=true)",
+      "Bash(set AUTH_JWT_SECRET=dev-secret-please-change)",
+      "Bash(./test_phase8_e2e.bat)",
+      "Bash(if [ -d \".claude/knowledge\" ])",
+      "Bash(then echo \"EXISTS\")",
+      "Bash(else echo \"MISSING\")",
+      "Bash(git rm:*)"
     ],
     "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
     "ask": []

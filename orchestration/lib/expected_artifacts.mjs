@@ -8,6 +8,7 @@
 import fs from 'fs';
 import path from 'path';
 import YAML from 'yaml';
+import { tenantPath } from './tenant.mjs';
 
 function lookupFromCapabilityYaml(auvId) {
   try {
@@ -24,33 +25,53 @@ function lookupFromCapabilityYaml(auvId) {
 /**
  * Get expected artifacts for a given AUV
  * @param {string} auvId - The AUV identifier (e.g., 'AUV-0002')
+ * @param {string} [tenant] - Optional tenant ID (defaults to process.env.TENANT_ID or 'default')
  * @returns {string[]} Array of expected artifact paths
  */
-export function expectedArtifacts(auvId) {
+export function expectedArtifacts(auvId, tenant = process.env.TENANT_ID || 'default') {
   // Prefer dynamic artifacts defined in the capability YAML if present
   const dyn = lookupFromCapabilityYaml(auvId);
-  if (Array.isArray(dyn) && dyn.length) return dyn;
+  if (Array.isArray(dyn) && dyn.length) {
+    // Apply tenant scoping to dynamic artifacts
+    return dyn.map((artifact) => {
+      // If artifact starts with 'runs/', apply tenant scoping
+      if (artifact.startsWith('runs/')) {
+        const relativePath = artifact.substring(5); // Remove 'runs/' prefix
+        return tenantPath(tenant, relativePath);
+      }
+      return artifact;
+    });
+  }
 
   // Fallback to static mappings for legacy AUVs
   switch (auvId) {
     case 'AUV-0002':
       return [
-        'runs/AUV-0002/ui/products_grid.png',
-        'runs/AUV-0002/ui/product_detail.png',
-        'runs/AUV-0002/perf/lighthouse.json',
+        tenantPath(tenant, 'AUV-0002/ui/products_grid.png'),
+        tenantPath(tenant, 'AUV-0002/ui/product_detail.png'),
+        tenantPath(tenant, 'AUV-0002/perf/lighthouse.json'),
       ];
     case 'AUV-0003':
-      return ['runs/AUV-0003/ui/products_search.png', 'runs/AUV-0003/perf/lighthouse.json'];
+      return [
+        tenantPath(tenant, 'AUV-0003/ui/products_search.png'),
+        tenantPath(tenant, 'AUV-0003/perf/lighthouse.json'),
+      ];
     case 'AUV-0004':
-      return ['runs/AUV-0004/ui/cart_summary.png', 'runs/AUV-0004/perf/lighthouse.json'];
+      return [
+        tenantPath(tenant, 'AUV-0004/ui/cart_summary.png'),
+        tenantPath(tenant, 'AUV-0004/perf/lighthouse.json'),
+      ];
     case 'AUV-0005':
-      return ['runs/AUV-0005/ui/checkout_success.png', 'runs/AUV-0005/perf/lighthouse.json'];
+      return [
+        tenantPath(tenant, 'AUV-0005/ui/checkout_success.png'),
+        tenantPath(tenant, 'AUV-0005/perf/lighthouse.json'),
+      ];
     case 'AUV-9999':
       // Test AUV - minimal artifacts for unit tests
-      return ['runs/AUV-9999/result-cards/runbook-summary.json'];
+      return [tenantPath(tenant, 'AUV-9999/result-cards/runbook-summary.json')];
     case 'AUV-9998':
       // Test AUV - minimal artifacts for unit tests
-      return ['runs/AUV-9998/result-cards/runbook-summary.json'];
+      return [tenantPath(tenant, 'AUV-9998/result-cards/runbook-summary.json')];
     default: {
       // No dynamic definition available
       return [];

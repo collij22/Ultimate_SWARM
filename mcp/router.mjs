@@ -38,7 +38,7 @@ export function planTools({
     require_secondary_consent: true,
   };
 
-  // Determine effective budget with tier defaults
+  // Determine effective budget with tier defaults and per-agent ceilings
   let effectiveBudget = budgetUsd;
   if (effectiveBudget === undefined || effectiveBudget === null) {
     // Check if we should use secondary tier default
@@ -51,6 +51,14 @@ export function planTools({
       effectiveBudget = policies.tiers.secondary.default_budget_usd;
     } else {
       effectiveBudget = policyDefaults.budget_usd;
+    }
+  }
+
+  // Per-agent budget ceilings
+  const agentBudgets = policies?.agents?.budgets?.[agentId];
+  if (agentBudgets?.total_usd !== undefined) {
+    if (effectiveBudget > agentBudgets.total_usd) {
+      effectiveBudget = agentBudgets.total_usd;
     }
   }
 
@@ -227,7 +235,7 @@ export function planTools({
       // Calculate cost
       const costUsd = calculateToolCost(tool);
 
-      // Determine effective budget for this tool
+      // Determine effective budget for this tool and capability ceilings
       let toolBudget = effectiveBudget;
 
       // Use fallback budget if no primary available
@@ -240,8 +248,14 @@ export function planTools({
         toolBudget = policies.tiers.secondary.budget_overrides[toolId];
       }
 
-      // Check budget for secondary tools
-      if (isSecondary && costUsd > toolBudget) {
+      // Apply per-capability ceilings if configured
+      const perCapBudget = agentBudgets?.per_capability_usd?.[capability];
+      if (perCapBudget !== undefined && toolBudget > perCapBudget) {
+        toolBudget = perCapBudget;
+      }
+
+      // Check budget for secondary tools and ceilings
+      if (costUsd > toolBudget) {
         decision.rejected.push({
           tool_id: toolId,
           reason: `exceeds budget: $${costUsd.toFixed(2)} > $${toolBudget.toFixed(2)}`,

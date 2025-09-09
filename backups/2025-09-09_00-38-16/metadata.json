@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "created_at": "2025-09-09T00:38:16.965Z",
+  "scope": "runs",
+  "tenants": ["default", "test-tenant-29e3ceb1", "test-tenant-f2203468"],
+  "statistics": {
+    "file_count": 3,
+    "total_size": 879,
+    "total_size_mb": 0
+  },
+  "environment": {
+    "node_version": "v20.19.5",
+    "platform": "win32",
+    "hostname": "JonZ_Laptop"
+  },
+  "files": [
+    {
+      "path": "runs/tenants/test-tenant-f2203468/graph/RUN-69a0f0e3eb1b/state.json",
+      "size": 486,
+      "modified": "2025-09-09T00:38:12.255Z"
+    },
+    {
+      "path": "runs/tenants/test-tenant-f2203468/graph/RUN-d5b8ab732a24/state.json",
+      "size": 380,
+      "modified": "2025-09-09T00:37:09.418Z"
+    },
+    {
+      "path": "runs/tenants/test-tenant-f2203468/test-backup/artifact.json",
+      "size": 13,
+      "modified": "2025-09-09T00:38:16.856Z"
+    }
+  ]
+}

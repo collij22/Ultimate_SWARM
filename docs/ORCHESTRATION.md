@@ -752,6 +752,460 @@ node orchestration/cli.mjs deliver AUV-0005
 
 ### Next Steps
 
-- Phase 8: Cryptographic signing with SLSA provenance
-- Phase 9: Automated vulnerability scanning via SBOM
-- Phase 10: Client portal with download authentication
+- Phase 9: Cryptographic signing with SLSA provenance
+- Phase 10: Automated vulnerability scanning via SBOM
+- Phase 11: Client portal with download authentication
+
+## Durable Execution & Multi-Tenant Operations (Phase 8 - Completed)
+
+### Overview
+
+Phase 8 transforms Swarm1 from a CLI-based system to a queue-based durable execution engine using BullMQ + Redis. This enables job resumability, multi-tenant isolation, resource governance, and enterprise-scale orchestration.
+
+### Key Features
+
+- **Durable Job Queue**: BullMQ + Redis for persistent job state
+- **Multi-Tenant Isolation**: Namespace-based artifact and resource separation
+- **Job Resumability**: State persistence enables recovery from crashes
+- **Policy Enforcement**: Per-tenant budgets, capabilities, and resource limits
+- **Status Aggregation**: Real-time monitoring and health checks
+- **Backup System**: Automatic backups with optional S3 support
+
+### Engine Commands
+
+#### Start Worker
+
+Launch the BullMQ worker to process jobs:
+
+```bash
+# Start worker in development mode
+node orchestration/cli.mjs engine start
+
+# Start in production mode
+NODE_ENV=production node orchestration/cli.mjs engine start
+
+# With custom Redis URL
+REDIS_URL=redis://my-redis:6379 node orchestration/cli.mjs engine start
+```
+
+#### Enqueue Jobs
+
+Submit jobs to the queue:
+
+```bash
+# Enqueue a graph execution job
+node orchestration/cli.mjs engine enqueue run_graph \
+  --graph orchestration/graph/projects/demo-01.yaml \
+  --tenant acme-corp \
+  --priority 5
+
+# Enqueue with metadata
+node orchestration/cli.mjs engine enqueue compile_brief \
+  --brief briefs/demo-01/brief.md \
+  --tenant beta-inc \
+  --metadata '{"project":"demo","owner":"user@example.com"}'
+```
+
+#### Monitor Status
+
+```bash
+# Get comprehensive status report
+node orchestration/cli.mjs engine status
+
+# Monitor in real-time (updates every 5s)
+node orchestration/cli.mjs engine monitor
+
+# Emit status JSON for CI/CD
+node orchestration/cli.mjs engine emit-status > status.json
+```
+
+#### Queue Management
+
+```bash
+# Pause queue processing
+node orchestration/cli.mjs engine pause
+
+# Resume queue processing
+node orchestration/cli.mjs engine resume
+
+# Cancel a specific job
+node orchestration/cli.mjs engine cancel job-abc123
+
+# List active jobs
+node orchestration/cli.mjs engine list
+
+# Get queue metrics
+node orchestration/cli.mjs engine metrics
+```
+
+#### Backup Operations
+
+```bash
+# Create backup (excludes sensitive data)
+node orchestration/cli.mjs engine backup
+
+# List available backups
+node orchestration/cli.mjs engine backup --list
+
+# Clean old backups (keep last 5)
+node orchestration/cli.mjs engine backup --clean
+```
+
+### Multi-Tenant Configuration
+
+Tenants are configured in `mcp/policies.yaml`:
+
+```yaml
+tenants:
+  default:
+    budget_ceiling_usd: 100
+    allowed_capabilities: [browser.automation, api.test]
+    max_concurrent_jobs: 3
+    max_job_runtime_ms: 300000 # 5 minutes
+    resource_limits:
+      max_artifacts_size_mb: 100
+      max_auv_count: 50
+
+  acme-corp: # Premium tenant
+    budget_ceiling_usd: 500
+    allowed_capabilities: [browser.automation, deploy.preview]
+    max_concurrent_jobs: 5
+    max_job_runtime_ms: 600000 # 10 minutes
+    allow_secondary_tools: true
+```
+
+### Tenant Isolation
+
+- **Default tenant**: Uses original paths (`runs/AUV-XXXX/...`) for backward compatibility
+- **Named tenants**: Use namespaced paths (`runs/tenants/{tenant}/AUV-XXXX/...`)
+- **Resource limits**: Per-tenant quotas for storage, concurrent jobs, and runtime
+- **Policy enforcement**: Budget ceilings and capability restrictions
+
+### Job Schema
+
+Jobs must conform to `orchestration/engine/bullmq/schemas/job.schema.json`:
+
+```json
+{
+  "type": "run_graph",
+  "graph_file": "orchestration/graph/projects/demo-01.yaml",
+  "tenant": "acme-corp",
+  "priority": 5,
+  "constraints": {
+    "budget_usd": 50,
+    "max_runtime_ms": 180000,
+    "required_capabilities": ["browser.automation"]
+  },
+  "metadata": {
+    "project": "demo",
+    "owner": "user@example.com"
+  }
+}
+```
+
+### Status Report Schema
+
+The engine emits structured status reports conforming to `schemas/status.schema.json`:
+
+```json
+{
+  "version": "1.0",
+  "generated_at": "2025-01-09T10:00:00Z",
+  "engine": {
+    "mode": "production",
+    "queue": {
+      "name": "swarm1:graphQueue",
+      "counts": {
+        "waiting": 5,
+        "active": 2,
+        "completed": 100
+      }
+    },
+    "health": {
+      "status": "healthy",
+      "checks": {
+        "redis_connected": true,
+        "queue_responsive": true,
+        "workers_available": true
+      }
+    }
+  },
+  "tenants": {
+    "acme-corp": {
+      "metrics": {
+        "jobs_per_hour": 12,
+        "success_rate_hour": "91.7%",
+        "avg_duration_ms": 45000
+      },
+      "recent_runs": [...]
+    }
+  }
+}
+```
+
+### Configuration
+
+Engine configuration via environment variables:
+
+```bash
+# Redis connection
+REDIS_URL=redis://localhost:6379
+
+# Engine settings
+ENGINE_MODE=production         # development|production|test
+ENGINE_CONCURRENCY=3           # Worker concurrency (1-10)
+ENGINE_JOB_TIMEOUT=300000      # Job timeout in ms
+ENGINE_MAX_RETRIES=2           # Max retry attempts
+
+# Tenant defaults
+ENGINE_DEFAULT_TENANT=default  # Default tenant ID
+ENGINE_NAMESPACE=swarm1        # Queue namespace
+```
+
+### Job States
+
+Jobs progress through these states:
+
+1. **waiting**: Queued, awaiting worker
+2. **active**: Currently being processed
+3. **completed**: Successfully finished
+4. **failed**: Terminated with error
+5. **delayed**: Scheduled for future
+6. **paused**: Queue is paused
+
+### Exit Codes
+
+Engine-specific exit codes (401-409):
+
+- **401**: Redis connection failed
+- **402**: Queue initialization failed
+- **403**: Worker startup failed
+- **404**: Job validation failed
+- **405**: Policy violation
+- **406**: Tenant quota exceeded
+- **407**: Backup operation failed
+- **408**: Status aggregation failed
+- **409**: Resource limit exceeded
+
+### Observability
+
+Engine events are logged to `runs/observability/hooks.jsonl`:
+
+- `EngineWorkerStarted`: Worker initialized
+- `EngineJobQueued`: Job added to queue
+- `EngineJobStarted`: Job processing began
+- `EngineJobCompleted`: Job finished successfully
+- `EngineJobFailed`: Job terminated with error
+- `EngineJobRetrying`: Retry attempt initiated
+
+---
+
+## Agent Excellence & Knowledge Assets (Phase 9 - Completed)
+
+### Agent Output Standards
+
+All agent outputs must conform to standardized schemas for consistency and validation:
+
+```bash
+# Validate agent output against schema
+node orchestration/cli.mjs validate agent-output runs/agents/<agent>/<run>/result-cards/agent-output.json
+```
+
+#### Output Types
+
+1. **Diff/Patch**: Code changes in unified diff format
+2. **Changeset**: Multiple file changes with metadata
+3. **Escalation**: Structured request for human intervention or additional capabilities
+
+#### Schemas
+
+- `schemas/agent-output.schema.json`: Base output validation
+- `schemas/agent-escalation.schema.json`: Escalation format
+- `schemas/agent-changeset.schema.json`: Multi-file changes
+- `schemas/agent-scorecard.schema.json`: Performance metrics
+
+### Knowledge System
+
+Build and query reusable knowledge assets:
+
+```bash
+# Build knowledge index from curated assets
+node orchestration/cli.mjs knowledge build-index
+
+# Retrieve relevant templates/patterns (programmatic)
+# Uses orchestration/lib/knowledge_retriever.mjs
+```
+
+#### Knowledge Structure
+
+```
+.claude/knowledge/
+  exemplars/            # High-quality example outputs
+  patterns/             # Reusable design patterns
+  templates/            # Code templates
+  domain/               # Domain-specific knowledge
+```
+
+### Agent Evaluation
+
+Score agents on synthetic tasks to measure improvement:
+
+```bash
+# Run synthetic tasks for an agent
+node orchestration/cli.mjs agents score --agent B7.rapid_builder
+```
+
+#### Scorecard Metrics
+
+- **Latency**: Time to complete task
+- **Accuracy**: Pass/fail on acceptance criteria
+- **Cost**: Token usage and MCP tool costs
+- **Quality**: Code quality metrics (if applicable)
+
+Synthetic tasks defined in `tests/agents/synthetic/` with pass/fail criteria.
+
+### Cost Governance
+
+Track and control agent spending:
+
+```bash
+# Generate spend dashboard
+node orchestration/cli.mjs observability spend
+
+# View per-agent budgets
+cat mcp/policies.yaml | grep -A 10 "agents.budgets"
+```
+
+#### Budget Enforcement
+
+The MCP router enforces budgets at two levels:
+
+1. **Per-Agent Budget**: Total budget for an agent across all capabilities
+2. **Per-Capability Budget**: Budget for specific capability usage
+
+Budgets defined in `mcp/policies.yaml`:
+
+```yaml
+agents:
+  budgets:
+    B7.rapid_builder: 0.50
+    B9.backend_api: 0.75
+    C14.debugger: 0.25
+    # Falls back to tier defaults if not specified
+```
+
+### CLI Commands
+
+```bash
+# Phase 9 commands
+node orchestration/cli.mjs validate agent-output <file>   # Validate output
+node orchestration/cli.mjs knowledge build-index          # Build index
+node orchestration/cli.mjs agents score --agent <ID>      # Score agent
+node orchestration/cli.mjs observability spend            # Spend dashboard
+```
+
+### Documentation
+
+- `.claude/agents/OUTPUT_STANDARDS.md`: Output format guidelines
+- `.claude/agents/EVALUATION.md`: Evaluation methodology
+- `.claude/agents/RETRIEVAL.md`: Knowledge retrieval system
+
+---
+
+## Testing
+
+```bash
+# Run engine unit tests
+npm run test:unit tests/unit/engine.test.mjs
+
+# Run basic engine tests (no complex imports)
+node --test tests/unit/engine-basic.test.mjs
+
+# Test job validation
+npx ajv validate -s orchestration/engine/bullmq/schemas/job.schema.json \
+  -d examples/job.json
+
+# Test status schema
+npx ajv validate -s schemas/status.schema.json \
+  -d examples/status.json
+```
+
+### Integration with Existing Systems
+
+- **CLI**: Engine commands integrated into main CLI
+- **DAG Runner**: Can be invoked via job queue or directly
+- **Hooks**: Engine events flow through hooks system
+- **Policies**: Tenant policies enforced at job submission
+- **Artifacts**: Tenant-namespaced artifact storage
+
+### Migration Path
+
+1. **Backward Compatible**: Default tenant uses original paths
+2. **Gradual Adoption**: Start with CLI, optionally use queue
+3. **Full Migration**: Submit all work via queue for durability
+
+### Production Deployment
+
+```bash
+# Docker Compose setup
+docker-compose up -d redis
+
+# Start worker with monitoring
+NODE_ENV=production \
+REDIS_URL=redis://redis:6379 \
+node orchestration/cli.mjs engine start
+
+# Monitor health
+curl http://localhost:3000/engine/health
+```
+
+### Backup Strategy
+
+- **Automatic**: Daily backups via cron
+- **Exclusions**: Sensitive data (secrets, keys) excluded
+- **Retention**: Keep last 5 backups by default
+- **S3 Support**: Optional cloud backup with `S3_BUCKET` env var
+
+### Authentication & RBAC (Phase 8)
+
+Auth is optional and disabled by default for backward compatibility. When enabled (`AUTH_REQUIRED=true`), job enqueue and queue admin operations require valid JWTs and appropriate roles.
+
+Env configuration:
+
+- JWKS mode (recommended):
+  - `AUTH_JWKS_URL` – JWKS endpoint URL
+  - `AUTH_ISSUER` – expected issuer (optional, recommended)
+  - `AUTH_AUDIENCE` – expected audience (optional, recommended)
+- HMAC mode (dev/local):
+  - `AUTH_JWT_SECRET` – HS256 secret
+- Toggle enforcement:
+  - `AUTH_REQUIRED=true`
+
+Roles:
+
+- `admin`: queue_admin, enqueue_jobs, view_status
+- `developer`: enqueue_jobs, view_status
+- `viewer`: view_status
+
+Tenant authorization:
+
+- Admins can operate on any tenant
+- Non-admin tokens must include a `tenant` claim matching the requested `--tenant`
+
+Usage examples:
+
+- Enqueue with token:
+  ```bash
+  export AUTH_REQUIRED=true
+  node orchestration/cli.mjs engine enqueue orchestration/graph/projects/demo-01.yaml \
+    --tenant acme-corp \
+    --auth-token "Bearer <JWT>"
+  ```
+- Admin status (requires admin token):
+  ```bash
+  export AUTH_REQUIRED=true
+  export AUTH_TOKEN="Bearer <ADMIN_JWT>"
+  node orchestration/engine/bullmq/admin.mjs status | cat
+  ```
+
+See `docs/AUTH.md` for full details.

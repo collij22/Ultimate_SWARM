@@ -8,12 +8,19 @@ Every section is anchored by **AUV-ID** so robots and reviewers can deep-link.
 ## Conventions
 
 - **Artifacts** are written under `runs/<AUV-ID>/...` by the runbook and tests.
+  - For multi-tenant execution (Phase 8), non-default tenants use `runs/tenants/{tenant}/<AUV-ID>/...`
 - **Env vars**: set `STAGING_URL` and `API_BASE` (see `docs/runbook.md`).
 - **Pass criteria** are stated explicitly (HTTP code, DOM selector values, file presence).
 - You can either run **manual curl/UI checks** or use the **one-button runbook**:
+
   ```sh
-  # Example: run end-to-end proof for an AUV
+  # Example: run end-to-end proof for an AUV (CLI)
   node orchestration/cli.mjs AUV-0003
+
+  # Or via queue (Phase 8 - requires Redis)
+  node orchestration/cli.mjs engine enqueue run_graph \
+    --graph orchestration/graph/projects/demo-01.yaml \
+    --tenant default
   ```
 
 ---

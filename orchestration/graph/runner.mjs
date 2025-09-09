@@ -13,6 +13,7 @@ import yaml from 'yaml';
 import Ajv from 'ajv';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'url';
+import { tenantPath } from '../lib/tenant.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -145,7 +146,7 @@ class ResourceLockManager {
  * Implementations for each node type
  */
 class NodeExecutors {
-  constructor(env = {}, runId = null) {
+  constructor(env = {}, runId = null, tenant = null) {
     this.baseEnv = {
       STAGING_URL: process.env.STAGING_URL || 'http://127.0.0.1:3000',
       API_BASE: process.env.API_BASE || 'http://127.0.0.1:3000/api',
@@ -153,6 +154,7 @@ class NodeExecutors {
       ...env,
     };
     this.runId = runId;
+    this.tenant = tenant || process.env.TENANT_ID || 'default';
     // Track a server we started so we can terminate it on graph completion
     this.serverProc = null;
     this.serverStartedByRunner = false;
@@ -223,7 +225,9 @@ class NodeExecutors {
         });
 
         // Write preview
-        const previewPath = path.resolve('runs', AUV_ID, `router_preview_${node.type}.json`);
+        const previewPath = path.resolve(
+          tenantPath(this.tenant, `${AUV_ID}/router_preview_${node.type}.json`),
+        );
         fs.mkdirSync(path.dirname(previewPath), { recursive: true });
         fs.writeFileSync(previewPath, JSON.stringify(routerResult.decision, null, 2));
 
@@ -342,10 +346,19 @@ class NodeExecutors {
 
   async lighthouse(node, env) {
     const url = node.params?.url?.replace('${STAGING_URL}', env.STAGING_URL);
-    const out = node.params?.out;
+    let out = node.params?.out;
 
     if (!url || !out) {
       throw new GraphRunnerError('Missing url or out param for lighthouse node', 'INVALID_PARAMS');
+    }
+
+    // Ensure tenant-scoped output path when a generic runs/ path is provided
+    // Accept already-tenant-scoped paths (runs/tenants/<tenant>/...)
+    if (typeof out === 'string' && out.startsWith('runs/')) {
+      if (!out.startsWith('runs/tenants/')) {
+        const relative = out.slice('runs/'.length);
+        out = tenantPath(this.tenant, relative);
+      }
     }
 
     // Ensure output directory exists
@@ -386,7 +399,7 @@ class NodeExecutors {
     console.log(`[agent_task] ${node.id}: Agent=${agent}, Task=${task}`);
 
     // Write placeholder result card
-    const resultPath = `runs/agents/${node.id}/result.json`;
+    const resultPath = tenantPath(this.tenant, `agents/${node.id}/result.json`);
     const resultDir = path.dirname(resultPath);
     if (!fs.existsSync(resultDir)) {
       fs.mkdirSync(resultDir, { recursive: true });
@@ -551,9 +564,10 @@ export class GraphRunner {
         ? crypto.randomUUID().replace(/-/g, '').slice(0, 12)
         : Math.random().toString(36).slice(2, 14);
     this.runId = options.runId || `RUN-${gen()}`;
-    this.stateFile = options.stateFile || `runs/graph/${this.runId}/state.json`;
+    this.tenant = options.tenant || process.env.TENANT_ID || 'default';
+    this.stateFile = options.stateFile || tenantPath(this.tenant, `graph/${this.runId}/state.json`);
     this.lockManager = new ResourceLockManager();
-    this.executors = new NodeExecutors(options.env, this.runId);
+    this.executors = new NodeExecutors(options.env, this.runId, this.tenant);
     this.state = null;
     this.graph = null;
     this.adjacency = new Map();
@@ -708,6 +722,11 @@ export class GraphRunner {
    * Save state to disk
    */
   async saveState() {
+    // Ensure directory exists before writing
+    const stateDir = path.dirname(this.stateFile);
+    if (!fs.existsSync(stateDir)) {
+      fs.mkdirSync(stateDir, { recursive: true });
+    }
     fs.writeFileSync(this.stateFile, JSON.stringify(this.state, null, 2));
   }
 

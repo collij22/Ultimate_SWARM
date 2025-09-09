@@ -1,0 +1,162 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarm1.ai/schemas/engine/job.schema.json",
+  "title": "Swarm1 Engine Job Payload",
+  "description": "Schema for BullMQ job payloads in the durable execution engine",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "description": "Job type identifier",
+      "type": "string",
+      "enum": ["run_graph", "compile_brief", "package_delivery", "backup"]
+    },
+    "graph_file": {
+      "description": "Path to the graph YAML file to execute",
+      "type": "string",
+      "pattern": "^[\\w\\-\\/]+\\.ya?ml$",
+      "examples": ["orchestration/graph/projects/demo-01.yaml", "capabilities/backlog.yaml"]
+    },
+    "tenant": {
+      "description": "Tenant identifier for multi-tenant isolation",
+      "type": "string",
+      "pattern": "^[a-z0-9\\-]+$",
+      "default": "default",
+      "minLength": 3,
+      "maxLength": 50
+    },
+    "run_id": {
+      "description": "Optional run identifier for resumability",
+      "type": "string",
+      "pattern": "^RUN-\\d{4}-\\d{2}-\\d{2}-[A-F0-9]{4}$",
+      "examples": ["RUN-2025-09-09-A3F2"]
+    },
+    "resume": {
+      "description": "Whether to resume from existing state",
+      "type": "boolean",
+      "default": false
+    },
+    "env": {
+      "description": "Environment variables to pass to the runner",
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "examples": [
+        {
+          "STAGING_URL": "http://127.0.0.1:3000",
+          "API_BASE": "http://127.0.0.1:3000/api"
+        }
+      ]
+    },
+    "concurrency": {
+      "description": "Number of parallel nodes to execute",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 3
+    },
+    "priority": {
+      "description": "Job priority (higher values processed first)",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 50
+    },
+    "metadata": {
+      "description": "Additional metadata for tracking",
+      "type": "object",
+      "properties": {
+        "brief_id": {
+          "type": "string",
+          "pattern": "^[\\w\\-]+$"
+        },
+        "auv_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^AUV-\\d{4}$"
+          }
+        },
+        "requested_by": {
+          "type": "string"
+        },
+        "project": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "constraints": {
+      "description": "Execution constraints",
+      "type": "object",
+      "properties": {
+        "max_runtime_ms": {
+          "description": "Maximum job runtime in milliseconds",
+          "type": "integer",
+          "minimum": 60000,
+          "maximum": 3600000,
+          "default": 300000
+        },
+        "budget_usd": {
+          "description": "Budget limit for this job",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "required_capabilities": {
+          "description": "Capabilities that must be available",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z\\.]+$"
+          }
+        }
+      }
+    },
+    "callbacks": {
+      "description": "Webhook callbacks for job events",
+      "type": "object",
+      "properties": {
+        "on_start": {
+          "type": "string",
+          "format": "uri"
+        },
+        "on_complete": {
+          "type": "string",
+          "format": "uri"
+        },
+        "on_fail": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "type": "run_graph",
+      "graph_file": "orchestration/graph/projects/demo-01.yaml",
+      "tenant": "acme-corp",
+      "concurrency": 5,
+      "metadata": {
+        "brief_id": "demo-01",
+        "auv_ids": ["AUV-0101", "AUV-0102"],
+        "requested_by": "john.doe@acme.com"
+      }
+    },
+    {
+      "type": "run_graph",
+      "graph_file": "capabilities/backlog.yaml",
+      "tenant": "default",
+      "resume": true,
+      "run_id": "RUN-2025-09-09-A3F2"
+    }
+  ]
+}

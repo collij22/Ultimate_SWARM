@@ -6,7 +6,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import yaml from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
+import { tenantPath } from './tenant.mjs';
 
 export class BudgetEvaluator {
   constructor() {
@@ -27,7 +28,7 @@ export class BudgetEvaluator {
 
     try {
       const content = fs.readFileSync(configPath, 'utf-8');
-      const config = yaml.load(content);
+      const config = parseYaml(content);
 
       if (!config.perf_budgets) {
         console.log(`[budget-evaluator] No performance budgets defined for ${auvId}`);
@@ -44,8 +45,11 @@ export class BudgetEvaluator {
   /**
    * Load Lighthouse results
    */
-  async loadLighthouseResults(auvId) {
-    const lighthousePath = path.join(process.cwd(), 'runs', auvId, 'perf', 'lighthouse.json');
+  async loadLighthouseResults(auvId, tenant = process.env.TENANT_ID || 'default') {
+    const lighthousePath = path.join(
+      process.cwd(),
+      tenantPath(tenant, `${auvId}/perf/lighthouse.json`),
+    );
 
     if (!fs.existsSync(lighthousePath)) {
       throw new Error(`Lighthouse results not found: ${lighthousePath}`);
@@ -236,7 +240,7 @@ export class BudgetEvaluator {
   /**
    * Main evaluation function
    */
-  async evaluateAuv(auvId) {
+  async evaluateAuv(auvId, tenant = process.env.TENANT_ID || 'default') {
     try {
       // Load budgets
       const budgets = await this.loadBudgets(auvId);
@@ -249,7 +253,7 @@ export class BudgetEvaluator {
       }
 
       // Load Lighthouse results
-      const lighthouseData = await this.loadLighthouseResults(auvId);
+      const lighthouseData = await this.loadLighthouseResults(auvId, tenant);
 
       // Extract metrics
       const metrics = this.extractMetrics(lighthouseData);
@@ -261,7 +265,11 @@ export class BudgetEvaluator {
       const summary = this.generateSummary(results, auvId);
 
       // Save summary
-      const summaryPath = path.join(process.cwd(), 'runs', auvId, 'perf', 'budget-evaluation.json');
+      const summaryPath = path.join(
+        process.cwd(),
+        tenantPath(tenant, `${auvId}/perf/budget-evaluation.json`),
+      );
+      fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
       fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
 
       // Log results
@@ -280,7 +288,7 @@ export class BudgetEvaluator {
 }
 
 // Export for use in CVF
-export async function evaluateBudget(auvId) {
+export async function evaluateBudget(auvId, tenant = process.env.TENANT_ID || 'default') {
   const evaluator = new BudgetEvaluator();
-  return await evaluator.evaluateAuv(auvId);
+  return await evaluator.evaluateAuv(auvId, tenant);
 }

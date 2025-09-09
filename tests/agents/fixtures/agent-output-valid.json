@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "ts": 1736467200,
+  "agent_id": "B7.rapid_builder",
+  "capabilities": ["browser.automation"],
+  "outputs": {
+    "result_card": { "summary": "noop" }
+  },
+  "ok": true
+}

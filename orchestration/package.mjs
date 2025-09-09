@@ -10,6 +10,7 @@ import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import Ajv from 'ajv';
 import { expectedArtifacts } from './lib/expected_artifacts.mjs';
+import { tenantPath, normalizeTenant } from './lib/tenant.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -23,12 +24,23 @@ class PackageBuilder {
   constructor(auvId, options = {}) {
     this.auvId = auvId;
     this.runId = options.runId;
+    this.tenant = normalizeTenant(options.tenant || process.env.TENANT_ID || 'default');
     this.includeSecurity = options.includeSecurity || false;
     this.includeVisual = options.includeVisual || false;
     this.strict = options.strict || false;
-    this.outputPath = options.outputPath || join(PROJECT_ROOT, 'dist', auvId);
+    this.outputPath = options.outputPath || this.getDistPath(auvId);
     this.startTime = Date.now();
     this.generatedFiles = []; // Track files generated outside project root
+  }
+
+  /**
+   * Get distribution path for tenant
+   */
+  getDistPath(auvId) {
+    if (this.tenant === 'default') {
+      return join(PROJECT_ROOT, 'dist', auvId);
+    }
+    return join(PROJECT_ROOT, 'dist', 'tenants', this.tenant, auvId);
   }
 
   /**
@@ -107,7 +119,7 @@ class PackageBuilder {
       return;
     }
 
-    const runDir = join(PROJECT_ROOT, 'runs', this.auvId);
+    const runDir = join(PROJECT_ROOT, tenantPath(this.tenant, this.auvId));
     const resultCardsDir = join(runDir, 'result-cards');
 
     if (!existsSync(resultCardsDir)) {
@@ -151,10 +163,7 @@ class PackageBuilder {
   async readRunbookSummary() {
     const summaryPath = join(
       PROJECT_ROOT,
-      'runs',
-      this.auvId,
-      'result-cards',
-      'runbook-summary.json',
+      tenantPath(this.tenant, `${this.auvId}/result-cards/runbook-summary.json`),
     );
 
     if (!existsSync(summaryPath)) {
@@ -169,7 +178,7 @@ class PackageBuilder {
    * Collect required artifacts based on CVF expectations
    */
   async collectArtifacts() {
-    const required = expectedArtifacts(this.auvId);
+    const required = expectedArtifacts(this.auvId, this.tenant);
     const artifacts = [];
     const missingArtifacts = [];
 
@@ -192,15 +201,12 @@ class PackageBuilder {
     // Always include runbook summary
     const summaryPath = join(
       PROJECT_ROOT,
-      'runs',
-      this.auvId,
-      'result-cards',
-      'runbook-summary.json',
+      tenantPath(this.tenant, `${this.auvId}/result-cards/runbook-summary.json`),
     );
     if (existsSync(summaryPath)) {
       const info = await this.getFileInfo(summaryPath);
       artifacts.push({
-        path: `runs/${this.auvId}/result-cards/runbook-summary.json`,
+        path: tenantPath(this.tenant, `${this.auvId}/result-cards/runbook-summary.json`),
         bytes: info.bytes,
         sha256: info.sha256,
         type: 'report',
@@ -208,11 +214,11 @@ class PackageBuilder {
     }
 
     // Opportunistically include router preview if present
-    const routerPath = join(PROJECT_ROOT, 'runs', 'router_preview.json');
+    const routerPath = join(PROJECT_ROOT, tenantPath(this.tenant, 'router_preview.json'));
     if (existsSync(routerPath)) {
       const info = await this.getFileInfo(routerPath);
       artifacts.push({
-        path: 'runs/router_preview.json',
+        path: tenantPath(this.tenant, 'router_preview.json'),
         bytes: info.bytes,
         sha256: info.sha256,
         type: 'config',
@@ -235,7 +241,7 @@ class PackageBuilder {
       gitleaks: { blocked: 0, findings: 0 },
     };
 
-    const semgrepPath = join(PROJECT_ROOT, 'runs', 'security', 'semgrep.json');
+    const semgrepPath = join(PROJECT_ROOT, tenantPath(this.tenant, 'security/semgrep.json'));
     if (existsSync(semgrepPath)) {
       const content = JSON.parse(await readFile(semgrepPath, 'utf8'));
       security.semgrep = {
@@ -243,17 +249,17 @@ class PackageBuilder {
         high: content.high || 0,
         medium: content.medium || 0,
         low: content.low || 0,
-        report_path: 'runs/security/semgrep.json',
+        report_path: tenantPath(this.tenant, 'security/semgrep.json'),
       };
     }
 
-    const gitleaksPath = join(PROJECT_ROOT, 'runs', 'security', 'gitleaks.json');
+    const gitleaksPath = join(PROJECT_ROOT, tenantPath(this.tenant, 'security/gitleaks.json'));
     if (existsSync(gitleaksPath)) {
       const content = JSON.parse(await readFile(gitleaksPath, 'utf8'));
       security.gitleaks = {
         blocked: content.blocked || 0,
         findings: content.findings || 0,
-        report_path: 'runs/security/gitleaks.json',
+        report_path: tenantPath(this.tenant, 'security/gitleaks.json'),
       };
     }
 
@@ -264,7 +270,10 @@ class PackageBuilder {
    * Gather visual regression summary if requested
    */
   async gatherVisualSummary() {
-    const visualPath = join(PROJECT_ROOT, 'runs', 'visual', this.auvId, 'visual.json');
+    const visualPath = join(
+      PROJECT_ROOT,
+      tenantPath(this.tenant, `visual/${this.auvId}/visual.json`),
+    );
 
     if (!existsSync(visualPath)) {
       return null;
@@ -276,7 +285,7 @@ class PackageBuilder {
       passed: content.passed || 0,
       threshold: content.threshold || 0.001,
       routes: content.routes || 0,
-      report_path: `runs/visual/${this.auvId}/visual.json`,
+      report_path: tenantPath(this.tenant, `visual/${this.auvId}/visual.json`),
     };
   }
 
@@ -330,7 +339,7 @@ class PackageBuilder {
    */
   async collectDiffs() {
     const diffs = [];
-    const patchesDir = join(PROJECT_ROOT, 'runs', this.auvId, 'patches');
+    const patchesDir = join(PROJECT_ROOT, tenantPath(this.tenant, `${this.auvId}/patches`));
 
     if (!existsSync(patchesDir)) {
       return diffs;
@@ -342,7 +351,7 @@ class PackageBuilder {
         const filePath = join(patchesDir, file);
         const info = await this.getFileInfo(filePath);
         diffs.push({
-          path: `runs/${this.auvId}/patches/${file}`,
+          path: tenantPath(this.tenant, `${this.auvId}/patches/${file}`),
           bytes: info.bytes,
           sha256: info.sha256,
         });
@@ -350,11 +359,14 @@ class PackageBuilder {
     }
 
     // Include changeset.json if present
-    const changesetPath = join(PROJECT_ROOT, 'runs', this.auvId, 'changeset.json');
+    const changesetPath = join(
+      PROJECT_ROOT,
+      tenantPath(this.tenant, `${this.auvId}/changeset.json`),
+    );
     if (existsSync(changesetPath)) {
       const info = await this.getFileInfo(changesetPath);
       diffs.push({
-        path: `runs/${this.auvId}/changeset.json`,
+        path: tenantPath(this.tenant, `${this.auvId}/changeset.json`),
         bytes: info.bytes,
         sha256: info.sha256,
       });
@@ -367,7 +379,10 @@ class PackageBuilder {
    * Read budget evaluation if available
    */
   async readBudgetEvaluation() {
-    const budgetPath = join(PROJECT_ROOT, 'runs', this.auvId, 'perf', 'budget-evaluation.json');
+    const budgetPath = join(
+      PROJECT_ROOT,
+      tenantPath(this.tenant, `${this.auvId}/perf/budget-evaluation.json`),
+    );
 
     if (!existsSync(budgetPath)) {
       return null;
@@ -458,7 +473,7 @@ class PackageBuilder {
         passed: runbookSummary.ok || false,
         perf_score: runbookSummary.perf?.perf_score || 0,
         lcp_ms: runbookSummary.perf?.lcp_ms || null,
-        required_artifacts: expectedArtifacts(this.auvId),
+        required_artifacts: expectedArtifacts(this.auvId, this.tenant),
         missing_artifacts: artifacts.missingArtifacts || [],
         budgets: budgetEval
           ? {
@@ -564,7 +579,10 @@ class PackageBuilder {
     await pipeline(stream, hash);
 
     return {
-      zip_path: `dist/${this.auvId}/package.zip`,
+      zip_path:
+        this.tenant === 'default'
+          ? `dist/${this.auvId}/package.zip`
+          : `dist/tenants/${this.tenant}/${this.auvId}/package.zip`,
       bytes: stats.size,
       sha256: hash.digest('hex'),
       compression: 'deflate',

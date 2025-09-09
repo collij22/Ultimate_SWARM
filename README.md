@@ -26,6 +26,7 @@ node orchestration/cvf-check.mjs AUV-0001
 - **docs/ARCHITECTURE.md** — system diagram & components.
 - **docs/SWARM1-GUIDE.md** — “what to keep/what to change” strategy (11 sections).
 - **docs/ORCHESTRATION.md** — AUV lifecycle, lanes, serialization policy.
+- **docs/AUTH.md** — Authentication & RBAC for durable engine (Phase 8).
 - **docs/QUALITY-GATES.md** — CVF/QA/Security gates & thresholds.
 - **docs/verify.md** — copy‑paste verification steps per AUV.
 - **docs/runbook.md, docs/operate.md** — run/operate playbooks.

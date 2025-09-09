@@ -293,10 +293,350 @@ for dir in dist/AUV-*; do
 done
 ```
 
+## Durable Execution Engine Operations (Phase 8)
+
+### Engine Prerequisites
+
+Before starting the engine, ensure Redis is available:
+
+```bash
+# Check Redis connectivity
+redis-cli ping
+# Expected: PONG
+
+# Or start Redis locally
+docker run -d -p 6379:6379 redis:7-alpine
+
+# Set custom Redis URL if needed
+export REDIS_URL=redis://localhost:6379
+```
+
+### Starting the Engine
+
+#### Development Mode
+
+```bash
+# Start worker with default settings
+node orchestration/cli.mjs engine start
+
+# With custom concurrency
+ENGINE_CONCURRENCY=5 node orchestration/cli.mjs engine start
+
+# With debug logging
+DEBUG=bullmq:* node orchestration/cli.mjs engine start
+```
+
+#### Production Mode
+
+```bash
+# Production configuration
+NODE_ENV=production \
+REDIS_URL=redis://redis.prod:6379 \
+ENGINE_CONCURRENCY=3 \
+ENGINE_JOB_TIMEOUT=600000 \
+node orchestration/cli.mjs engine start
+```
+
+### Monitoring Engine Health
+
+#### Real-time Monitoring
+
+```bash
+# Monitor queue status (updates every 5s)
+node orchestration/cli.mjs engine monitor
+
+# View detailed status report
+node orchestration/cli.mjs engine status
+
+# Export status for external monitoring
+node orchestration/cli.mjs engine emit-status | \
+  jq '.engine.health.status'
+```
+
+#### Health Checks
+
+```bash
+# Check Redis connection
+redis-cli ping
+
+# Check queue responsiveness
+node orchestration/cli.mjs engine status | \
+  jq '.engine.health.checks'
+
+# Monitor worker count
+node orchestration/cli.mjs engine status | \
+  jq '.engine.queue.workers.count'
+```
+
+### Managing Jobs
+
+#### Enqueue Jobs
+
+```bash
+# Submit graph execution job
+node orchestration/cli.mjs engine enqueue run_graph \
+  --graph orchestration/graph/projects/demo-01.yaml \
+  --tenant default
+
+# High priority job
+node orchestration/cli.mjs engine enqueue run_graph \
+  --graph critical-job.yaml \
+  --priority 10 \
+  --tenant acme-corp
+
+# With metadata for tracking
+node orchestration/cli.mjs engine enqueue compile_brief \
+  --brief briefs/project.md \
+  --metadata '{"project":"Q1-2025","owner":"team@example.com"}'
+```
+
+#### Monitor Job Progress
+
+```bash
+# List active jobs
+node orchestration/cli.mjs engine list
+
+# Check specific job
+node orchestration/cli.mjs engine status | \
+  jq '.tenants.default.recent_runs[] | select(.job_id=="job-abc123")'
+
+# View job metrics
+node orchestration/cli.mjs engine metrics
+```
+
+#### Cancel Jobs
+
+```bash
+# Cancel specific job
+node orchestration/cli.mjs engine cancel job-abc123
+
+# Pause all processing
+node orchestration/cli.mjs engine pause
+
+# Resume processing
+node orchestration/cli.mjs engine resume
+```
+
+### Multi-Tenant Management
+
+#### View Tenant Status
+
+```bash
+# Check all tenant metrics
+node orchestration/cli.mjs engine status | \
+  jq '.tenants'
+
+# Specific tenant metrics
+node orchestration/cli.mjs engine status | \
+  jq '.tenants["acme-corp"].metrics'
+
+# Tenant storage usage
+node orchestration/cli.mjs engine status | \
+  jq '.tenants[].storage'
+```
+
+#### Monitor Tenant Quotas
+
+```bash
+# Check budget usage
+tail -f runs/observability/hooks.jsonl | \
+  jq 'select(.event == "EnginePolicyViolation")'
+
+# View tenant resource limits
+cat mcp/policies.yaml | \
+  yq '.tenants["acme-corp"].resource_limits'
+
+# Check concurrent job limits
+node orchestration/cli.mjs engine status | \
+  jq '.tenants["acme-corp"].metrics.active_jobs'
+```
+
+### Troubleshooting Engine Issues
+
+#### Redis Connection Issues
+
+```bash
+# Test Redis connection
+redis-cli -h redis.host -p 6379 ping
+
+# Check Redis memory
+redis-cli info memory | grep used_memory_human
+
+# Clear stuck jobs (CAUTION: data loss)
+redis-cli FLUSHDB
+```
+
+#### Worker Issues
+
+```bash
+# Check worker errors
+tail -f runs/observability/hooks.jsonl | \
+  jq 'select(.event | startswith("EngineJob"))'
+
+# Restart worker with clean state
+pkill -f "engine start"
+node orchestration/cli.mjs engine start
+
+# Check for orphaned processes
+ps aux | grep "bullmq"
+```
+
+#### Job Failures
+
+```bash
+# Find failed jobs
+node orchestration/cli.mjs engine status | \
+  jq '.engine.queue.counts.failed'
+
+# View failure reasons
+tail -100 runs/observability/hooks.jsonl | \
+  jq 'select(.event == "EngineJobFailed")'
+
+# Retry failed jobs (if configured)
+# Jobs retry automatically based on config
+```
+
+### Backup & Recovery
+
+#### Create Backups
+
+```bash
+# Manual backup
+node orchestration/cli.mjs engine backup
+
+# Automated daily backup (cron)
+0 2 * * * node /path/to/orchestration/cli.mjs engine backup
+
+# With S3 upload
+S3_BUCKET=my-backups node orchestration/cli.mjs engine backup
+```
+
+#### List & Manage Backups
+
+```bash
+# List available backups
+node orchestration/cli.mjs engine backup --list
+
+# Clean old backups (keep last 5)
+node orchestration/cli.mjs engine backup --clean
+
+# Restore from backup (manual process)
+tar -xzf backups/swarm1-backup-2025-01-09.tar.gz -C /
+```
+
+### Performance Tuning
+
+#### Optimize Concurrency
+
+```bash
+# Monitor CPU/memory during processing
+top -p $(pgrep -f "engine start")
+
+# Adjust concurrency based on load
+ENGINE_CONCURRENCY=2 node orchestration/cli.mjs engine start  # Light load
+ENGINE_CONCURRENCY=8 node orchestration/cli.mjs engine start  # Heavy load
+```
+
+#### Queue Metrics
+
+```bash
+# View processing rates
+node orchestration/cli.mjs engine metrics | \
+  jq '.processing_rate_per_minute'
+
+# Check average job duration
+node orchestration/cli.mjs engine status | \
+  jq '.tenants[].metrics.avg_duration_ms'
+
+# Monitor queue depth
+watch -n 5 'node orchestration/cli.mjs engine status | \
+  jq ".engine.queue.counts.waiting"'
+```
+
+### Engine Observability
+
+#### Log Analysis
+
+```bash
+# Count events by type
+jq -r '.event' runs/observability/hooks.jsonl | \
+  grep ^Engine | sort | uniq -c
+
+# Job completion times
+jq 'select(.event == "EngineJobCompleted") | .duration_ms' \
+  runs/observability/hooks.jsonl | \
+  awk '{sum+=$1; count++} END {print "Avg:", sum/count, "ms"}'
+
+# Policy violations
+jq 'select(.event == "EnginePolicyViolation")' \
+  runs/observability/hooks.jsonl
+```
+
+#### Monitoring Dashboards
+
+```bash
+# Export metrics for Grafana/DataDog
+node orchestration/cli.mjs engine emit-status | \
+  curl -X POST https://monitoring.example.com/metrics \
+    -H "Content-Type: application/json" \
+    -d @-
+
+# Continuous metric export
+while true; do
+  node orchestration/cli.mjs engine emit-status > \
+    metrics/engine-$(date +%s).json
+  sleep 60
+done
+```
+
+### Emergency Procedures
+
+#### Engine Unresponsive
+
+```bash
+# 1. Check Redis
+redis-cli ping
+
+# 2. Kill stuck workers
+pkill -9 -f "engine start"
+
+# 3. Clear job locks (CAUTION)
+redis-cli --scan --pattern "bull:*:lock:*" | xargs redis-cli DEL
+
+# 4. Restart clean
+node orchestration/cli.mjs engine start
+```
+
+#### Queue Overflow
+
+```bash
+# Check queue size
+redis-cli LLEN bull:swarm1:graphQueue:wait
+
+# Pause processing
+node orchestration/cli.mjs engine pause
+
+# Clear low-priority jobs
+# (Requires manual Redis operations)
+
+# Resume with higher concurrency
+ENGINE_CONCURRENCY=10 node orchestration/cli.mjs engine start
+```
+
+### Best Practices
+
+1. **Monitor Redis memory** - Set maxmemory policy
+2. **Use job priorities** - Critical jobs: 10, Normal: 5, Low: 1
+3. **Set reasonable timeouts** - Default 5 min, extend for large graphs
+4. **Regular backups** - Daily automated + before upgrades
+5. **Tenant isolation** - Test thoroughly before production
+6. **Health monitoring** - Alert on queue depth > 100
+7. **Graceful shutdown** - Use SIGTERM, not SIGKILL
+
 ### Security Considerations
 
 1. **Never commit bundles to git** - Use .gitignore for dist/
-2. **Verify signatures** when implemented (Phase 8)
+2. **Verify signatures** when implemented (Phase 9)
 3. **Scan SBOM** for vulnerabilities before distribution
 4. **Rotate credentials** after bundle creation
 5. **Use secure channels** for bundle distribution

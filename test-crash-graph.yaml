@@ -1,0 +1,15 @@
+version: '1.0'
+project_id: crash-test-test-tenant-04a343f6
+nodes:
+  - id: slow-node-1
+    type: work_simulation
+    params:
+      duration_ms: 5000
+      output: Step 1 complete
+  - id: slow-node-2
+    type: work_simulation
+    requires:
+      - slow-node-1
+    params:
+      duration_ms: 10000
+      output: Step 2 complete

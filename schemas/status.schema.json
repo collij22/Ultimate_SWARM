@@ -1,0 +1,245 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarm1.ai/schemas/status.schema.json",
+  "title": "Swarm1 Engine Status Report",
+  "description": "Schema for the durable execution engine status report",
+  "type": "object",
+  "required": ["version", "generated_at", "engine", "tenants", "summary"],
+  "properties": {
+    "version": {
+      "description": "Status report format version",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+$",
+      "examples": ["1.0"]
+    },
+    "generated_at": {
+      "description": "ISO 8601 timestamp when report was generated",
+      "type": "string",
+      "format": "date-time"
+    },
+    "environment": {
+      "description": "Environment information",
+      "type": "object",
+      "properties": {
+        "node_version": {
+          "type": "string",
+          "pattern": "^v\\d+\\.\\d+\\.\\d+"
+        },
+        "platform": {
+          "type": "string",
+          "enum": ["darwin", "linux", "win32", "freebsd", "sunos", "aix"]
+        },
+        "namespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "redis_url": {
+          "type": "string",
+          "description": "Redis connection URL (sensitive parts redacted)"
+        }
+      }
+    },
+    "engine": {
+      "description": "Engine status and configuration",
+      "type": "object",
+      "required": ["mode", "queue", "health"],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["development", "production", "test"]
+        },
+        "config": {
+          "type": "object",
+          "properties": {
+            "concurrency": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10
+            },
+            "job_timeout_ms": {
+              "type": "integer",
+              "minimum": 60000
+            },
+            "max_retries": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            }
+          }
+        },
+        "queue": {
+          "description": "Queue status",
+          "type": "object",
+          "required": ["name", "status", "counts", "workers"],
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["active", "paused"]
+            },
+            "counts": {
+              "type": "object",
+              "properties": {
+                "waiting": { "type": "integer", "minimum": 0 },
+                "active": { "type": "integer", "minimum": 0 },
+                "completed": { "type": "integer", "minimum": 0 },
+                "failed": { "type": "integer", "minimum": 0 },
+                "delayed": { "type": "integer", "minimum": 0 },
+                "paused": { "type": "integer", "minimum": 0 },
+                "total": { "type": "integer", "minimum": 0 }
+              }
+            },
+            "workers": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "details": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": { "type": "string" },
+                      "name": { "type": "string" },
+                      "addr": { "type": "string" },
+                      "started": { "type": ["string", "null"], "format": "date-time" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "health": {
+          "description": "System health status",
+          "type": "object",
+          "required": ["status", "checks", "last_check"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["healthy", "degraded", "critical"]
+            },
+            "checks": {
+              "type": "object",
+              "properties": {
+                "redis_connected": { "type": "boolean" },
+                "queue_responsive": { "type": "boolean" },
+                "workers_available": { "type": "boolean" },
+                "error_rate_acceptable": { "type": "boolean" }
+              }
+            },
+            "last_check": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        }
+      }
+    },
+    "tenants": {
+      "description": "Per-tenant summaries",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "metrics": {
+            "type": "object",
+            "properties": {
+              "jobs_per_hour": { "type": "integer", "minimum": 0 },
+              "jobs_per_day": { "type": "integer", "minimum": 0 },
+              "success_rate_hour": { "type": "string" },
+              "success_rate_day": { "type": "string" },
+              "avg_duration_ms": { "type": "integer", "minimum": 0 },
+              "active_jobs": { "type": "integer", "minimum": 0 },
+              "waiting_jobs": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "storage": {
+            "type": "object",
+            "properties": {
+              "auv_count": { "type": "integer", "minimum": 0 },
+              "total_size_mb": { "type": "number", "minimum": 0 },
+              "last_modified": { "type": ["string", "null"], "format": "date-time" }
+            }
+          },
+          "recent_runs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "job_id": { "type": "string" },
+                "run_id": { "type": "string", "pattern": "^RUN-" },
+                "graph_file": { "type": "string" },
+                "state": {
+                  "type": "string",
+                  "enum": ["waiting", "active", "completed", "failed", "delayed", "paused"]
+                },
+                "started_at": { "type": ["string", "null"], "format": "date-time" },
+                "finished_at": { "type": ["string", "null"], "format": "date-time" },
+                "duration_ms": { "type": ["integer", "null"], "minimum": 0 },
+                "ok": { "type": "boolean" }
+              }
+            }
+          },
+          "active_auvs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^AUV-\\d{4}$"
+            }
+          }
+        }
+      }
+    },
+    "recent_events": {
+      "description": "Recent engine events from hooks.jsonl",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event", "timestamp"],
+        "properties": {
+          "event": {
+            "type": "string",
+            "pattern": "^Engine"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "job_id": { "type": "string" },
+          "tenant": { "type": "string" },
+          "queue": { "type": "string" },
+          "error": { "type": "string" }
+        }
+      }
+    },
+    "summary": {
+      "description": "High-level summary",
+      "type": "object",
+      "required": ["total_tenants", "total_jobs", "active_workers", "system_status"],
+      "properties": {
+        "total_tenants": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_jobs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "active_workers": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "system_status": {
+          "type": "string",
+          "enum": ["healthy", "degraded", "critical"]
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

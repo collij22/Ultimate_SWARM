@@ -15,7 +15,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import yaml from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 
 // Configuration
 const SEVERITY_LEVELS = {
@@ -67,7 +67,7 @@ class SemgrepScanner {
 
     try {
       const content = fs.readFileSync(waiversPath, 'utf-8');
-      const data = yaml.load(content);
+      const data = parseYaml(content);
 
       if (data && data.waivers) {
         const now = new Date();

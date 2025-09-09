@@ -1,0 +1,9 @@
+version: '1.0'
+project_id: e2e-test-test-tenant-04a343f6
+nodes:
+  - id: test-work
+    type: work_simulation
+    params:
+      duration_ms: 100
+      output: Test work complete
+      auv_id: AUV-TEST

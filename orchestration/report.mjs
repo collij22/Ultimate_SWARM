@@ -4,6 +4,7 @@ import { readFile, writeFile, mkdir, copyFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
+import { normalizeTenant } from './lib/tenant.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,9 +18,20 @@ class ReportGenerator {
   constructor(auvId, options = {}) {
     this.auvId = auvId;
     this.runId = options.runId || 'latest';
-    this.outputPath = options.outputPath || join(PROJECT_ROOT, 'dist', auvId, 'report.html');
-    this.manifestPath = options.manifestPath || join(PROJECT_ROOT, 'dist', auvId, 'manifest.json');
+    this.tenant = normalizeTenant(options.tenant || process.env.TENANT_ID || 'default');
+    this.outputPath = options.outputPath || this.getDistPath('report.html');
+    this.manifestPath = options.manifestPath || this.getDistPath('manifest.json');
     this.startTime = Date.now();
+  }
+
+  /**
+   * Get distribution path for tenant
+   */
+  getDistPath(filename) {
+    if (this.tenant === 'default') {
+      return join(PROJECT_ROOT, 'dist', this.auvId, filename);
+    }
+    return join(PROJECT_ROOT, 'dist', 'tenants', this.tenant, this.auvId, filename);
   }
 
   /**

@@ -88,6 +88,19 @@ agents:
     C15.security_auditor: [semgrep, gitleaks, checkov, trivy]
     C16.devops_engineer: [kubectl, helm, docker-buildx, vercel]
 
+  budgets:
+    A1.orchestrator:
+      total_usd: 1.00
+      per_capability_usd:
+        browser.automation: 0.25
+        web.perf_audit: 0.25
+    B7.rapid_builder:
+      total_usd: 1.50
+      per_capability_usd:
+        code.codemod: 0.50
+        lint: 0.25
+        typecheck: 0.25
+
   # Auxiliary agents
   performance-optimizer:
     capabilities: [perf.web, perf.api, perf.db, trace.profile]
@@ -121,3 +134,77 @@ performance:
     p95_ms: 200
   db:
     query_ms: 50
+
+# Tenant-specific configurations (Phase 8)
+tenants:
+  # Default tenant (backward compatibility)
+  default:
+    budget_ceiling_usd: 100
+    allowed_capabilities:
+      - browser.automation
+      - api.test
+      - data.validation
+      - docs.search
+      - code.analysis
+      - perf.web
+      - security.scan
+    max_concurrent_jobs: 3
+    max_job_runtime_ms: 300000 # 5 minutes
+    allow_secondary_tools: false
+    resource_limits:
+      max_artifacts_size_mb: 100
+      max_auv_count: 50
+      max_graph_nodes: 100
+
+  # Example tenant with enhanced capabilities
+  acme-corp:
+    budget_ceiling_usd: 500
+    allowed_capabilities:
+      - browser.automation
+      - api.test
+      - data.validation
+      - docs.search
+      - code.analysis
+      - perf.web
+      - security.scan
+      - deploy.preview # Premium capability
+      - database.staging
+    max_concurrent_jobs: 5
+    max_job_runtime_ms: 600000 # 10 minutes
+    allow_secondary_tools: true
+    resource_limits:
+      max_artifacts_size_mb: 500
+      max_auv_count: 100
+      max_graph_nodes: 200
+    router_overrides:
+      prefer_tier: primary
+      budget_override: 200 # Per-job budget override
+      tool_allowlist:
+        - playwright
+        - lighthouse
+        - http
+        - postgres
+        - vercel
+      tool_blocklist:
+        - kubectl # Block production k8s access
+
+  # Example limited tenant
+  beta-inc:
+    budget_ceiling_usd: 50
+    allowed_capabilities:
+      - browser.automation
+      - api.test
+      - docs.search
+    max_concurrent_jobs: 1
+    max_job_runtime_ms: 180000 # 3 minutes
+    allow_secondary_tools: false
+    resource_limits:
+      max_artifacts_size_mb: 50
+      max_auv_count: 10
+      max_graph_nodes: 50
+    router_overrides:
+      prefer_tier: primary
+      tool_blocklist:
+        - semgrep # No security scans for this tenant
+        - gitleaks
+        - postgres # No database access

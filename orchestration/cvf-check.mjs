@@ -19,9 +19,10 @@
 
 import fs from 'fs';
 import path from 'path';
-import yaml from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 import { expectedArtifacts } from './lib/expected_artifacts.mjs';
 import { evaluateBudget } from './lib/budget_evaluator.mjs';
+import { tenantPath } from './lib/tenant.mjs';
 
 function statNonEmpty(p) {
   try {
@@ -61,8 +62,10 @@ async function checkSecurityGates(auvId, strict) {
     messages: [],
   };
 
+  const tenant = process.env.TENANT_ID || 'default';
+
   // Check Semgrep results if they exist
-  const semgrepPath = path.join(process.cwd(), 'runs', 'security', 'semgrep.json');
+  const semgrepPath = path.join(process.cwd(), tenantPath(tenant, 'security/semgrep.json'));
   if (fs.existsSync(semgrepPath)) {
     const semgrep = readJsonSafe(semgrepPath);
     if (semgrep?.blocked > 0) {
@@ -78,7 +81,7 @@ async function checkSecurityGates(auvId, strict) {
   }
 
   // Check Gitleaks results if they exist
-  const gitleaksPath = path.join(process.cwd(), 'runs', 'security', 'gitleaks.json');
+  const gitleaksPath = path.join(process.cwd(), tenantPath(tenant, 'security/gitleaks.json'));
   if (fs.existsSync(gitleaksPath)) {
     const gitleaks = readJsonSafe(gitleaksPath);
     if (gitleaks?.blocked > 0) {
@@ -100,7 +103,8 @@ async function checkVisualRegression(auvId, strict) {
     messages: [],
   };
 
-  const visualPath = path.join(process.cwd(), 'runs', 'visual', auvId, 'visual.json');
+  const tenant = process.env.TENANT_ID || 'default';
+  const visualPath = path.join(process.cwd(), tenantPath(tenant, `visual/${auvId}/visual.json`));
   if (fs.existsSync(visualPath)) {
     const visual = readJsonSafe(visualPath);
     if (visual?.failed > 0) {
@@ -114,7 +118,7 @@ async function checkVisualRegression(auvId, strict) {
     const configPath = path.join(process.cwd(), 'capabilities', `${auvId}.yaml`);
     if (fs.existsSync(configPath)) {
       const content = fs.readFileSync(configPath, 'utf-8');
-      const config = yaml.load(content);
+      const config = parseYaml(content);
       if (config?.visual?.routes?.length > 0) {
         results.messages.push('Visual: Regression tests not run (but configured)');
       }
@@ -157,8 +161,9 @@ async function main() {
   }
 
   const strict = process.argv.includes('--strict');
+  const tenant = process.env.TENANT_ID || 'default';
 
-  const required = expectedArtifacts(auvId);
+  const required = expectedArtifacts(auvId, tenant);
   if (!required) {
     console.error(
       `[CVF] FAIL — no artifact definition for '${auvId}'. Update expectedArtifacts().`,

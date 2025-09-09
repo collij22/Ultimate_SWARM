@@ -16,7 +16,7 @@ import fs from 'fs';
 import path from 'path';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
-import yaml from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 
 class VisualCompare {
   constructor() {
@@ -44,7 +44,7 @@ class VisualCompare {
     }
 
     const content = fs.readFileSync(configPath, 'utf-8');
-    const config = yaml.load(content);
+    const config = parseYaml(content);
 
     if (!config.visual || !config.visual.routes) {
       console.log(`[visual-compare] No visual routes defined for ${auvId}`);

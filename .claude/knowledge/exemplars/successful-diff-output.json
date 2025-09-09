@@ -1,0 +1,31 @@
+{
+  "version": "1.0",
+  "ts": 1757380000000,
+  "agent_id": "B7.rapid_builder",
+  "capabilities": ["code.codemod", "lint"],
+  "ok": true,
+  "outputs": {
+    "changeset": {
+      "files": [
+        {
+          "path": "src/components/Button.tsx",
+          "action": "modify",
+          "diff": "--- a/src/components/Button.tsx\n+++ b/src/components/Button.tsx\n@@ -1,5 +1,6 @@\n import React from 'react';\n+import { ButtonProps } from './types';\n \n-export const Button = ({ children, onClick }) => {\n+export const Button: React.FC<ButtonProps> = ({ children, onClick, disabled = false }) => {\n   return (\n-    <button onClick={onClick}>\n+    <button onClick={onClick} disabled={disabled}>\n       {children}\n     </button>\n   );\n };"
+        }
+      ],
+      "summary": "Added TypeScript types and disabled prop to Button component"
+    },
+    "result_card": {
+      "status": "success",
+      "files_modified": 1,
+      "tests_passed": true,
+      "lint_clean": true
+    }
+  },
+  "notes": "Successfully added TypeScript types to Button component with proper prop interface",
+  "metadata": {
+    "execution_time_ms": 1250,
+    "tokens_used": 850,
+    "cost_usd": 0.02
+  }
+}

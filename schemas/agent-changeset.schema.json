@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/agent-changeset.schema.json",
+  "title": "AgentChangeset",
+  "type": "object",
+  "required": ["files"],
+  "properties": {
+    "files": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "action"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "^(?!.*\\.\\.)[\\/\\w\\-\\.]+$"
+          },
+          "action": { "type": "string", "enum": ["add", "modify", "delete"] },
+          "content": { "type": "string" },
+          "patch": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": false
+}

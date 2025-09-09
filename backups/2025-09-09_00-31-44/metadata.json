@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "created_at": "2025-09-09T00:31:45.043Z",
+  "scope": "runs",
+  "tenants": ["default", "test-tenant-29e3ceb1", "test-tenant-e74a9a5d"],
+  "statistics": {
+    "file_count": 1,
+    "total_size": 13,
+    "total_size_mb": 0
+  },
+  "environment": {
+    "node_version": "v20.19.5",
+    "platform": "win32",
+    "hostname": "JonZ_Laptop"
+  },
+  "files": [
+    {
+      "path": "runs/tenants/test-tenant-e74a9a5d/test-backup/artifact.json",
+      "size": 13,
+      "modified": "2025-09-09T00:31:44.954Z"
+    }
+  ]
+}

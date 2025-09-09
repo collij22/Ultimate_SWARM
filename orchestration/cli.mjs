@@ -64,6 +64,20 @@ Commands:
   package <AUV-ID>                                Create distribution bundle for AUV
   report <AUV-ID>                                 Generate HTML report from manifest
   deliver <AUV-ID>                                Full delivery pipeline (run → package → report)
+
+Engine Commands (Durable Execution):
+  engine start [--tenant <ID>] [--concurrency N]  Start worker for queue processing
+  engine enqueue <graph.yaml> [--tenant <ID>]     Submit job to queue
+  engine status [--tenant <ID>] [--job <ID>]      Show queue/job status
+  engine pause                                    Pause queue processing
+  engine resume                                   Resume queue processing
+  engine cancel --job <ID>                        Cancel a specific job
+  engine list [--state <state>]                   List jobs by state
+  engine metrics                                   Show queue metrics
+  engine monitor                                   Monitor queue events (live)
+  engine emit-status                              Generate status report
+  engine backup [runs|dist|both] [--tenant <ID>]  Create backup archive
+
   help                                             Show this help message
 
 Examples:
@@ -80,6 +94,13 @@ Examples:
   node orchestration/cli.mjs package AUV-0005
   node orchestration/cli.mjs report AUV-0005
   node orchestration/cli.mjs deliver AUV-0005
+
+Engine Examples:
+  node orchestration/cli.mjs engine start --concurrency 5
+  node orchestration/cli.mjs engine enqueue orchestration/graph/projects/demo-01.yaml --tenant acme-corp
+  node orchestration/cli.mjs engine status --job run_graph-default-123456
+  node orchestration/cli.mjs engine list --state active
+  node orchestration/cli.mjs engine backup runs --tenant acme-corp
 
 Environment Variables:
   STAGING_URL    Staging server URL (default: http://127.0.0.1:3000)
@@ -182,7 +203,32 @@ async function main() {
       }
     }
 
-    console.error('Usage: node orchestration/cli.mjs validate <brief|auv> <target>');
+    // Phase 9: validate agent output
+    if (subCommand === 'agent-output') {
+      const file = target;
+      if (!file) {
+        console.error('Usage: node orchestration/cli.mjs validate agent-output <file.json>');
+        process.exit(2);
+      }
+      try {
+        const { validateAgentOutputFile, writeValidationReport } = await import(
+          './lib/agent_output_validator.mjs'
+        );
+        const result = validateAgentOutputFile(file);
+        if (!result.ok) {
+          const report = writeValidationReport(result.errors);
+          console.error('❌ Agent output validation failed. See:', report);
+          process.exit(501);
+        }
+        console.log('✅ Agent output valid');
+        process.exit(0);
+      } catch (err) {
+        console.error('Validator error:', err.message);
+        process.exit(1);
+      }
+    }
+
+    console.error('Usage: node orchestration/cli.mjs validate <brief|auv|agent-output> <target>');
     process.exit(2);
   }
 
@@ -450,6 +496,67 @@ async function main() {
     }
   }
 
+  // Phase 9: knowledge index build
+  if (command === 'knowledge') {
+    const sub = args[1];
+    if (sub === 'build-index') {
+      try {
+        const { buildKnowledgeIndex } = await import('./lib/knowledge_indexer.mjs');
+        const out = buildKnowledgeIndex();
+        console.log('✅ Knowledge index built at:', out);
+        process.exit(0);
+      } catch (err) {
+        console.error('Knowledge index error:', err.message);
+        process.exit(502);
+      }
+    }
+    console.error('Usage: node orchestration/cli.mjs knowledge build-index');
+    process.exit(2);
+  }
+
+  // Phase 9: agents evaluation
+  if (command === 'agents') {
+    const sub = args[1];
+    if (sub === 'score') {
+      const agentIdx = args.indexOf('--agent');
+      if (agentIdx === -1 || !args[agentIdx + 1]) {
+        console.error('Usage: node orchestration/cli.mjs agents score --agent <ID>');
+        process.exit(2);
+      }
+      const agentId = args[agentIdx + 1];
+      try {
+        const { evaluateAgent } = await import('./agents/evaluator.mjs');
+        const { outPath, scorecard } = await evaluateAgent({ agentId });
+        console.log('✅ Scorecard written to:', outPath);
+        console.log('Average score:', scorecard.summary.avg_score.toFixed(2));
+        process.exit(scorecard.summary.avg_score >= 0.85 ? 0 : 503);
+      } catch (err) {
+        console.error('Agent scoring error:', err.message);
+        process.exit(503);
+      }
+    }
+    console.error('Usage: node orchestration/cli.mjs agents score --agent <ID>');
+    process.exit(2);
+  }
+
+  // Phase 9: spend aggregation
+  if (command === 'observability') {
+    const sub = args[1];
+    if (sub === 'spend') {
+      try {
+        const { aggregateSpend } = await import('./observability/spend_aggregator.mjs');
+        const out = aggregateSpend();
+        console.log('✅ Spend report at:', out);
+        process.exit(0);
+      } catch (err) {
+        console.error('Spend aggregation error:', err.message);
+        process.exit(1);
+      }
+    }
+    console.error('Usage: node orchestration/cli.mjs observability spend');
+    process.exit(2);
+  }
+
   // Handle graph-from-backlog command
   if (command === 'graph-from-backlog') {
     const backlogPath = args[1];
@@ -496,6 +603,265 @@ async function main() {
       console.error(`[cli] Graph compilation error: ${error.message}`);
       process.exit(201);
     }
+  }
+
+  // Handle engine commands for durable execution (Phase 8)
+  if (command === 'engine') {
+    const subCommand = args[1];
+
+    if (!subCommand || subCommand === 'help') {
+      console.log('Engine Commands (Durable Execution):');
+      console.log('  engine start [--tenant <ID>] [--concurrency N]  - Start worker');
+      console.log('  engine enqueue <graph.yaml> [--tenant <ID>]     - Submit job to queue');
+      console.log('  engine status [--tenant <ID>] [--job <ID>]      - Show status');
+      console.log('  engine pause                                    - Pause queue');
+      console.log('  engine resume                                   - Resume queue');
+      console.log('  engine cancel --job <ID>                        - Cancel job');
+      console.log('  engine list [--state <state>]                   - List jobs');
+      console.log('  engine metrics                                   - Show metrics');
+      console.log('  engine monitor                                   - Monitor events');
+      console.log('  engine emit-status                              - Generate status report');
+      console.log('  engine backup [runs|dist|both] [--tenant <ID>]  - Create backup');
+      process.exit(0);
+    }
+
+    // Start worker
+    if (subCommand === 'start') {
+      const { startWorker } = await import('./engine/bullmq/worker.mjs');
+      const { printConfig } = await import('./engine/bullmq/config.mjs');
+
+      const tenantIdx = args.indexOf('--tenant');
+      const concurrencyIdx = args.indexOf('--concurrency');
+
+      if (tenantIdx > -1) {
+        process.env.DEFAULT_TENANT = args[tenantIdx + 1];
+      }
+
+      if (concurrencyIdx > -1) {
+        process.env.ENGINE_CONCURRENCY = args[concurrencyIdx + 1];
+      }
+
+      try {
+        printConfig();
+        await startWorker();
+        // Worker runs indefinitely - this line should never be reached
+        // unless the worker exits cleanly
+        return;
+      } catch (error) {
+        console.error('[engine] Failed to start worker:', error.message);
+        process.exit(401); // Redis unavailable
+      }
+      return; // Ensure we don't fall through to "Unknown subcommand"
+    }
+
+    // Enqueue job
+    if (subCommand === 'enqueue') {
+      const graphFile = args[2];
+      if (!graphFile) {
+        console.error('Usage: engine enqueue <graph.yaml> [--tenant <ID>] [--resume <RUN-ID>]');
+        process.exit(2);
+      }
+
+      const { enqueueJob } = await import('./engine/bullmq/enqueue.mjs');
+
+      const tenantIdx = args.indexOf('--tenant');
+      const resumeIdx = args.indexOf('--resume');
+      const priorityIdx = args.indexOf('--priority');
+      const tokenIdx = args.indexOf('--auth-token');
+
+      const jobData = {
+        type: 'run_graph',
+        graph_file: graphFile,
+        tenant: tenantIdx > -1 ? args[tenantIdx + 1] : 'default',
+        resume: resumeIdx > -1,
+        run_id: resumeIdx > -1 ? args[resumeIdx + 1] : undefined,
+        priority: priorityIdx > -1 ? parseInt(args[priorityIdx + 1]) : 50,
+      };
+
+      try {
+        const options = {};
+        if (tokenIdx > -1) options.authToken = args[tokenIdx + 1];
+        const result = await enqueueJob(jobData, options);
+        console.log('\n✅ Job enqueued:');
+        console.log(`  Job ID: ${result.jobId}`);
+        console.log(`  Run ID: ${result.runId}`);
+        console.log(`  Tenant: ${result.tenant}`);
+        console.log(`  Status: ${result.status}`);
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Failed to enqueue:', error.message);
+        process.exit(405); // Permission denied or validation error
+      }
+    }
+
+    // Queue status
+    if (subCommand === 'status') {
+      const { getQueueStatus, getJob } = await import('./engine/bullmq/admin.mjs');
+
+      const jobIdx = args.indexOf('--job');
+
+      try {
+        if (jobIdx > -1) {
+          const jobId = args[jobIdx + 1];
+          const job = await getJob(jobId);
+          console.log('Job Details:', JSON.stringify(job, null, 2));
+        } else {
+          const status = await getQueueStatus();
+          console.log('Queue Status:', JSON.stringify(status, null, 2));
+        }
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Status error:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Pause queue
+    if (subCommand === 'pause') {
+      const { pauseQueue } = await import('./engine/bullmq/admin.mjs');
+
+      try {
+        await pauseQueue();
+        console.log('✅ Queue paused');
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Failed to pause:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Resume queue
+    if (subCommand === 'resume') {
+      const { resumeQueue } = await import('./engine/bullmq/admin.mjs');
+
+      try {
+        await resumeQueue();
+        console.log('✅ Queue resumed');
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Failed to resume:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Cancel job
+    if (subCommand === 'cancel') {
+      const jobIdx = args.indexOf('--job');
+      if (jobIdx === -1 || !args[jobIdx + 1]) {
+        console.error('Usage: engine cancel --job <ID>');
+        process.exit(2);
+      }
+
+      const { cancelJob } = await import('./engine/bullmq/admin.mjs');
+      const jobId = args[jobIdx + 1];
+
+      try {
+        await cancelJob(jobId);
+        console.log(`✅ Job ${jobId} cancelled`);
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Failed to cancel:', error.message);
+        process.exit(407); // Cancelled by user
+      }
+    }
+
+    // List jobs
+    if (subCommand === 'list') {
+      const { listJobs } = await import('./engine/bullmq/admin.mjs');
+
+      const stateIdx = args.indexOf('--state');
+      const states = stateIdx > -1 ? [args[stateIdx + 1]] : undefined;
+
+      try {
+        const jobs = await listJobs(states);
+        console.log(`Found ${jobs.length} jobs:`);
+        for (const job of jobs) {
+          console.log(`  ${job.id} [${job.state}] - ${job.data.graph_file} (${job.data.tenant})`);
+        }
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] List error:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Get metrics
+    if (subCommand === 'metrics') {
+      const { getMetrics } = await import('./engine/bullmq/admin.mjs');
+
+      try {
+        const metrics = await getMetrics();
+        console.log('Queue Metrics:', JSON.stringify(metrics, null, 2));
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Metrics error:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Monitor events
+    if (subCommand === 'monitor') {
+      const { monitorQueue } = await import('./engine/bullmq/admin.mjs');
+
+      try {
+        await monitorQueue((event) => {
+          console.log(`[${event.timestamp}] ${event.event}:`, event.jobId || '');
+        });
+        // Runs indefinitely
+      } catch (error) {
+        console.error('[engine] Monitor error:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Emit status report
+    if (subCommand === 'emit-status') {
+      const { writeStatusReport } = await import('./engine/status_aggregator.mjs');
+
+      try {
+        const path = await writeStatusReport();
+        console.log(`✅ Status report written to: ${path}`);
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Status error:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Create backup
+    if (subCommand === 'backup') {
+      const { createBackup } = await import('./ops/backup.mjs');
+
+      const scope = args[2] || 'both';
+      const tenantIdx = args.indexOf('--tenant');
+      const tenant = tenantIdx > -1 ? args[tenantIdx + 1] : null;
+
+      try {
+        const backup = await createBackup(scope, { tenant });
+        if (backup) {
+          console.log('✅ Backup created:');
+          console.log(`  ID: ${backup.id}`);
+          console.log(`  Path: ${backup.path}`);
+          if (backup.archive) {
+            console.log(
+              `  Archive: ${backup.archive.fileCount} files, ${Math.round((backup.archive.size / 1024 / 1024) * 100) / 100} MB`,
+            );
+          }
+          if (backup.s3) {
+            console.log(`  S3: s3://${backup.s3.bucket}/${backup.s3.key}`);
+          }
+        }
+        process.exit(0);
+      } catch (error) {
+        console.error('[engine] Backup error:', error.message);
+        process.exit(1);
+      }
+    }
+
+    // Unknown subcommand
+    console.error(`Unknown engine subcommand: ${subCommand}`);
+    console.error('Run "node orchestration/cli.mjs engine help" for usage');
+    process.exit(2);
   }
 
   // Default: treat as AUV ID for backwards compatibility

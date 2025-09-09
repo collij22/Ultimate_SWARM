@@ -11,7 +11,7 @@
 import fs from 'fs';
 import path from 'path';
 import { chromium } from 'playwright';
-import yaml from 'js-yaml';
+import { parse as parseYaml } from 'yaml';
 
 class VisualCapture {
   constructor() {
@@ -81,7 +81,7 @@ class VisualCapture {
     }
 
     const content = fs.readFileSync(configPath, 'utf-8');
-    const config = yaml.load(content);
+    const config = parseYaml(content);
 
     if (!config.visual || !config.visual.routes) {
       console.log(`[visual-capture] No visual routes defined for ${auvId}`);

@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "schemas/agent-output.schema.json",
+  "title": "AgentOutput",
+  "type": "object",
+  "required": ["version", "ts", "agent_id", "capabilities", "ok"],
+  "properties": {
+    "version": { "type": "string", "enum": ["1.0"] },
+    "ts": { "type": "number" },
+    "agent_id": { "type": "string", "minLength": 1 },
+    "capabilities": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "outputs": {
+      "type": "object",
+      "properties": {
+        "changeset": { "$ref": "./agent-changeset.schema.json" },
+        "result_card": { "type": "object" },
+        "attachments": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "escalation": { "$ref": "./agent-escalation.schema.json" },
+    "notes": { "type": "string" },
+    "ok": { "type": "boolean" },
+    "metadata": { "type": "object", "additionalProperties": true }
+  },
+  "additionalProperties": false
+}
