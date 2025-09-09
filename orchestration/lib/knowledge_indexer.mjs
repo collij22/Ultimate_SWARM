@@ -92,7 +92,8 @@ export function buildKnowledgeIndex({
 
 export function loadKnowledgeIndex(indexFile = 'reports/knowledge/index.json') {
   const abs = path.join(projectRoot, indexFile);
-  if (!fs.existsSync(abs))
+  if (!fs.existsSync(abs)) {
     return { version: '1.0', generated_at: null, root: null, count: 0, items: [] };
+  }
   return JSON.parse(fs.readFileSync(abs, 'utf8'));
 }
