@@ -47,8 +47,9 @@ describe('Tool Executor Tenant Paths', () => {
 
     // Verify all artifacts are in tenant path
     for (const artifact of result.artifacts) {
+      const normalizedArtifact = artifact.replace(/\\/g, '/');
       assert.ok(
-        artifact.includes(`runs/tenants/${tenant}/crawl_demo`),
+        normalizedArtifact.includes(`runs/tenants/${tenant}/crawl_demo`),
         `Artifact ${artifact} should be in tenant path`,
       );
       assert.ok(fs.existsSync(artifact), `Artifact ${artifact} should exist`);
@@ -76,8 +77,9 @@ describe('Tool Executor Tenant Paths', () => {
 
     // Verify all artifacts are in tenant path
     for (const artifact of result.artifacts) {
+      const normalizedArtifact = artifact.replace(/\\/g, '/');
       assert.ok(
-        artifact.includes(`runs/tenants/${tenant}/payments_demo`),
+        normalizedArtifact.includes(`runs/tenants/${tenant}/payments_demo`),
         `Artifact ${artifact} should be in tenant path`,
       );
       assert.ok(fs.existsSync(artifact), `Artifact ${artifact} should exist`);
@@ -113,8 +115,9 @@ describe('Tool Executor Tenant Paths', () => {
 
     // Verify all artifacts are in tenant path
     for (const artifact of result.artifacts) {
+      const normalizedArtifact = artifact.replace(/\\/g, '/');
       assert.ok(
-        artifact.includes(`runs/tenants/${tenant}/db_demo`),
+        normalizedArtifact.includes(`runs/tenants/${tenant}/db_demo`),
         `Artifact ${artifact} should be in tenant path`,
       );
       assert.ok(fs.existsSync(artifact), `Artifact ${artifact} should exist`);
@@ -149,8 +152,9 @@ describe('Tool Executor Tenant Paths', () => {
 
     // Verify artifact is in tenant path
     const wavPath = result.artifacts[0];
+    const normalizedWavPath = wavPath.replace(/\\/g, '/');
     assert.ok(
-      wavPath.includes(`runs/tenants/${tenant}/tts_cloud_demo`),
+      normalizedWavPath.includes(`runs/tenants/${tenant}/tts_cloud_demo`),
       `Artifact ${wavPath} should be in tenant path`,
     );
     assert.ok(fs.existsSync(wavPath), `Artifact ${wavPath} should exist`);
