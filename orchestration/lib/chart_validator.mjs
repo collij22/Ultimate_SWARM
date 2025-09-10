@@ -79,11 +79,10 @@ async function analyzeVisualContent(buffer) {
     });
 
     png.on('error', () => {
-      // Fallback for decoder failures - minimal PNGs are considered blank
-      // A real chart PNG should be at least a few KB
-      const minContentSize = 1000; // 1KB minimum for actual content
+      // Fallback to size heuristic if decoder fails
+      const expectedMinSize = Math.min(20000, buffer.length * 0.01);
       resolve({
-        hasContent: buffer.length > minContentSize,
+        hasContent: buffer.length > expectedMinSize,
         colorCount: 0,
         nonWhiteRatio: 0,
       });

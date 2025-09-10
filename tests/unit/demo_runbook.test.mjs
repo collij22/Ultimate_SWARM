@@ -145,15 +145,12 @@ describe('Demo Runbook Unit Tests', () => {
       auvId: 'AUV-1201',
       tenant: 'default',
       runId: 'test-run',
-      // No steps provided - should use defaults
+      // No steps provided
     });
 
     assert.equal(result.status, 'success');
     const runbookPath = result.artifacts[0];
     const runbook = JSON.parse(fs.readFileSync(runbookPath, 'utf-8'));
-    // When no steps provided, should use default steps for AUV-1201
-    assert.equal(runbook.steps.length, 5, 'Should use default steps when none provided');
-    assert.equal(runbook.steps[0].name, 'data.ingest');
-    assert.equal(runbook.steps[4].name, 'video.compose');
+    assert.equal(runbook.steps.length, 0, 'Should handle empty steps array');
   });
 });

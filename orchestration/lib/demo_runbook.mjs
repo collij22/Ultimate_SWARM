@@ -50,10 +50,6 @@ export async function generateDemoRunbook(params) {
     ok: true,
     duration_ms: 1000,
     timestamp: new Date().toISOString(),
-    description:
-      auvId === 'AUV-1201'
-        ? 'Data-to-Video Analytics Pipeline Demo'
-        : 'SEO Audit and Reporting Pipeline Demo',
     steps: runbookSteps.map((step) => ({
       name: step,
       ok: true,
@@ -98,7 +94,7 @@ export async function generateDemoRunbook(params) {
 
   return {
     status: 'success',
-    message: `Demo runbook generated for ${auvId}`,
+    message: `Demo runbook created for ${auvId}`,
     artifacts: [summaryPath],
     metadata: {
       auv_id: auvId,

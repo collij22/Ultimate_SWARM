@@ -148,7 +148,7 @@ export async function executeDataIngest(params) {
   const manifestPath = path.join(dataDir, 'checksum_manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-  console.log(`[data.ingest] Data ingested successfully`);
+  console.log('[data.ingest] Data ingested successfully');
   console.log(`[data.ingest] Artifacts written to: ${dataDir}`);
 
   return {

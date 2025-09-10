@@ -16,7 +16,6 @@ The demo mode serves several purposes:
 ## Affected AUVs
 
 Demo mode currently affects only these specific AUVs:
-
 - **AUV-1201**: Data-to-Video Analytics Pipeline
 - **AUV-1202**: SEO Audit and Reporting Pipeline
 
@@ -52,7 +51,6 @@ export DEMO_MODE=false
 ### When DEMO_MODE is Enabled
 
 For AUV-1201 and AUV-1202 only:
-
 1. The `demo_runbook` node in the DAG will generate a runbook summary
 2. The runbook will be saved to `runs/AUV-<ID>/result-cards/runbook-summary.json`
 3. The runbook includes:
@@ -91,7 +89,6 @@ The demo runbook generation is handled by the `demo_runbook` node in the DAG, wh
    - Artifact inventory
 
 Example runbook structure:
-
 ```json
 {
   "auv_id": "AUV-1201",
@@ -115,12 +112,10 @@ Example runbook structure:
 ## Testing
 
 The demo runbook generation is tested in:
-
 - `tests/unit/demo_runbook.test.mjs` - Unit tests for the runbook module
 - `tests/integration/packaging-e2e.test.mjs` - E2E tests including demo mode
 
 To run tests:
-
 ```bash
 # Run unit test
 node --test tests/unit/demo_runbook.test.mjs
@@ -141,7 +136,6 @@ TEST_MODE=true node --test tests/integration
 ### Runbook Not Generated
 
 Check that:
-
 1. `DEMO_MODE` or `TEST_MODE` is set to `true`
 2. You're running AUV-1201 or AUV-1202
 3. The DAG includes a `demo_runbook` node
@@ -150,7 +144,6 @@ Check that:
 ### Runbook Location
 
 Runbooks are saved to:
-
 ```
 runs/<AUV-ID>/result-cards/runbook-summary.json
 ```
@@ -160,7 +153,6 @@ If the directory doesn't exist, it will be created automatically.
 ## Future Enhancements
 
 Potential future improvements:
-
 - Support for additional demo AUVs
 - Configurable runbook formats (HTML, Markdown)
 - Integration with reporting dashboard
