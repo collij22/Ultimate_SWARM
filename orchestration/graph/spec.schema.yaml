@@ -20,6 +20,10 @@ properties:
     pattern: '^[a-zA-Z0-9-_]+$'
     description: 'Unique identifier for this graph/project'
 
+  description:
+    type: string
+    description: 'Human-readable description of the graph'
+
   nodes:
     type: array
     description: 'List of nodes in the graph'
@@ -78,10 +82,30 @@ properties:
               type: string
             task:
               type: string
+            goal:
+              type: string
             allowlist:
               type: array
               items:
                 type: string
+            capability:
+              type: string
+              description: 'Target capability for this task'
+            input:
+              type: object
+              description: 'Input specification for the capability'
+            input_spec:
+              type: object
+              description: 'Alternative input specification'
+            secondary_consent:
+              type: boolean
+              description: 'Consent for Secondary tool usage'
+            test_mode:
+              type: boolean
+              description: 'Force test mode execution'
+            hints:
+              type: object
+              description: 'Hints for tool selection (e.g., scale)'
 
             # Work simulation params (for testing)
             label:
@@ -102,6 +126,12 @@ properties:
         requires:
           type: array
           description: 'Node IDs that must complete before this node'
+          items:
+            type: string
+
+        outputs:
+          type: array
+          description: 'Expected output artifacts from this node'
           items:
             type: string
 

@@ -14,7 +14,9 @@
         "maxSteps": { "type": "integer", "minimum": 1 },
         "maxSeconds": { "type": "integer", "minimum": 1 },
         "maxCostUsd": { "type": "number", "minimum": 0 },
-        "testMode": { "type": "boolean" }
+        "testMode": { "type": "boolean" },
+        "secondaryConsent": { "type": "boolean" },
+        "consentToken": { "type": "string" }
       },
       "additionalProperties": false
     },

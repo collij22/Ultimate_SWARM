@@ -428,7 +428,15 @@ class NodeExecutors {
           },
         };
 
-        const res = await runSubagent({ role_id: roleId, goal, context });
+        // Pass secondary consent from node params or environment
+        const secondaryConsent =
+          Boolean(node.params?.secondary_consent) || process.env.SECONDARY_CONSENT === 'true';
+        const options = {
+          testMode: process.env.TEST_MODE === 'true',
+          secondaryConsent: secondaryConsent,
+        };
+
+        const res = await runSubagent({ role_id: roleId, goal, context, options });
 
         // Phase 10b-3: execute tool_requests via router + tool executor
         if (res?.result?.response?.tool_requests?.length) {
@@ -443,7 +451,7 @@ class NodeExecutors {
           for (const tr of res.result.response.tool_requests) {
             const cap = tr.capability;
             const budgetUsd = tr.constraints?.max_cost_usd ?? 0.05;
-            const secondaryConsent = process.env.SECONDARY_CONSENT === 'true';
+            // secondaryConsent already defined above and passed to runSubagent
 
             const router = planTools({
               agentId: roleId,
@@ -453,6 +461,7 @@ class NodeExecutors {
               env: process.env,
               registry,
               policies,
+              hints: node.params?.hints || {},
             });
 
             appendToHooks({
@@ -476,10 +485,17 @@ class NodeExecutors {
               capabilities: p.capabilities,
             }));
 
+            // Defense-in-depth: flatten nested input structures
+            const flattenedInput = tr.input_spec?.input ?? tr.input_spec ?? {};
+            const normalizedRequest = {
+              ...tr,
+              input_spec: flattenedInput,
+            };
+
             const execOut = await executeToolRequest({
               tenant: this.tenant,
               runId: this.runId,
-              toolRequest: tr,
+              toolRequest: normalizedRequest,
               selectedTools,
             });
 
@@ -526,9 +542,9 @@ class NodeExecutors {
     const capability = node.params?.capability;
     const agent = node.params?.agent;
     const task = node.params?.task;
-    
+
     console.log(`[agent_task] ${node.id}: Capability=${capability}, Agent=${agent}, Task=${task}`);
-    
+
     // Emit observability event for deterministic execution
     if (mode === 'hybrid' || process.env.HOOKS_MODE) {
       try {
@@ -539,85 +555,165 @@ class NodeExecutors {
           mode: 'deterministic',
           capability,
           reason: engine === 'deterministic' ? 'Selected by engine selector' : 'Fallback',
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         });
       } catch {
         // Observability is optional, don't fail if it errors
       }
     }
-    
+
     // Execute based on capability
     let result;
-    
+
     try {
       switch (capability) {
         case 'data.ingest': {
-          const { executeDataIngest } = await import('../lib/deterministic/data_ingest_executor.mjs');
+          const { executeDataIngest } = await import(
+            '../lib/deterministic/data_ingest_executor.mjs'
+          );
           result = await executeDataIngest({
             input: node.params?.input || 'tests/fixtures/sample-data.csv',
             tenant: this.tenant,
-            runId: this.runId
+            runId: this.runId,
           });
           break;
         }
-        
+
         case 'data.insights': {
-          const { executeDataInsights } = await import('../lib/deterministic/data_insights_executor.mjs');
+          const { executeDataInsights } = await import(
+            '../lib/deterministic/data_insights_executor.mjs'
+          );
           result = await executeDataInsights({
             tenant: this.tenant,
-            runId: this.runId
+            runId: this.runId,
           });
           break;
         }
-        
+
         case 'chart.render': {
-          const { executeChartRender } = await import('../lib/deterministic/chart_render_executor.mjs');
+          const { executeChartRender } = await import(
+            '../lib/deterministic/chart_render_executor.mjs'
+          );
           result = await executeChartRender({
             tenant: this.tenant,
-            runId: this.runId
+            runId: this.runId,
+            charts: node.params?.input?.charts,
           });
           break;
         }
-        
+
         case 'audio.tts': {
           const { executeAudioTTS } = await import('../lib/deterministic/audio_tts_executor.mjs');
           result = await executeAudioTTS({
             text: node.params?.text,
             tenant: this.tenant,
-            runId: this.runId
+            runId: this.runId,
           });
           break;
         }
-        
+
         case 'video.compose': {
-          const { executeVideoCompose } = await import('../lib/deterministic/video_compose_executor.mjs');
+          const { executeVideoCompose } = await import(
+            '../lib/deterministic/video_compose_executor.mjs'
+          );
           result = await executeVideoCompose({
             tenant: this.tenant,
-            runId: this.runId
+            runId: this.runId,
           });
           break;
         }
-        
+
         case 'seo.audit': {
           const { executeSEOAudit } = await import('../lib/deterministic/seo_audit_executor.mjs');
           result = await executeSEOAudit({
             url: node.params?.url,
             tenant: this.tenant,
-            runId: this.runId
+            runId: this.runId,
           });
           break;
         }
-        
+
         case 'doc.generate': {
-          const { executeDocGenerate } = await import('../lib/deterministic/doc_generate_executor.mjs');
+          const { executeDocGenerate } = await import(
+            '../lib/deterministic/doc_generate_executor.mjs'
+          );
           result = await executeDocGenerate({
-            format: node.params?.format || 'both',
+            template: node.params?.input?.template || node.params?.template || 'seo_report',
+            format: node.params?.input?.format || node.params?.format || 'both',
             tenant: this.tenant,
-            runId: this.runId
+            runId: this.runId,
+            dataPath: node.params?.input?.data,
+            scriptPath: node.params?.input?.script,
+            composePath: node.params?.input?.compose_data,
+            videoPath: node.params?.input?.video_path,
+            connectivityPath: node.params?.input?.connectivity,
+            roundtripPath: node.params?.input?.roundtrip,
+            schemaPath: node.params?.input?.schema,
+            content: node.params?.input?.content,
           });
           break;
         }
-        
+
+        case 'payments.test': {
+          // Use tool executor for TEST_MODE payments
+          const { executeToolRequest } = await import('../lib/tool_executor.mjs');
+          result = await executeToolRequest({
+            tenant: this.tenant,
+            runId: this.runId,
+            toolRequest: {
+              capability: 'payments.test',
+              input_spec: node.params?.input || {},
+            },
+            selectedTools: [{ tool_id: 'stripe', capabilities: ['payments.test'] }],
+          });
+          break;
+        }
+
+        case 'cloud.db': {
+          // Use tool executor for TEST_MODE cloud database
+          const { executeToolRequest } = await import('../lib/tool_executor.mjs');
+          result = await executeToolRequest({
+            tenant: this.tenant,
+            runId: this.runId,
+            toolRequest: {
+              capability: 'cloud.db',
+              input_spec: node.params?.input || {},
+            },
+            selectedTools: [{ tool_id: 'supabase', capabilities: ['cloud.db'] }],
+          });
+          break;
+        }
+
+        case 'audio.tts.cloud': {
+          // Use tool executor for TEST_MODE cloud TTS
+          const { executeToolRequest } = await import('../lib/tool_executor.mjs');
+          result = await executeToolRequest({
+            tenant: this.tenant,
+            runId: this.runId,
+            toolRequest: {
+              capability: 'audio.tts.cloud',
+              input_spec: node.params?.input || {},
+            },
+            selectedTools: [{ tool_id: 'tts-cloud', capabilities: ['audio.tts.cloud'] }],
+          });
+          break;
+        }
+
+        case 'web.crawl': {
+          // Use tool executor for TEST_MODE web crawl
+          const { executeToolRequest } = await import('../lib/tool_executor.mjs');
+          result = await executeToolRequest({
+            tenant: this.tenant,
+            runId: this.runId,
+            toolRequest: {
+              capability: 'web.crawl',
+              input_spec: node.params?.input || {},
+            },
+            selectedTools: [{ tool_id: 'firecrawl', capabilities: ['web.crawl'] }],
+          });
+          break;
+        }
+
         default: {
           // Fallback for unknown capabilities
           console.log(`[agent_task] No deterministic executor for capability: ${capability}`);
@@ -630,20 +726,17 @@ class NodeExecutors {
             status: 'success',
             message: `Placeholder for ${capability}`,
             artifacts: [resultPath],
-            metadata: { capability, node: node.id }
+            metadata: { capability, node: node.id },
           };
-          fs.writeFileSync(
-            resultPath,
-            JSON.stringify(result, null, 2)
-          );
+          fs.writeFileSync(resultPath, JSON.stringify(result, null, 2));
         }
       }
-      
+
       // Emit result event with cost estimates for Phase 13
       if ((mode === 'hybrid' || process.env.HOOKS_MODE) && result) {
         try {
           const { appendToHooks } = await import('../../mcp/router.mjs');
-          
+
           appendToHooks({
             event: 'ExecutionResult',
             node_id: node.id,
@@ -652,7 +745,7 @@ class NodeExecutors {
             artifacts: result.artifacts || [],
             cost_estimate_usd: 0, // Deterministic execution is free
             duration_ms: result.duration_ms || 0,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           });
         } catch {
           // Observability is optional, don't fail
@@ -662,10 +755,10 @@ class NodeExecutors {
       console.error(`[agent_task] Error executing ${capability}: ${error.message}`);
       throw new GraphRunnerError(
         `Deterministic executor failed for ${capability}: ${error.message}`,
-        'EXECUTOR_FAILED'
+        'EXECUTOR_FAILED',
       );
     }
-    
+
     // Save result
     if (result) {
       const resultPath = tenantPath(this.tenant, `agents/${node.id}/result.json`);
@@ -675,15 +768,19 @@ class NodeExecutors {
       }
       fs.writeFileSync(
         resultPath,
-        JSON.stringify({
-          ...result,
-          node: node.id,
-          capability,
-          timestamp: new Date().toISOString()
-        }, null, 2)
+        JSON.stringify(
+          {
+            ...result,
+            node: node.id,
+            capability,
+            timestamp: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
       );
     }
-    
+
     return result || { status: 'success', message: 'Agent task executed' };
   }
 
@@ -809,15 +906,15 @@ class NodeExecutors {
 
     try {
       const { generateDemoRunbook } = await import('../lib/demo_runbook.mjs');
-      
+
       // Collect steps from previous nodes in the graph
       const steps = node.params?.steps || [];
-      
+
       const result = await generateDemoRunbook({
         auvId: auv,
         tenant: this.tenant,
         runId: this.runId,
-        steps
+        steps,
       });
 
       if (result.status === 'skipped') {
@@ -1322,7 +1419,7 @@ if (
 
   const runner = new GraphRunner({
     concurrency,
-    runId: resumeId || process.env.RUN_ID,  // Support RUN_ID from environment
+    runId: resumeId || process.env.RUN_ID, // Support RUN_ID from environment
   });
 
   try {

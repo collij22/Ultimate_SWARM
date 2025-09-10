@@ -1,0 +1,66 @@
+# Cloud Database Demo (Phase 13)
+# Tests Supabase Secondary tool for cloud DB operations
+version: '1.0'
+project_id: cloud-db-demo
+description: Cloud database connectivity and operations demo
+concurrency: 2
+
+nodes:
+  - id: connect
+    type: agent_task
+    params:
+      capability: cloud.db
+      input:
+        check: connectivity
+        host: 'demo.supabase.co'
+        database: 'test_db'
+      secondary_consent: true # Required for Supabase
+      test_mode: true # Required for cloud_db
+
+  - id: roundtrip
+    type: agent_task
+    requires: [connect]
+    params:
+      capability: cloud.db
+      input:
+        check: roundtrip
+        query: 'SELECT version(), current_timestamp'
+      secondary_consent: true
+      test_mode: true
+
+  - id: schema
+    type: agent_task
+    requires: [roundtrip]
+    params:
+      capability: cloud.db
+      input:
+        operation: create_schema
+        schema_name: demo_schema
+        tables:
+          - name: users
+            columns:
+              - { name: id, type: serial, primary: true }
+              - { name: email, type: varchar(255), unique: true }
+              - { name: created_at, type: timestamp }
+      secondary_consent: true
+      test_mode: true
+
+  - id: report
+    type: agent_task
+    requires: [schema]
+    params:
+      capability: doc.generate
+      input:
+        template: database_report
+        connectivity: runs/tenants/default/db_demo/connectivity.json
+        roundtrip: runs/tenants/default/db_demo/roundtrip.json
+        schema: runs/tenants/default/db_demo/schema.json
+# Metadata:
+# - requires_test_mode: true  # Mandatory for cloud_db
+# - estimated_cost_usd: 0.15
+# - secondary_tools: [supabase]
+# - acceptance:
+#   - Connectivity check passes with status 'connected'
+#   - Roundtrip query executes successfully
+#   - Schema operations complete without errors
+#   - Status report generated

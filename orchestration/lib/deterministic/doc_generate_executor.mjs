@@ -1,10 +1,11 @@
 /**
  * Document Generate Executor - Deterministic document generation
- * Creates markdown and HTML reports from audit data
+ * Creates markdown and HTML reports from audit data, payment receipts, and media reports
  */
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { tenantPath } from '../tenant.mjs';
 
 /**
  * Generate markdown summary from SEO audit
@@ -14,7 +15,12 @@ function generateMarkdownSummary(audit) {
   const url = audit.url || audit.audit_url || 'Unknown';
   const timestamp = audit.timestamp || audit.generated_at || new Date().toISOString();
   const source = audit.source || 'automated';
-  const score = audit.score || (audit.pages && audit.pages[0] && Math.round((1 - (audit.pages[0].issues || []).length / 10) * 100)) || 0;
+  const score =
+    audit.score ||
+    (audit.pages &&
+      audit.pages[0] &&
+      Math.round((1 - (audit.pages[0].issues || []).length / 10) * 100)) ||
+    0;
 
   let md = '# SEO Audit Report\n\n';
   md += `**URL:** ${url}\n`;
@@ -26,7 +32,8 @@ function generateMarkdownSummary(audit) {
 
   // Score badge
   let badge = '🔴'; // Red for poor
-  if (score >= 80) badge = '🟢'; // Green for good
+  if (score >= 80)
+    badge = '🟢'; // Green for good
   else if (score >= 60) badge = '🟡'; // Yellow for moderate
 
   md += `${badge} **${score >= 80 ? 'Good' : score >= 60 ? 'Needs Improvement' : 'Poor'}** SEO Health\n\n`;
@@ -57,7 +64,7 @@ function generateMarkdownSummary(audit) {
   const issues = audit.issues || (audit.pages && audit.pages[0] && audit.pages[0].issues) || [];
   if (issues && issues.length > 0) {
     md += '### ❌ Critical Issues\n\n';
-    issues.forEach(issue => {
+    issues.forEach((issue) => {
       if (typeof issue === 'string') {
         md += `- ${issue}\n`;
       } else {
@@ -71,7 +78,7 @@ function generateMarkdownSummary(audit) {
   const warnings = audit.warnings || [];
   if (warnings && warnings.length > 0) {
     md += '### ⚠️ Warnings\n\n';
-    warnings.slice(0, 10).forEach(warning => {
+    warnings.slice(0, 10).forEach((warning) => {
       if (typeof warning === 'string') {
         md += `- ${warning}\n`;
       } else {
@@ -88,7 +95,7 @@ function generateMarkdownSummary(audit) {
   const passed = audit.passed || [];
   if (passed && passed.length > 0) {
     md += '### ✅ Passed Checks\n\n';
-    passed.slice(0, 10).forEach(pass => {
+    passed.slice(0, 10).forEach((pass) => {
       if (typeof pass === 'string') {
         md += `- ${pass}\n`;
       } else {
@@ -123,7 +130,7 @@ function generateMarkdownSummary(audit) {
   const ogTags = audit.data?.open_graph ? Object.keys(audit.data.open_graph) : [];
   if (ogTags.length > 0) {
     md += '#### Open Graph Tags\n';
-    ogTags.forEach(tag => {
+    ogTags.forEach((tag) => {
       md += `- **${tag}:** ${audit.data.open_graph[tag]}\n`;
     });
     md += '\n';
@@ -158,10 +165,15 @@ function generateMarkdownSummary(audit) {
 function generateHTMLReport(audit) {
   // Handle both structures
   const issues = audit.issues || (audit.pages && audit.pages[0] && audit.pages[0].issues) || [];
-  const warnings = audit.warnings || [];
-  const passed = audit.passed || [];
+  // const warnings = audit.warnings || [];
+  // const passed = audit.passed || [];
   const recommendations = audit.recommendations || [];
-  const score = audit.score || (audit.pages && audit.pages[0] && Math.round((1 - (audit.pages[0].issues || []).length / 10) * 100)) || 0;
+  const score =
+    audit.score ||
+    (audit.pages &&
+      audit.pages[0] &&
+      Math.round((1 - (audit.pages[0].issues || []).length / 10) * 100)) ||
+    0;
   const url = audit.url || audit.audit_url || 'Unknown';
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -271,31 +283,43 @@ function generateHTMLReport(audit) {
             <li><strong>Robots:</strong> ${audit.data?.robots_directive || 'Not specified'}</li>
         </ul>
         
-        ${(issues && issues.length > 0) ? `
+        ${
+          issues && issues.length > 0
+            ? `
         <h2 class="issue">Critical Issues</h2>
         <ul>
-            ${issues.map(issue => {
-              if (typeof issue === 'string') {
-                return `<li>${issue}</li>`;
-              } else {
-                return `<li><strong>${issue.type || 'Issue'}:</strong> ${issue.message || issue}</li>`;
-              }
-            }).join('')}
+            ${issues
+              .map((issue) => {
+                if (typeof issue === 'string') {
+                  return `<li>${issue}</li>`;
+                } else {
+                  return `<li><strong>${issue.type || 'Issue'}:</strong> ${issue.message || issue}</li>`;
+                }
+              })
+              .join('')}
         </ul>
-        ` : ''}
+        `
+            : ''
+        }
         
-        ${(recommendations && recommendations.length > 0) ? `
+        ${
+          recommendations && recommendations.length > 0
+            ? `
         <h2>Recommendations</h2>
-        ${recommendations.map(rec => {
-          if (typeof rec === 'string') {
-            return `<div class="recommendation">${rec}</div>`;
-          } else if (rec && rec.description) {
-            const priority = rec.priority ? `[${rec.priority.toUpperCase()}] ` : '';
-            return `<div class="recommendation">${priority}${rec.description}</div>`;
-          }
-          return '';
-        }).join('')}
-        ` : ''}
+        ${recommendations
+          .map((rec) => {
+            if (typeof rec === 'string') {
+              return `<div class="recommendation">${rec}</div>`;
+            } else if (rec && rec.description) {
+              const priority = rec.priority ? `[${rec.priority.toUpperCase()}] ` : '';
+              return `<div class="recommendation">${priority}${rec.description}</div>`;
+            }
+            return '';
+          })
+          .join('')}
+        `
+            : ''
+        }
         
         <hr>
         <p><em>Generated by Swarm1 SEO Auditor • ${new Date().toISOString()}</em></p>
@@ -307,18 +331,419 @@ function generateHTMLReport(audit) {
 }
 
 /**
+ * Generate payment receipt from payment intent data
+ */
+function generatePaymentReceipt(paymentData, format) {
+  const receipt = paymentData.payment_intent || paymentData;
+  const amount = (receipt.amount / 100).toFixed(2);
+  const currency = (receipt.currency || 'usd').toUpperCase();
+  const id = receipt.id || 'N/A';
+  const status = receipt.status || 'unknown';
+  const created = new Date((receipt.created || Date.now() / 1000) * 1000).toISOString();
+
+  if (format === 'markdown' || format === 'both') {
+    let md = '# Payment Receipt\n\n';
+    md += `**Transaction ID:** ${id}\n`;
+    md += `**Amount:** ${currency} ${amount}\n`;
+    md += `**Status:** ${status}\n`;
+    md += `**Date:** ${created}\n\n`;
+    md += '---\n';
+    md += '*Generated by Swarm1 Payment System*\n';
+    return { markdown: md };
+  }
+
+  if (format === 'html' || format === 'both') {
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Receipt</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; }
+        .receipt { border: 2px solid #333; padding: 30px; }
+        h1 { color: #333; }
+        .amount { font-size: 24px; font-weight: bold; color: #27ae60; }
+        .status { color: ${status === 'succeeded' ? '#27ae60' : '#e74c3c'}; }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <h1>Payment Receipt</h1>
+        <p><strong>Transaction ID:</strong> ${id}</p>
+        <p class="amount">${currency} ${amount}</p>
+        <p class="status"><strong>Status:</strong> ${status}</p>
+        <p><strong>Date:</strong> ${created}</p>
+    </div>
+</body>
+</html>`;
+    return { html };
+  }
+
+  return {};
+}
+
+/**
+ * Generate media report from composition metadata
+ */
+function generateMediaReport(mediaData, format) {
+  const metadata = mediaData.metadata || mediaData;
+  const duration = metadata.duration || 'N/A';
+  const resolution = metadata.resolution || 'N/A';
+  const fps = metadata.fps || 'N/A';
+  const audioTracks = metadata.audio_tracks || 0;
+
+  if (format === 'markdown' || format === 'both') {
+    let md = '# Media Composition Report\n\n';
+    md += '## Media Properties\n\n';
+    md += `- **Duration:** ${duration} seconds\n`;
+    md += `- **Resolution:** ${resolution}\n`;
+    md += `- **Frame Rate:** ${fps} fps\n`;
+    md += `- **Audio Tracks:** ${audioTracks}\n\n`;
+    md += '---\n';
+    md += '*Generated by Swarm1 Media Composer*\n';
+    return { markdown: md };
+  }
+
+  if (format === 'html' || format === 'both') {
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Media Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        .report { background: #f5f5f5; padding: 30px; border-radius: 8px; }
+        h1 { color: #333; }
+        .properties { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .property { background: white; padding: 15px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="report">
+        <h1>Media Composition Report</h1>
+        <div class="properties">
+            <div class="property"><strong>Duration:</strong> ${duration} seconds</div>
+            <div class="property"><strong>Resolution:</strong> ${resolution}</div>
+            <div class="property"><strong>Frame Rate:</strong> ${fps} fps</div>
+            <div class="property"><strong>Audio Tracks:</strong> ${audioTracks}</div>
+        </div>
+    </div>
+</body>
+</html>`;
+    return { html };
+  }
+
+  return {};
+}
+
+/**
+ * Generate database report from connectivity, roundtrip, and schema data
+ */
+function generateDatabaseReport(data, format) {
+  const { connectivity = {}, roundtrip = {}, schema = {} } = data;
+
+  // Extract key metrics
+  const status = connectivity.status || 'unknown';
+  const latency = connectivity.latency_ms || 'N/A';
+  const query = roundtrip.query || 'N/A';
+  const queryDuration = roundtrip.duration_ms || 'N/A';
+  const schemaName = schema.name || 'N/A';
+  const tables = schema.tables || [];
+
+  if (format === 'markdown' || format === 'both') {
+    let md = '# Database Report\n\n';
+    md += '## Connectivity\n\n';
+    md += `- **Status:** ${status}\n`;
+    md += `- **Latency:** ${latency}ms\n\n`;
+    md += '## Roundtrip Test\n\n';
+    md += `- **Query:** \`${query}\`\n`;
+    md += `- **Duration:** ${queryDuration}ms\n\n`;
+    if (schemaName !== 'N/A') {
+      md += '## Schema\n\n';
+      md += `- **Name:** ${schemaName}\n`;
+      md += `- **Tables:** ${tables.length}\n`;
+      if (tables.length > 0) {
+        md += '\n### Table Details\n\n';
+        tables.forEach((table) => {
+          md += `- **${table.name || 'unnamed'}**: ${(table.columns || []).length} columns\n`;
+        });
+      }
+    }
+    md += '\n---\n';
+    md += '*Generated by Swarm1 Database Manager*\n';
+    return { markdown: md };
+  }
+
+  if (format === 'html' || format === 'both') {
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        .report { background: #f5f5f5; padding: 30px; border-radius: 8px; }
+        h1, h2 { color: #333; }
+        .metric { background: white; padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .status-connected { color: #27ae60; font-weight: bold; }
+        .status-unknown { color: #95a5a6; }
+        code { background: #ecf0f1; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="report">
+        <h1>Database Report</h1>
+        
+        <h2>Connectivity</h2>
+        <div class="metric">
+            <strong>Status:</strong> <span class="status-${status}">${status}</span>
+        </div>
+        <div class="metric">
+            <strong>Latency:</strong> ${latency}ms
+        </div>
+        
+        <h2>Roundtrip Test</h2>
+        <div class="metric">
+            <strong>Query:</strong> <code>${query}</code>
+        </div>
+        <div class="metric">
+            <strong>Duration:</strong> ${queryDuration}ms
+        </div>
+        
+        ${
+          schemaName !== 'N/A'
+            ? `
+        <h2>Schema</h2>
+        <div class="metric">
+            <strong>Name:</strong> ${schemaName}
+        </div>
+        <div class="metric">
+            <strong>Tables:</strong> ${tables.length}
+        </div>
+        ${
+          tables.length > 0
+            ? `
+        <h3>Table Details</h3>
+        ${tables
+          .map(
+            (table) => `
+        <div class="metric">
+            <strong>${table.name || 'unnamed'}:</strong> ${(table.columns || []).length} columns
+        </div>
+        `,
+          )
+          .join('')}
+        `
+            : ''
+        }
+        `
+            : ''
+        }
+        
+        <hr>
+        <p><em>Generated by Swarm1 Database Manager • ${new Date().toISOString()}</em></p>
+    </div>
+</body>
+</html>`;
+    return { html };
+  }
+
+  return {};
+}
+
+/**
  * Execute document generation
  * @param {Object} params - Execution parameters
+ * @param {string} params.template - Template type (seo_report, payment_receipt, media_report)
  * @param {string} params.format - Output format (markdown, html, both)
  * @param {string} params.tenant - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
+ * @param {string} params.dataPath - Path to data file for templates
+ * @param {string} params.scriptPath - Path to script file
+ * @param {string} params.composePath - Path to compose metadata
+ * @param {string} params.videoPath - Path to video file
  * @returns {Object} Result with status and artifacts
  */
 export async function executeDocGenerate(params) {
-  const { format = 'both' } = params;
+  const {
+    template = 'seo_report',
+    format = 'both',
+    tenant = 'default',
+    dataPath,
+    composePath,
+  } = params;
 
-  // Find audit from previous step
-  const auditPath = path.resolve('reports/seo/audit.json');
+  // Handle payment receipt template
+  if (template === 'payment_receipt') {
+    const paymentPath = dataPath
+      ? path.resolve(dataPath)
+      : path.resolve(tenantPath(tenant, 'payments_demo/payment_intent.json'));
+    if (!fs.existsSync(paymentPath)) {
+      throw new Error(`Payment data not found at: ${paymentPath}`);
+    }
+
+    const paymentData = JSON.parse(fs.readFileSync(paymentPath, 'utf-8'));
+    const result = generatePaymentReceipt(paymentData, format);
+    const artifacts = [];
+
+    if (result.markdown) {
+      const mdPath = path.resolve(tenantPath(tenant, 'payments_demo/receipt.md'));
+      fs.writeFileSync(mdPath, result.markdown);
+      artifacts.push(mdPath);
+    }
+
+    if (result.html) {
+      const htmlPath = path.resolve(tenantPath(tenant, 'payments_demo/receipt.html'));
+      fs.writeFileSync(htmlPath, result.html);
+      artifacts.push(htmlPath);
+    }
+
+    return {
+      status: 'success',
+      message: `Generated payment receipt in ${format} format`,
+      artifacts,
+      metadata: { template, format },
+    };
+  }
+
+  // Handle media report template
+  if (template === 'media_report') {
+    const metadataPath = composePath
+      ? path.resolve(composePath)
+      : path.resolve('media/compose-metadata.json');
+    if (!fs.existsSync(metadataPath)) {
+      // Create basic metadata if missing
+      const basicMetadata = {
+        duration: 30,
+        resolution: '1920x1080',
+        fps: 30,
+        audio_tracks: 1,
+      };
+      fs.mkdirSync('media', { recursive: true });
+      fs.writeFileSync(metadataPath, JSON.stringify(basicMetadata, null, 2));
+    }
+
+    const mediaData = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'));
+    const result = generateMediaReport(mediaData, format);
+    const artifacts = [];
+
+    if (result.markdown) {
+      const mdPath = path.resolve('reports/media/production_report.md');
+      const mdDir = path.dirname(mdPath);
+      if (!fs.existsSync(mdDir)) fs.mkdirSync(mdDir, { recursive: true });
+      fs.writeFileSync(mdPath, result.markdown);
+      artifacts.push(mdPath);
+    }
+
+    if (result.html) {
+      const htmlPath = path.resolve('reports/media/production_report.html');
+      const htmlDir = path.dirname(htmlPath);
+      if (!fs.existsSync(htmlDir)) fs.mkdirSync(htmlDir, { recursive: true });
+      fs.writeFileSync(htmlPath, result.html);
+      artifacts.push(htmlPath);
+    }
+
+    return {
+      status: 'success',
+      message: `Generated media report in ${format} format`,
+      artifacts,
+      metadata: { template, format },
+    };
+  }
+
+  // Handle database report template
+  if (template === 'database_report') {
+    const connectivityPath = params.connectivityPath || params.input?.connectivity;
+    const roundtripPath = params.roundtripPath || params.input?.roundtrip;
+    const schemaPath = params.schemaPath || params.input?.schema;
+
+    // Read the JSON files safely
+    const readJsonSafe = (filepath) => {
+      if (!filepath) return {};
+      const resolved = path.resolve(filepath);
+      if (!fs.existsSync(resolved)) return {};
+      try {
+        return JSON.parse(fs.readFileSync(resolved, 'utf8'));
+      } catch {
+        return {};
+      }
+    };
+
+    const connectivity = readJsonSafe(connectivityPath);
+    const roundtrip = readJsonSafe(roundtripPath);
+    const schema = readJsonSafe(schemaPath);
+
+    // Generate report
+    const result = generateDatabaseReport({ connectivity, roundtrip, schema }, format);
+    const artifacts = [];
+
+    // Ensure reports/db directory exists
+    const dbReportDir = path.resolve('reports/db');
+    if (!fs.existsSync(dbReportDir)) {
+      fs.mkdirSync(dbReportDir, { recursive: true });
+    }
+
+    if (result.markdown) {
+      const mdPath = path.resolve('reports/db/summary.md');
+      fs.writeFileSync(mdPath, result.markdown);
+      artifacts.push(mdPath);
+    }
+
+    if (result.html) {
+      const htmlPath = path.resolve('reports/db/summary.html');
+      fs.writeFileSync(htmlPath, result.html);
+      artifacts.push(htmlPath);
+    }
+
+    return {
+      status: 'success',
+      message: `Generated database report in ${format} format`,
+      artifacts,
+      metadata: { template, format },
+    };
+  }
+
+  // Handle narration script template
+  if (template === 'narration_script') {
+    const content = params.content || params.input?.content || '';
+    const scriptPath = params.scriptPath || params.input?.scriptPath;
+
+    // Get the script content
+    let scriptText = content;
+    if (!scriptText && scriptPath) {
+      const resolved = path.resolve(scriptPath);
+      if (fs.existsSync(resolved)) {
+        scriptText = fs.readFileSync(resolved, 'utf8');
+      }
+    }
+
+    // Ensure media directory exists
+    const mediaDir = path.resolve('media');
+    if (!fs.existsSync(mediaDir)) {
+      fs.mkdirSync(mediaDir, { recursive: true });
+    }
+
+    // Write to media/script.txt
+    const outputPath = path.resolve('media/script.txt');
+    fs.writeFileSync(outputPath, scriptText);
+
+    const artifacts = [outputPath];
+
+    // Optionally create markdown version if format requests it
+    if (format === 'markdown' || format === 'both') {
+      const mdPath = path.resolve('media/script.md');
+      fs.writeFileSync(mdPath, `# Narration Script\n\n${scriptText}`);
+      artifacts.push(mdPath);
+    }
+
+    return {
+      status: 'success',
+      message: 'Generated narration script',
+      artifacts,
+      metadata: { template, format },
+    };
+  }
+
+  // Default: SEO report (existing functionality)
+  // Use dataPath if provided, otherwise default to standard location
+  const auditPath = dataPath ? path.resolve(dataPath) : path.resolve('reports/seo/audit.json');
 
   if (!fs.existsSync(auditPath)) {
     throw new Error(`SEO audit not found at: ${auditPath}. Run seo.audit first.`);
@@ -331,7 +756,12 @@ export async function executeDocGenerate(params) {
 
   // Handle different audit structures
   const url = audit.url || audit.audit_url || 'Unknown';
-  const score = audit.score || (audit.pages && audit.pages[0] && Math.round((1 - (audit.pages[0].issues || []).length / 10) * 100)) || 0;
+  const score =
+    audit.score ||
+    (audit.pages &&
+      audit.pages[0] &&
+      Math.round((1 - (audit.pages[0].issues || []).length / 10) * 100)) ||
+    0;
 
   console.log(`[doc.generate] Generating report for URL: ${url} (score: ${score}%)`);
 

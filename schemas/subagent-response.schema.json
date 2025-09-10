@@ -26,6 +26,7 @@
           "capability": { "type": "string", "minLength": 1 },
           "purpose": { "type": "string", "minLength": 1 },
           "input_spec": { "type": "object" },
+          "hints": { "type": "object" },
           "expected_artifacts": {
             "type": "array",
             "items": { "type": "string", "pattern": "^runs/" }

@@ -522,3 +522,15 @@ tools:
       usd: 0.05
     side_effects: [network, file_write]
     description: Hosted Postgres/storage for demos; gated by consent/budget.
+
+  tts-cloud:
+    name: Cloud TTS MCP
+    tier: secondary
+    capabilities: [audio.tts.cloud]
+    requires_api_key: true
+    api_key_env: TTS_CLOUD_API_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.05
+    side_effects: [network, file_write]
+    description: Cloud TTS (generic adapter; TEST_MODE only; providers pluggable).

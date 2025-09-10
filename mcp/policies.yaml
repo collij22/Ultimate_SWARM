@@ -28,17 +28,17 @@ tiers:
       firecrawl: 0.10
       stripe: 0.10
       supabase: 0.10
+      tts-cloud: 0.10
 
 # Global environment safety
 safety:
   allow_production_mutations: false
   require_test_mode_for:
     - payments
-    - external_search
     - web.search
-    - external_crawl
-    - cloud_db
-    - tts.cloud
+    - web.crawl
+    - cloud.db
+    - audio.tts.cloud
     - email
   redact_logs:
     - api_keys
@@ -117,12 +117,14 @@ capability_map:
   nlp.translate: [argos-translate]
   payments.test: [stripe]
   cloud.db: [supabase]
+  audio.tts.cloud: [tts-cloud]
 
 # Agent-level allowlists (used by router for filtering)
 agents:
   allowlist:
     A1.orchestrator: [playwright, lighthouse, http, semgrep, gitleaks, ref, brave-search, fetch]
-    A2.requirements_analyst: [refdocs, ref, brave-search, fetch]
+    A2.requirements_analyst:
+      [refdocs, ref, brave-search, fetch, stripe, supabase, firecrawl, tts-cloud, crawler-lite]
     A3.capability_validator: [playwright, lighthouse, http]
     A4.user_robot: [playwright, http]
     A5.finalizer_integrator: [zip, checksum]
@@ -142,6 +144,7 @@ agents:
         pandoc,
         argos-translate,
         crawler-lite,
+        firecrawl,
         tts-piper,
         ffmpeg,
         ref,
@@ -150,15 +153,26 @@ agents:
       ]
     B8.frontend_specialist:
       [playwright, lighthouse, bundle-analyzer, visual-compare, chart-renderer, imagemagick]
-    B9.backend_api_integrator: [http, postgres, latency-sampler, explain, duckdb]
+    B9.backend_api_integrator: [http, postgres, latency-sampler, explain, duckdb, supabase]
     B10.database_expert: [postgres, explain, duckdb]
     B11.ai_ml_specialist: [http, traces]
     B12.documentation_writer: [refdocs, ref, fetch]
     C13.quality_guardian:
-      [playwright, lighthouse, http, visual-compare, seo-auditor, crawler-lite, report-lite, fetch]
+      [
+        playwright,
+        lighthouse,
+        http,
+        visual-compare,
+        seo-auditor,
+        crawler-lite,
+        report-lite,
+        fetch,
+        firecrawl,
+      ]
     C14.debugger: [traces, explain, depgraph]
     C15.security_auditor: [semgrep, gitleaks, checkov, trivy]
-    C16.devops_engineer: [kubectl, helm, docker-buildx, vercel]
+    C16.devops_engineer:
+      [kubectl, helm, docker-buildx, vercel, firecrawl, stripe, supabase, tts-cloud]
 
   budgets:
     A1.orchestrator:

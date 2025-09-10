@@ -1,0 +1,48 @@
+# SEO Audit Large Site Demo (Phase 13)
+# Tests firecrawl Secondary tool for large-scale crawling
+version: '1.0'
+project_id: seo-audit-large
+description: SEO audit for large site using Secondary crawl capability
+concurrency: 3
+
+nodes:
+  - id: crawl
+    type: agent_task
+    params:
+      capability: web.crawl
+      hints:
+        crawl:
+          max_pages: 500
+          depth: 3
+      input:
+        url: 'http://127.0.0.1:3000'
+        max_pages: 500
+        depth: 3
+        rate_limit: 10
+      secondary_consent: true # Required for firecrawl
+      test_mode: true
+    outputs:
+      - runs/tenants/default/crawl_demo/urls.json
+      - runs/tenants/default/crawl_demo/graph.json
+
+  - id: audit
+    type: agent_task
+    requires: [crawl]
+    params:
+      capability: seo.audit
+      input:
+        crawl_data: runs/tenants/default/crawl_demo/urls.json
+    outputs:
+      - reports/seo/audit.json
+      - reports/seo/summary.md
+
+  - id: report
+    type: agent_task
+    requires: [audit]
+    params:
+      capability: doc.generate
+      input:
+        template: seo_report
+        data: reports/seo/audit.json
+    outputs:
+      - reports/seo/report.html

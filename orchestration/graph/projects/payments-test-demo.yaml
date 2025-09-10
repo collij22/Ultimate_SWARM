@@ -1,0 +1,38 @@
+# Payments Test Mode Demo (Phase 13)
+# Tests Stripe Secondary tool in test mode
+version: '1.0'
+project_id: payments-test-demo
+description: Payment flow validation using Stripe test mode
+concurrency: 2
+
+nodes:
+  - id: payment
+    type: agent_task
+    params:
+      capability: payments.test
+      input:
+        amount: 1999 # $19.99 in cents
+        currency: usd
+        description: 'Test payment for AUV demo'
+        customer_email: 'test@example.com'
+      secondary_consent: true # Required for Stripe
+      test_mode: true # Mandatory for payments
+    outputs:
+      - runs/payments_demo/payment_intent.json
+      - runs/payments_demo/charge.json
+
+  - id: report
+    type: agent_task
+    requires: [payment]
+    params:
+      capability: doc.generate
+      input:
+        template: payment_receipt
+        format: both
+        data: runs/tenants/default/payments_demo/payment_intent.json
+    outputs:
+      - runs/tenants/default/payments_demo/receipt.html
+      - runs/tenants/default/payments_demo/receipt.md
+
+edges:
+  - [payment, report]

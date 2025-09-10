@@ -196,6 +196,95 @@ async function checkPerformanceBudgets(auvId) {
   return results;
 }
 
+// Phase 13: Secondary tool artifact validation (capability-aware)
+async function checkSecondaryArtifacts(auvId, tenant) {
+  const results = {
+    passed: true,
+    messages: [],
+  };
+
+  // Check for web.crawl (firecrawl) artifacts
+  const crawlUrlsPath = tenantPath(tenant, 'crawl_demo/urls.json');
+  const crawlGraphPath = tenantPath(tenant, 'crawl_demo/graph.json');
+  if (fs.existsSync(crawlUrlsPath) || fs.existsSync(crawlGraphPath)) {
+    if (fs.existsSync(crawlUrlsPath)) {
+      const urls = readJsonSafe(crawlUrlsPath);
+      if (Array.isArray(urls) && urls.length > 0) {
+        results.messages.push(`Web Crawl: ${urls.length} URLs discovered`);
+      } else if (urls) {
+        results.messages.push('Web Crawl: Invalid URL list format');
+      }
+    }
+    if (fs.existsSync(crawlGraphPath)) {
+      const graph = readJsonSafe(crawlGraphPath);
+      if (graph?.nodes && graph?.edges) {
+        results.messages.push(
+          `Web Crawl: Graph with ${graph.nodes.length} nodes, ${graph.edges.length} edges`,
+        );
+      }
+    }
+  }
+
+  // Check for payments.test (stripe) artifacts
+  const paymentIntentPath = tenantPath(tenant, 'payments_demo/payment_intent.json');
+  const chargePath = tenantPath(tenant, 'payments_demo/charge.json');
+  if (fs.existsSync(paymentIntentPath) || fs.existsSync(chargePath)) {
+    if (fs.existsSync(paymentIntentPath)) {
+      const intent = readJsonSafe(paymentIntentPath);
+      if (intent?.status === 'succeeded') {
+        results.messages.push(
+          `Payments: Intent ${intent.id} succeeded (${intent.currency} ${intent.amount / 100})`,
+        );
+      } else if (intent) {
+        results.passed = false;
+        results.messages.push(`Payments: Intent failed with status ${intent.status}`);
+      }
+    }
+    if (fs.existsSync(chargePath)) {
+      const charge = readJsonSafe(chargePath);
+      if (charge?.paid) {
+        results.messages.push(`Payments: Charge ${charge.id} paid`);
+      }
+    }
+  }
+
+  // Check for cloud.db (supabase) artifacts
+  const connectivityPath = tenantPath(tenant, 'db_demo/connectivity.json');
+  const roundtripPath = tenantPath(tenant, 'db_demo/roundtrip.json');
+  if (fs.existsSync(connectivityPath) || fs.existsSync(roundtripPath)) {
+    if (fs.existsSync(connectivityPath)) {
+      const conn = readJsonSafe(connectivityPath);
+      if (conn?.status === 'connected') {
+        results.messages.push(`Cloud DB: Connected (${conn.latency_ms}ms latency)`);
+      } else if (conn) {
+        results.passed = false;
+        results.messages.push(`Cloud DB: Connection failed - ${conn.status}`);
+      }
+    }
+    if (fs.existsSync(roundtripPath)) {
+      const rt = readJsonSafe(roundtripPath);
+      if (rt?.result && rt?.duration_ms) {
+        results.messages.push(`Cloud DB: Roundtrip successful (${rt.duration_ms}ms)`);
+      }
+    }
+  }
+
+  // Check for audio.tts.cloud artifacts
+  const ttsPath = tenantPath(tenant, 'tts_cloud_demo/narration.wav');
+  if (fs.existsSync(ttsPath)) {
+    const stats = fs.statSync(ttsPath);
+    if (stats.size > 44) {
+      // WAV header is 44 bytes
+      const durationEstimate = Math.round((stats.size - 44) / (44100 * 2)); // Rough estimate
+      results.messages.push(`Cloud TTS: Audio generated (~${durationEstimate}s duration)`);
+    } else {
+      results.messages.push('Cloud TTS: Invalid WAV file');
+    }
+  }
+
+  return results;
+}
+
 // Phase 11: Domain-specific validation
 async function checkDomainArtifacts(auvId, domains, tenant) {
   const results = {
@@ -298,6 +387,15 @@ async function checkDomainArtifacts(auvId, domains, tenant) {
         }
         break;
       }
+    }
+  }
+
+  // Phase 13: Check Secondary tool artifacts if present (capability-aware)
+  const secondaryResults = await checkSecondaryArtifacts(auvId, tenant);
+  if (secondaryResults.messages.length > 0) {
+    results.messages.push(...secondaryResults.messages);
+    if (!secondaryResults.passed) {
+      results.passed = false;
     }
   }
 

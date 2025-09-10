@@ -184,6 +184,125 @@ Notes:
 - `web_search_fetch` honors TEST_MODE and writes deterministic artifacts from a local HTML fixture when API keys are unavailable.
 - CVF strict auto-detects domains (data, charts, seo, media, db) and validates available artifacts; performance budgets are evaluated when Lighthouse data is present.
 
+### Phase 13 — Optional Secondary Integrations (Budget-Gated)
+
+Phase 13 introduces carefully controlled Secondary MCPs (paid/external services) with strict safety measures, consent requirements, and TEST_MODE enforcement.
+
+#### Secondary Tools Available
+
+- **firecrawl** (`web.crawl`): Large-scale site crawling when Primary crawler-lite insufficient
+- **stripe** (`payments.test`): Payment flow validation in strict test mode
+- **supabase** (`cloud.db`): Hosted database for demos/staging
+- **tts-cloud** (`audio.tts.cloud`): Premium text-to-speech voices
+
+#### Safety & Consent
+
+All Secondary tools require:
+
+- `TEST_MODE=true` for restricted categories (payments, external_crawl, cloud_db, tts.cloud)
+- Explicit consent via `secondary_consent: true` or `consent_token`
+- Budget allocation with per-tool overrides
+- Proper API keys (test mode keys only for payments)
+
+#### Hints-Based Selection
+
+The router now supports hints for intelligent Primary vs Secondary selection:
+
+```yaml
+# Example: Large crawl triggers Secondary tool
+nodes:
+  - id: crawl
+    type: agent_task
+    params:
+      capability: web.crawl
+      hints:
+        crawl:
+          max_pages: 500 # > 100 triggers firecrawl
+          depth: 3 # > 2 triggers firecrawl
+      secondary_consent: true
+```
+
+#### Consent Flow
+
+When Secondary tools are proposed without consent:
+
+1. Subagent gateway detects Secondary requirement
+2. Generates structured escalation with cost estimates
+3. Saves to `runs/agents/<role>/<session>/escalation.json`
+4. Returns `secondary_consent_required` error
+5. Re-run with `consent_token` or `secondary_consent: true` to proceed
+
+#### Demo DAGs
+
+Four demonstration graphs exercise Secondary capabilities:
+
+```bash
+# Large-scale SEO audit (firecrawl)
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-large.yaml
+
+# Payment flow validation (Stripe test mode)
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/payments-test-demo.yaml
+
+# Cloud database operations (Supabase)
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/cloud-db-demo.yaml
+
+# Premium TTS with video composition
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/tts-cloud-demo.yaml
+```
+
+#### TEST_MODE Stubs
+
+All Secondary tools have deterministic TEST_MODE stubs:
+
+- **firecrawl**: Generates synthetic URL list and graph
+- **stripe**: Creates test payment_intent with succeeded status
+- **supabase**: Returns connectivity and roundtrip stubs
+- **tts-cloud**: Generates WAV header with silence matching duration
+
+#### CVF Validation
+
+Phase 13 adds capability-aware validation for Secondary artifacts:
+
+- Web crawl: Validates urls.json and graph.json format
+- Payments: Checks payment_intent status and charge.paid
+- Cloud DB: Verifies connectivity and roundtrip success
+- Cloud TTS: Validates WAV format and duration
+
+#### Observability
+
+Secondary tool usage tracked via:
+
+- `ToolDecision` events with tier and consent flags
+- `SecondaryEscalation` events when consent missing
+- Spend ledgers under `runs/observability/ledgers/`
+- Router coverage report includes Secondary decisions
+
+#### Implementation updates (Phase 13 final)
+
+- Doc Generate templates:
+  - `database_report` → reads `runs/tenants/{tenant}/db_demo/{connectivity.json,roundtrip.json,schema.json}` and writes `reports/db/summary.{md,html}`.
+  - `narration_script` → writes `media/script.txt` (and optional `media/script.md`).
+  - Media report now writes to `reports/media/production_report.{md,html}`.
+- Chart rendering accepts direct chart definitions via `params.input.charts`; generates tenant-scoped artifacts under `runs/tenants/{tenant}/{RUN_ID}/charts/`.
+- Claude path hardening:
+  - Subagent synthesized `tool_requests.input_spec` now uses only `node.params.input` (not the entire `params`).
+  - `options.secondaryConsent` is passed through; runner flattens nested `input_spec` prior to execution.
+- Router policy in TEST_MODE:
+  - API key requirement is bypassed for Secondary stubs when `TEST_MODE=true` (keeps planning deterministic without real keys).
+- Allowlist alignment for planning:
+  - `A2.requirements_analyst` allowlist now includes `stripe`, `supabase`, `firecrawl`, `tts-cloud`, `crawler-lite` to enable claude-mode demos.
+- Spend observability:
+  - Ledger entries now include selected `capabilities`; spend aggregator outputs `reports/observability/spend.json` and `reports/observability/secondary_spend.json` with per-capability breakdowns.
+
+#### Knowledge Assets
+
+Detailed recipes available at `.claude/knowledge/capabilities/`:
+
+- `web.crawl-secondary.md` - Firecrawl usage and patterns
+- `payments.test.md` - Stripe test mode integration
+- `cloud.db.md` - Supabase operations and safety
+- `audio.tts.cloud.md` - Premium TTS with SSML support
+
 #### Performance Benefits
 
 With dependency-aware parallel execution:

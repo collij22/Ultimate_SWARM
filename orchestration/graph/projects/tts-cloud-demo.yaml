@@ -1,0 +1,91 @@
+# Cloud TTS + Video Composition Demo (Phase 13)
+# Tests tts-cloud Secondary tool with video composition pipeline
+version: '1.0'
+project_id: tts-cloud-demo
+description: Cloud TTS narration combined with video composition
+concurrency: 2
+
+nodes:
+  - id: script
+    type: agent_task
+    params:
+      capability: doc.generate
+      input:
+        template: narration_script
+        content: |
+          Welcome to the Swarm1 demonstration.
+          This video showcases our cloud text-to-speech capabilities.
+          The narration you're hearing was generated using premium voices.
+          Combined with our video composition pipeline, we can create 
+          professional training materials and presentations automatically.
+    outputs:
+      - media/script.txt
+
+  - id: tts
+    type: agent_task
+    requires: [script]
+    params:
+      capability: audio.tts.cloud
+      input:
+        text_file: media/script.txt
+        voice: en-US-Wavenet-D # Premium voice
+        speed: 1.0
+        pitch: 0
+      secondary_consent: true # Required for tts-cloud
+      test_mode: true # Required for tts.cloud
+    outputs:
+      - runs/tenants/default/tts_cloud_demo/narration.wav
+
+  - id: slides
+    type: agent_task
+    params:
+      capability: chart.render
+      input:
+        charts:
+          - type: title
+            text: 'Swarm1 Cloud TTS Demo'
+          - type: bullet_points
+            title: 'Features'
+            points:
+              - 'Premium voice quality'
+              - 'Multiple language support'
+              - 'Adjustable speed and pitch'
+          - type: bar_chart
+            title: 'Performance Metrics'
+            data:
+              labels: ['Speed', 'Quality', 'Cost']
+              values: [95, 98, 85]
+    outputs:
+      - charts/slide_1.png
+      - charts/slide_2.png
+      - charts/slide_3.png
+
+  - id: video
+    type: agent_task
+    requires: [tts, slides]
+    params:
+      capability: video.compose
+      input:
+        audio: runs/tenants/default/tts_cloud_demo/narration.wav
+        slides:
+          - { image: charts/slide_1.png, duration: 5 }
+          - { image: charts/slide_2.png, duration: 8 }
+          - { image: charts/slide_3.png, duration: 7 }
+        output_format: mp4
+        resolution: 1920x1080
+    outputs:
+      - media/final.mp4
+      - media/compose.json
+
+  - id: report
+    type: agent_task
+    requires: [video]
+    params:
+      capability: doc.generate
+      input:
+        template: media_report
+        script: media/script.txt
+        compose_data: media/compose.json
+        video_path: media/final.mp4
+    outputs:
+      - reports/media/production_report.html

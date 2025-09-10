@@ -27,15 +27,21 @@ node orchestration/cli.mjs AUV-0005
 # Deterministic
 node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --mode deterministic
 
-# Claude subagents (Plan Mode; TEST_MODE recommended for web.search)
+# Claude subagents (Plan Mode; TEST_MODE recommended for Secondary planning)
 set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
 
 # Hybrid (include specific roles)
 set SWARM_MODE=hybrid && set SUBAGENTS_INCLUDE=A2.requirements_analyst,B7.rapid_builder && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
 
-# Demo pipelines (Phase 12)
+# Demo pipelines (Phase 12–13)
 set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
 set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+
+# Secondary demos (Phase 13)
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-large.yaml
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/payments-test-demo.yaml
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/cloud-db-demo.yaml
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/tts-cloud-demo.yaml
 ```
 
 ### Phase 10a — Search & Fetch Proof

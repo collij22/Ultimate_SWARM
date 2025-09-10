@@ -72,3 +72,10 @@ We optimize for **reliability**, **repeatability**, and **low-risk promotion**.
 - MCP routing → **mcp/README.md**, **mcp/registry.yaml**, **mcp/policies.yaml**
 - AUV specs & verification → **capabilities/**, **docs/verify.md**
 - Operations → **docs/runbook.md**, **docs/operate.md**
+
+Phase 13 highlights:
+
+- Optional Secondary integrations with TEST_MODE safety, consent, and budgets (firecrawl, stripe, supabase, tts-cloud)
+- Doc generation templates for DB and narration script; media report standardized under `reports/media/production_report.*`
+- Claude path hardened (proper `input_spec`, consent propagation, hints), and router TEST_MODE bypass for API keys during planning
+- Tenant‑scoped artifacts across all demos; spend ledger includes capabilities and aggregates by capability

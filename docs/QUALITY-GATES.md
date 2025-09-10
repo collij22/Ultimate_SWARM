@@ -99,6 +99,41 @@
 - **Script**: `node orchestration/lib/media_validator.mjs <path>`
 - **Checks**: Duration variance, video dimensions, audio track presence
 
+### 10. Secondary Tool Gates (Phase 13)
+
+Phase 13 introduces capability-aware validation for Secondary (paid/external) tool artifacts:
+
+#### Web Crawl (firecrawl)
+
+- **Validates**: `runs/tenants/{tenant}/crawl_demo/urls.json` and `graph.json`
+- **Checks**: Valid JSON array format, graph nodes/edges structure
+- **TEST_MODE**: Generates deterministic fixture with synthetic URLs
+
+#### Payments Test (Stripe)
+
+- **Validates**: `runs/tenants/{tenant}/payments_demo/payment_intent.json` and `charge.json`
+- **Checks**: payment_intent.status === 'succeeded', charge.paid === true
+- **TEST_MODE**: Synthesizes test payment data with test IDs
+
+#### Cloud DB (Supabase)
+
+- **Validates**: `runs/tenants/{tenant}/db_demo/connectivity.json` and `roundtrip.json`
+- **Checks**: status === 'connected', roundtrip query success
+- **TEST_MODE**: Returns connectivity stub with mock latency
+
+#### Cloud TTS
+
+- **Validates**: `runs/tenants/{tenant}/tts_cloud_demo/narration.wav`
+- **Checks**: Valid WAV format, duration within tolerance
+- **TEST_MODE**: Generates WAV header with silence matching text duration
+
+All Secondary tools require:
+
+- **TEST_MODE=true** for restricted categories (payments, external_crawl, cloud_db, tts.cloud)
+- **Explicit consent** via `secondary_consent: true` or `consent_token`
+- **Budget allocation** with per-tool overrides in policies.yaml
+- **API keys** normally required; in `TEST_MODE=true`, Secondary stubs bypass real key checks in routing for deterministic planning
+
 #### Database Domain (Exit Code 309)
 
 - **Validates**: Migration execution results

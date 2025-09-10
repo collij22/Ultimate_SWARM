@@ -13,6 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Phase 10a: New Primary MCPs `ref` (docs.search/docs.read), `brave-search` (web.search), and extended `fetch` (web.fetch); CLI `search-fetch`; DAG node `web_search_fetch`; router coverage report path.
 - Phase 10b: Tri‑mode orchestration (deterministic/claude/hybrid) with:
 
+### Phase 13: Optional Secondary Integrations (2025-09-10)
+
+#### Added
+
+- Secondary MCP demos and TEST_MODE stubs:
+  - `firecrawl` (web.crawl), `stripe` (payments.test), `supabase` (cloud.db), `tts-cloud` (audio.tts.cloud)
+  - Deterministic executors write tenant‑scoped artifacts under `runs/tenants/{tenant}/...`
+- Doc Generate templates:
+  - `database_report` → `reports/db/summary.{md,html}`
+  - `narration_script` → `media/script.txt` (+ optional `media/script.md`)
+  - Media report now writes to `reports/media/production_report.{md,html}`
+- Chart rendering accepts direct chart definitions via `params.input.charts`; outputs charts under `runs/tenants/{tenant}/{RUN_ID}/charts/`
+- Observability:
+  - Ledger entries include selected `capabilities`; aggregator emits `reports/observability/spend.json` and `reports/observability/secondary_spend.json`
+
+#### Changed
+
+- Subagent gateway synthesizes `tool_requests.input_spec` from `node.params.input`; `hints` preserved; schemas updated to allow `hints` and `secondaryConsent` option
+- DAG runner (claude path) flattens nested `input_spec` before execution; passes `options.secondaryConsent`
+- Router: in `TEST_MODE=true`, bypass API key enforcement for Secondary stubs during planning
+- Policies: `A2.requirements_analyst` allowlist now includes `stripe`, `supabase`, `firecrawl`, `tts-cloud`, `crawler-lite`
+
+#### Documentation
+
+- `docs/ORCHESTRATION.md`: Added Phase 13 implementation updates, templates, claude path notes, spend.
+- `docs/QUALITY-GATES.md`: Updated Secondary validation paths to tenant‑scoped; noted TEST_MODE API key bypass for stubs.
+- `docs/verify.md`: Added Phase 13 verification for all four demos (both modes) and new report paths.
+
 ### Phase 11: Cross‑Domain CVF (2025-09-10)
 
 #### Added

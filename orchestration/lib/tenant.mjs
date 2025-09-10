@@ -52,12 +52,8 @@ export function normalizeTenant(tenant) {
 export function tenantPath(tenant, relativePath, baseDir = 'runs') {
   const normalizedTenant = normalizeTenant(tenant);
 
-  // Default tenant uses original path structure for backward compatibility
-  if (normalizedTenant === 'default') {
-    return path.join(baseDir, relativePath);
-  }
-
-  // Other tenants use namespaced paths
+  // Always use tenant-namespaced paths for Phase 13+ consistency
+  // Even default tenant gets its own namespace
   return path.join(baseDir, 'tenants', normalizedTenant, relativePath);
 }
 

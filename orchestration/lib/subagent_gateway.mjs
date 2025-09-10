@@ -185,11 +185,11 @@ function buildFirstUserMessage(req) {
  *   role_id: string,
  *   goal: string,
  *   context: Record<string, unknown>,
- *   options?: { maxSteps?: number, maxSeconds?: number, maxCostUsd?: number, testMode?: boolean },
+ *   options?: { maxSteps?: number, maxSeconds?: number, maxCostUsd?: number, testMode?: boolean, secondaryConsent?: boolean, consentToken?: string },
  *   session_id?: string,
  * }} request
  * @param {{ adapter?: (input:{system:string, messages:Array<{role:string, content:string}>})=>Promise<{role:'assistant', content:string}> }} [opts]
- * @returns {Promise<{ ok: boolean, errors?: string[], transcript_path: string, steps: number, result?: any }>}
+ * @returns {Promise<{ ok: boolean, errors?: string[], transcript_path: string, steps: number, result?: any, escalation?: any }>}
  */
 export async function runSubagent(request, opts = {}) {
   const errors = [];
@@ -202,6 +202,9 @@ export async function runSubagent(request, opts = {}) {
   const { role_id: roleId, goal } = request;
   const options = { ...getDefaultSubagentOptionsFromEnv(), ...(request.options || {}) };
   const adapter = opts.adapter || defaultAdapter;
+
+  // Check for consent token to authorize Secondary tools
+  const hasSecondaryConsent = options.secondaryConsent || !!options.consentToken;
 
   // Prepare paths
   const sessionId = request.session_id || `SAG-${crypto.randomUUID().slice(0, 8)}`;
@@ -256,7 +259,8 @@ export async function runSubagent(request, opts = {}) {
           {
             capability: String(cap),
             purpose: `auto-synthesized request for ${cap}`,
-            input_spec: /** @type {any} */ (request?.context?.node_context)?.params || {},
+            input_spec: /** @type {any} */ (request?.context?.node_context)?.params?.input || {},
+            hints: /** @type {any} */ (request?.context?.node_context)?.params?.hints || undefined,
             expected_artifacts: [placeholderArtifact],
             constraints: { test_mode: true, max_cost_usd: 0.05, side_effects: [] },
             acceptance: ['expected_artifacts exist'],
@@ -276,6 +280,60 @@ export async function runSubagent(request, opts = {}) {
     }
 
     lastAssistantJson = parsed;
+
+    // Check for Secondary tool proposals without consent
+    let escalation = null;
+    if (!hasSecondaryConsent && parsed.tool_requests && parsed.tool_requests.length > 0) {
+      // Check if any tool_requests require Secondary tools
+      // In a real implementation, we'd check against registry/policies
+      // For now, check for known Secondary capabilities
+      const secondaryCapabilities = ['payments.test', 'cloud.db', 'audio.tts.cloud'];
+      const requiresSecondary = parsed.tool_requests.some(
+        (req) =>
+          secondaryCapabilities.includes(req.capability) ||
+          (req.capability === 'web.crawl' && req.input_spec?.max_pages > 100),
+      );
+
+      if (requiresSecondary) {
+        // Generate escalation per agent-escalation.schema.json
+        escalation = {
+          type: 'escalation',
+          reason: 'secondary_consent_required',
+          description: 'Secondary tools requested without consent',
+          proposed_tools: parsed.tool_requests
+            .filter(
+              (req) =>
+                secondaryCapabilities.includes(req.capability) ||
+                (req.capability === 'web.crawl' && req.input_spec?.max_pages > 100),
+            )
+            .map((req) => ({
+              capability: req.capability,
+              estimated_cost_usd: req.cost_estimate_usd || 0.05,
+              rationale: req.purpose,
+              required_env_keys: [], // Would be populated from registry
+            })),
+          resolution: {
+            option_1: 'Provide consent_token to authorize Secondary tools',
+            option_2: 'Modify requirements to use Primary tools only',
+          },
+          session_id: sessionId,
+        };
+
+        // Save escalation
+        const escalationPath = path.join(agentDir, 'escalation.json');
+        fs.writeFileSync(escalationPath, JSON.stringify(escalation, null, 2));
+
+        await appendHookEvent({
+          event: 'SecondaryEscalation',
+          role_id: roleId,
+          session_id: sessionId,
+          reason: 'secondary_consent_required',
+        });
+
+        errors.push('secondary_consent_required');
+        break; // Exit loop on escalation
+      }
+    }
 
     await appendHookEvent({
       event: 'PlanUpdated',
@@ -320,12 +378,24 @@ export async function runSubagent(request, opts = {}) {
   });
 
   const ok = errors.length === 0 && !!lastAssistantJson;
+
+  // Check if there's an escalation file
+  let escalation = null;
+  const escalationPath = path.join(path.dirname(transcriptPath), 'escalation.json');
+  if (fs.existsSync(escalationPath)) {
+    escalation = JSON.parse(fs.readFileSync(escalationPath, 'utf8'));
+  }
+
   // Persist result summary alongside transcript for convenience
-  const resultPath = path.join(path.dirname(transcriptPath), 'result.json');
+  const resultPath = path.join(path.dirname(transcriptPath), 'result-gateway.json');
   const result = {
     ok,
     errors,
     steps,
+    consent_state: {
+      secondary_consent: hasSecondaryConsent,
+      consent_token: options.consentToken || null,
+    },
     summary: ok
       ? {
           // @ts-ignore - lastAssistantJson is typed as any
@@ -335,10 +405,11 @@ export async function runSubagent(request, opts = {}) {
         }
       : null,
     response: lastAssistantJson || null,
+    escalation: escalation || null,
   };
   fs.writeFileSync(resultPath, JSON.stringify(result, null, 2));
 
-  return { ok, errors, transcript_path: transcriptPath, steps, result };
+  return { ok, errors, transcript_path: transcriptPath, steps, result, escalation };
 }
 
 // Optional CLI for local smoke (no network; dry adapter only)

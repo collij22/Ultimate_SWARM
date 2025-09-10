@@ -28,7 +28,7 @@ Every section is anchored by **AUV-ID** so robots and reviewers can deep-link.
 
 To verify tri‑mode orchestration using the seo-audit demo:
 
-```bash
+````bash
 # Deterministic
 node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 3
 
@@ -40,7 +40,7 @@ set SWARM_MODE=hybrid && set SUBAGENTS_INCLUDE=A2.requirements_analyst,B7.rapid_
 
 ### Phase 12 — Demo Datasets & TEST_MODE
 
-Deterministic demo graphs are provided to exercise the data/media and SEO/reporting pipelines end‑to‑end. In TEST_MODE, networked steps are replaced with local fixtures and budget checks may be skipped if Lighthouse artifacts are not available.
+Deterministic and claude-mode demo graphs are provided to exercise the data/media, SEO/reporting, and Secondary integrations end‑to‑end. In TEST_MODE, networked steps are replaced with local fixtures and the router bypasses real API key checks for Secondary stubs during planning; performance budgets may be skipped if Lighthouse artifacts are not available.
 
 ```bash
 # Data → Insights → Chart → TTS → Video → Package → Report
@@ -51,10 +51,11 @@ set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/pr
 
 # Optional stable RUN_ID for predictable artifact paths
 set RUN_ID=RUN-demo && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
-```
+````
 
 CVF strict auto‑detects domains. In TEST_MODE, performance budgets are evaluated when Lighthouse artifacts exist; otherwise, the budget evaluator records a "skipped" summary and CVF does not fail on missing perf data.
-```
+
+````
 
 Pass if:
 
@@ -64,6 +65,41 @@ Pass if:
   - `runs/agents/<role>/<session>/thread.jsonl`
   - `runs/tenants/default/agents/<node>/result-gateway.json`
   - `runs/tenants/default/agents/<node>/tool_results.json`
+
+### Phase 13 — Secondary Demos (Verification)
+
+Run each Secondary demo in both deterministic and claude modes (Windows examples):
+
+```bash
+# Large-scale SEO audit (firecrawl)
+set TEST_MODE=true && set SWARM_MODE=deterministic && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-large.yaml
+set TEST_MODE=true && set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-large.yaml
+
+# Payments test (Stripe)
+set TEST_MODE=true && set SWARM_MODE=deterministic && node orchestration/graph/runner.mjs orchestration/graph/projects/payments-test-demo.yaml
+set TEST_MODE=true && set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/payments-test-demo.yaml
+
+# Cloud DB (Supabase)
+set TEST_MODE=true && set SWARM_MODE=deterministic && node orchestration/graph/runner.mjs orchestration/graph/projects/cloud-db-demo.yaml
+set TEST_MODE=true && set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/cloud-db-demo.yaml
+
+# Cloud TTS + video compose
+set TEST_MODE=true && set SWARM_MODE=deterministic && node orchestration/graph/runner.mjs orchestration/graph/projects/tts-cloud-demo.yaml
+set TEST_MODE=true && set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/tts-cloud-demo.yaml
+````
+
+Pass if (per demo):
+
+- firecrawl: `runs/tenants/default/crawl_demo/urls.json`, `graph.json`
+- stripe: `runs/tenants/default/payments_demo/payment_intent.json`, `charge.json`
+- supabase: `runs/tenants/default/db_demo/connectivity.json`, `roundtrip.json`, `schema.json`
+- tts-cloud: `runs/tenants/default/tts_cloud_demo/narration.wav`
+
+Doc generation artifacts:
+
+- SEO: `reports/seo/summary.md`, `summary.html` (data from `reports/seo/audit.json`)
+- DB: `reports/db/summary.md`, `summary.html`
+- Media: `reports/media/production_report.md`, `production_report.html`
 
 ---
 

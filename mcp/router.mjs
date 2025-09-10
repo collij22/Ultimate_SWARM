@@ -29,6 +29,7 @@ export function planTools({
   env = {},
   registry,
   policies,
+  hints = {}, // NEW: hints for scale/constraint indication
 }) {
   // Normalize inputs
   const capabilities = [...new Set(requestedCapabilities)]; // dedupe
@@ -94,9 +95,37 @@ export function planTools({
   for (const capability of capabilities) {
     const candidateToolIds = capabilityMap[capability] || [];
 
-    // Reorder candidates if prefer_tier is primary
+    // Check hints to determine if Secondary tools are needed
+    let preferSecondaryForScale = false;
+    if (capability === 'web.crawl' && hints?.crawl) {
+      const { max_pages, depth } = hints.crawl;
+      // Use Secondary if scale exceeds Primary limits
+      if (max_pages > 100 || depth > 2) {
+        preferSecondaryForScale = true;
+        decision.warnings.push(
+          `Scale requirements (max_pages: ${max_pages}, depth: ${depth}) suggest Secondary tool for ${capability}`,
+        );
+      }
+    }
+
+    // Reorder candidates based on tier preference and hints
     let orderedCandidates = [...candidateToolIds];
-    if (preferPrimary) {
+    if (preferSecondaryForScale) {
+      // For scale requirements, prefer Secondary tools first
+      const primaryTools = [];
+      const secondaryTools = [];
+
+      for (const toolId of candidateToolIds) {
+        const tool = registry?.tools?.[toolId];
+        if (tool?.tier === 'primary') {
+          primaryTools.push(toolId);
+        } else {
+          secondaryTools.push(toolId);
+        }
+      }
+
+      orderedCandidates = [...secondaryTools, ...primaryTools]; // Secondary first for scale
+    } else if (preferPrimary) {
       const primaryTools = [];
       const secondaryTools = [];
 
@@ -202,9 +231,11 @@ export function planTools({
         }
       }
 
-      // Check test mode requirements
+      // Check test mode requirements - enhanced enforcement
       if (safety.require_test_mode_for?.length > 0) {
         const requiresTestMode = safety.require_test_mode_for.some((domain) => {
+          // Check if capability matches restricted domain
+          if (capability.includes(domain)) return true;
           // Check if any tool capability contains the restricted domain
           return (tool.capabilities || []).some((cap) => cap.includes(domain));
         });
@@ -212,9 +243,13 @@ export function planTools({
         if (requiresTestMode && env && env['TEST_MODE'] !== 'true') {
           decision.rejected.push({
             tool_id: toolId,
-            reason: 'requires test mode for restricted domain',
+            reason: 'policy_violation: TEST_MODE required for restricted domain',
             capability,
+            policy_requirement: 'TEST_MODE=true',
           });
+          // Update alternatives tracking
+          const alt = decision.alternatives[capability]?.find((a) => a.tool_id === toolId);
+          if (alt) alt.rejection_reason = 'TEST_MODE required';
           continue;
         }
       }
@@ -223,12 +258,17 @@ export function planTools({
       if (tool.requires_api_key) {
         const keyName = tool.api_key_env || `${toolId.toUpperCase()}_API_KEY`;
         if (!env[keyName]) {
-          decision.rejected.push({
-            tool_id: toolId,
-            reason: `missing API key: ${keyName}`,
-            capability,
-          });
-          continue;
+          // In TEST_MODE, bypass API key requirement for stubs
+          if (env.TEST_MODE === 'true') {
+            console.log(`[router] TEST_MODE: bypassing API key check for ${toolId}`);
+          } else {
+            decision.rejected.push({
+              tool_id: toolId,
+              reason: `missing API key: ${keyName}`,
+              capability,
+            });
+            continue;
+          }
         }
       }
 
@@ -552,6 +592,7 @@ export function updateLedger(sessionId, toolPlan) {
     const entry = {
       ts: Date.now() / 1000,
       tool_id: tool.tool_id,
+      capabilities: tool.capabilities || [],
       estimated_cost_usd: tool.estimated_cost_usd || 0,
     };
     appendFileSync(ledgerPath, JSON.stringify(entry) + '\n');
