@@ -15,7 +15,6 @@ nodes:
     type: agent_task
     params:
       capability: data.ingest
-      input: tests/fixtures/sample-data.csv
 
   - id: insights
     type: agent_task
@@ -47,6 +46,8 @@ nodes:
     params:
       auv: AUV-1201
       steps: ['data.ingest', 'data.insights', 'chart.render', 'audio.tts', 'video.compose']
+    env:
+      DEMO_MODE: 'true'
 
   - id: package
     type: package
@@ -59,7 +60,6 @@ nodes:
     requires: [package]
     params:
       auv: AUV-1201
-
 edges:
   - [server, ingest]
   - [ingest, insights]
