@@ -118,7 +118,25 @@ Node types:
 - `lighthouse`: Run performance audit
 - `cvf`: Validate capability artifacts
 - `agent_task`: Placeholder for agent execution
+- `web_search_fetch`: Brave search + fetch first result; writes `runs/websearch_*` artifacts
 - `package`/`report`: Future packaging/reporting
+
+#### Phase 10a Node Example
+
+```yaml
+# orchestration/graph/projects/seo-audit-demo.yaml (excerpt)
+nodes:
+  - id: search
+    type: web_search_fetch
+    params:
+      query: 'ref-tools MCP server'
+      outDir: websearch_demo
+  - id: audit
+    type: agent_task
+    requires: [search]
+    params:
+      capability: seo.audit
+```
 
 #### Performance Benefits
 

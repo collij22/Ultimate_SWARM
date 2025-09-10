@@ -274,7 +274,7 @@ tools:
   fetch:
     name: Fetch MCP
     tier: primary
-    capabilities: [header.csp]
+    capabilities: [header.csp, web.fetch]
     requires_api_key: false
     cost_model:
       type: flat_per_run
@@ -338,3 +338,187 @@ tools:
       usd: 0.02
     side_effects: [file_read, file_write]
     description: OSS license summary for bundles.
+
+  # -------- Documentation & Search (new) --------
+  ref:
+    name: Ref MCP
+    tier: primary
+    capabilities: [docs.search, docs.read]
+    requires_api_key: true
+    api_key_env: REF_API_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [network]
+    description: Token-efficient documentation search and page reader.
+
+  # -------- New Primary (free/local) for data/media/seo/docs/crawl --------
+  duckdb:
+    name: DuckDB MCP
+    tier: primary
+    capabilities: [data.ingest, data.query]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [file_read, file_write]
+    description: Local analytical DB for CSV/Parquet ingest and SQL queries.
+
+  insights:
+    name: Insights MCP
+    tier: primary
+    capabilities: [data.insights]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [file_read, file_write]
+    description: Generate basic aggregates/trends/outliers to insights.json.
+
+  chart-renderer:
+    name: Chart Renderer MCP
+    tier: primary
+    capabilities: [chart.render]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [file_read, file_write]
+    description: Render charts to PNG using Chart.js and node-canvas.
+
+  tts-piper:
+    name: Piper TTS MCP
+    tier: primary
+    capabilities: [audio.tts]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [exec, file_write]
+    description: Offline text-to-speech via Piper; outputs WAV files.
+
+  ffmpeg:
+    name: FFmpeg MCP
+    tier: primary
+    capabilities: [video.compose]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [exec, file_read, file_write]
+    description: Compose/transcode media; build MP4 from slides+audio.
+
+  seo-auditor:
+    name: SEO Auditor MCP
+    tier: primary
+    capabilities: [seo.audit]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [network, file_write]
+    description: Audit titles/meta/canonicals/links/sitemap; output audit.json.
+
+  report-lite:
+    name: Report Lite MCP
+    tier: primary
+    capabilities: [doc.generate]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [file_read, file_write]
+    description: Generate HTML (and optional PDF) from templates and data.
+
+  imagemagick:
+    name: ImageMagick MCP
+    tier: primary
+    capabilities: [image.process]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [exec, file_read, file_write]
+    description: Convert/resize/crop/composite images deterministically.
+
+  pandoc:
+    name: Pandoc MCP
+    tier: primary
+    capabilities: [doc.convert]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [exec, file_read, file_write]
+    description: Robust document conversions between md/html/docx/pdf.
+
+  argos-translate:
+    name: Argos Translate MCP
+    tier: primary
+    capabilities: [nlp.translate]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [exec, file_read, file_write]
+    description: Offline translation using Argos Translate models.
+
+  crawler-lite:
+    name: Crawler Lite MCP
+    tier: primary
+    capabilities: [web.crawl]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [network, file_write]
+    description: Safe, constrained crawler for small sites (domain/depth/time limits).
+
+  # -------- New Secondary (budget-gated) --------
+  brave-search:
+    name: Brave Search MCP
+    tier: primary
+    capabilities: [web.search]
+    requires_api_key: true
+    api_key_env: BRAVE_API_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [network]
+    description: Web search via Brave Search API for high-quality results.
+
+  firecrawl:
+    name: Firecrawl MCP
+    tier: secondary
+    capabilities: [web.crawl]
+    requires_api_key: true
+    api_key_env: FIRECRAWL_API_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.05
+    side_effects: [network, file_write]
+    description: Scalable site crawl with throttling; use sparingly.
+
+  stripe:
+    name: Stripe MCP
+    tier: secondary
+    capabilities: [payments.test]
+    requires_api_key: true
+    api_key_env: STRIPE_API_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.05
+    side_effects: [network]
+    description: Payments test-mode flows (never prod keys).
+
+  supabase:
+    name: Supabase MCP
+    tier: secondary
+    capabilities: [cloud.db]
+    requires_api_key: true
+    api_key_env: SUPABASE_SERVICE_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.05
+    side_effects: [network, file_write]
+    description: Hosted Postgres/storage for demos; gated by consent/budget.

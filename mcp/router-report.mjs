@@ -7,6 +7,7 @@
 import { loadConfig } from './router.mjs';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { fileURLToPath } from 'url';
 
 export function generateCoverageReport() {
   const { registry, policies } = loadConfig();
@@ -142,7 +143,10 @@ export function generateCoverageReport() {
 }
 
 // CLI mode
-if (process.argv[1] === new URL(import.meta.url).pathname) {
+// Windows-safe CLI detection similar to other modules
+const thisPath = fileURLToPath(import.meta.url).replace(/\\/g, '/');
+const argvPath = (process.argv[1] || '').replace(/\\/g, '/');
+if (thisPath.endsWith(argvPath) || argvPath.endsWith('router-report.mjs')) {
   try {
     const report = generateCoverageReport();
 

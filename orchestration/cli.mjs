@@ -162,6 +162,29 @@ async function main() {
     }
   }
 
+  // search-fetch <query...>
+  if (command === 'search-fetch') {
+    const query = args.slice(1).join(' ');
+    if (!query) {
+      console.error('Usage: node orchestration/cli.mjs search-fetch <query>');
+      process.exit(2);
+    }
+    try {
+      const { runWebSearchFetch } = await import('./lib/web_search_fetch.mjs');
+      const result = await runWebSearchFetch({
+        query,
+        tenant: process.env.TENANT_ID || 'default',
+        outDir: 'websearch_demo',
+      });
+      console.log(`\n✅ Search-Fetch complete: ${result.title}\n${result.url}`);
+      console.log('Artifacts under runs/websearch_demo');
+      process.exit(0);
+    } catch (err) {
+      console.error('Search-Fetch error:', err.message);
+      process.exit(1);
+    }
+  }
+
   // Handle validate command
   if (command === 'validate') {
     const subCommand = args[1];

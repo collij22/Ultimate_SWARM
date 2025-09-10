@@ -21,6 +21,19 @@ node orchestration/cli.mjs AUV-0004
 node orchestration/cli.mjs AUV-0005
 ```
 
+### Phase 10a — Search & Fetch Proof
+
+```bash
+# Tangible artifacts for web search + fetch
+node orchestration/cli.mjs search-fetch "ref-tools MCP server"
+
+# Artifacts:
+# runs/websearch_demo/summary.json
+# runs/websearch_demo/brave_search.json
+# runs/websearch_demo/first_result.html
+# runs/websearch_demo/first_result_snippet.txt
+```
+
 ## What it does
 
 1. **Checks for healthy server** (or starts `mock/server.js`) and waits for `/health`
@@ -41,6 +54,11 @@ node orchestration/cli.mjs AUV-0005
 
 - **Prefer PowerShell env**: `$env:STAGING_URL="http://127.0.0.1:3000"` (avoid inline `FOO=bar` cmd)
 - **If Lighthouse fails on localhost**: use `127.0.0.1` (avoids Chrome interstitials)
+
+### Environment for Search
+
+- `BRAVE_API_KEY` must be set for Brave Search.
+- Router planning for `web.search` typically requires `TEST_MODE=true`.
 
 ## CI Integration
 

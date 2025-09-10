@@ -33,6 +33,12 @@ node orchestration/cvf-check.mjs AUV-0001
 - **mcp/** — tool registry & policies (router).
 - **capabilities/** — AUV specs.
 
+### Phase 10a Highlights
+
+- New Primary MCPs: `ref` (docs.search/docs.read), `brave-search` (web.search), `fetch` (web.fetch)
+- New node: `web_search_fetch` (Brave search + fetch); CLI: `node orchestration/cli.mjs search-fetch "<query>"`
+- Router coverage report path: `runs/router/coverage-report.json`
+
 ## Repo layout (essentials)
 
 ```

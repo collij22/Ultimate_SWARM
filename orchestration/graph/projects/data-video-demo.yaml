@@ -1,0 +1,57 @@
+version: '1.0'
+project_id: data-video-demo
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 180000
+nodes:
+  - id: server
+    type: server
+    resources: [server]
+
+  - id: ingest
+    type: agent_task
+    params:
+      capability: data.ingest
+      input: briefs/demo-01/data.csv
+
+  - id: insights
+    type: agent_task
+    requires: [ingest]
+    params:
+      capability: data.insights
+
+  - id: chart
+    type: agent_task
+    requires: [insights]
+    params:
+      capability: chart.render
+
+  - id: tts
+    type: agent_task
+    requires: [insights]
+    params:
+      capability: audio.tts
+
+  - id: video
+    type: agent_task
+    requires: [chart, tts]
+    params:
+      capability: video.compose
+
+  - id: report
+    type: report
+    requires: [video]
+    params:
+      auv: AUV-9999
+
+edges:
+  - [server, ingest]
+  - [ingest, insights]
+  - [insights, chart]
+  - [insights, tts]
+  - [chart, video]
+  - [tts, video]
+  - [video, report]

@@ -126,6 +126,27 @@
             }
           },
           "additionalProperties": false
+        },
+        "budgets": {
+          "type": "object",
+          "description": "Per-agent budget ceilings",
+          "patternProperties": {
+            "^[A-Z][0-9]+\\.[a-z_]+$|^[a-z][a-z0-9-]*$": {
+              "type": "object",
+              "properties": {
+                "total_usd": { "type": "number", "minimum": 0 },
+                "per_capability_usd": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^[a-z][a-z0-9._-]*$": { "type": "number", "minimum": 0 }
+                  },
+                  "additionalProperties": false
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": {
@@ -214,6 +235,52 @@
           "properties": {
             "query_ms": { "type": "number", "minimum": 0 }
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "tenants": {
+      "type": "object",
+      "description": "Tenant-specific configurations",
+      "patternProperties": {
+        "^[a-z][a-z0-9._-]*$": {
+          "type": "object",
+          "properties": {
+            "budget_ceiling_usd": { "type": "number", "minimum": 0 },
+            "allowed_capabilities": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^[a-z][a-z0-9._-]*$" }
+            },
+            "max_concurrent_jobs": { "type": "integer", "minimum": 0 },
+            "max_job_runtime_ms": { "type": "integer", "minimum": 0 },
+            "allow_secondary_tools": { "type": "boolean" },
+            "resource_limits": {
+              "type": "object",
+              "properties": {
+                "max_artifacts_size_mb": { "type": "integer", "minimum": 0 },
+                "max_auv_count": { "type": "integer", "minimum": 0 },
+                "max_graph_nodes": { "type": "integer", "minimum": 0 }
+              },
+              "additionalProperties": false
+            },
+            "router_overrides": {
+              "type": "object",
+              "properties": {
+                "prefer_tier": { "type": "string", "enum": ["primary", "secondary"] },
+                "budget_override": { "type": "number", "minimum": 0 },
+                "tool_allowlist": {
+                  "type": "array",
+                  "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+                },
+                "tool_blocklist": {
+                  "type": "array",
+                  "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" }
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

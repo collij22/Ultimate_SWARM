@@ -25,6 +25,7 @@ flowchart LR
 - **Orchestrator**: schedules lanes, fans out work, merges evidence, and decides promotions.
 - **Sub‑agents**: focused roles (A1…C16) that each emit a **Result Card** (machine-readable).
 - **Tool Router (MCP)**: resolves _capabilities_ → _tools_ using `/mcp/policies.yaml` and `/mcp/registry.yaml`.
+  - Phase 10a: added Primary `ref` (docs.search/docs.read), `brave-search` (web.search), and extended `fetch` (web.fetch). Router coverage is generated to `runs/router/coverage-report.json`.
 - **User Robot**: deterministic UI/API journeys that produce artifacts (videos, traces, HTTP dumps).
 - **Gates**:
   - **CVF** (Capability Validator): checks acceptance proofs for the current AUV.
@@ -61,6 +62,7 @@ flowchart LR
 
 - Structured **logs** (include `request_id`, `auv_id`), **metrics** (HTTP, latency), **traces** (OpenTelemetry).
 - Artifacts: `reports/**`, `coverage/**`, `runs/**` are the source of truth for decisions.
+  - Router coverage report: `runs/router/coverage-report.json` (use `node mcp/router-report.mjs`).
 
 ## Security posture
 

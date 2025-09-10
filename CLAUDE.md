@@ -23,6 +23,19 @@
 - **Artifacts:** All proofs under `runs/<AUV-ID>/...`; CI uploads them.
 - **Hooks:** AUV-only activation (requires `AUV_ID` env var). Normal coding stays inert. Modes: `off` (default), `warn` (log violations), `block` (enforce policies). Circuit breaker prevents IDE wedging. Set via `HOOKS_MODE=block` for orchestration runs.
 
+## Phase 10a Updates (2025-09-10)
+
+- **New Primary MCPs:**
+  - `ref` → `docs.search`, `docs.read` (requires `REF_API_KEY`)
+  - `brave-search` → `web.search` (requires `BRAVE_API_KEY`; router planning typically requires `TEST_MODE=true`)
+  - `fetch` → `web.fetch`
+- **Router Coverage:** `node mcp/router-report.mjs` writes `runs/router/coverage-report.json` (Windows-safe CLI detection fixed).
+- **New Node & CLI:**
+  - DAG node `web_search_fetch` (search via Brave → fetch first result) writes artifacts under `runs/websearch_*`
+  - CLI utility `node orchestration/cli.mjs search-fetch "<query>"` for tangible proofs (HTML, JSON, snippet)
+- **Knowledge & Tests:** Seeded `.claude/knowledge/capabilities/{data.ingest.md, seo.audit.md, video.compose.md}` and synthetic stubs under `tests/agents/synthetic/`.
+- **Safety:** Capabilities like `web.search` are gated; set `TEST_MODE=true` for planning and ensure API keys are present.
+
 ## 2) Roles & Responsibilities
 
 ### 2.1 Orchestrator (Brain)
@@ -93,6 +106,8 @@ An AUV is **Done** only if all gates pass:
   - **Primary:** free/core tools (e.g., filesystem, Playwright, HTTP client, security scan, docs/ref).
   - **Secondary:** paid/provider-specific (e.g., hosted DB, deploy, search/crawl, payments). Require consent/budget.
 
+  Phase 10a additions (Primary-first): `ref` (docs.search, docs.read), `brave-search` (web.search), `fetch` (web.fetch). Use the router to plan tool use; do not hard-code tool IDs into prompts.
+
 - **Tool Plan (Orchestrator):**
   For each AUV, compute a plan with:
   - `capabilities_needed`, `selected_tools` (with reasons), any `secondary_tools_requested` (budget & consent), and **required proofs**.
@@ -102,7 +117,7 @@ An AUV is **Done** only if all gates pass:
   - If a tool is missing, ask for escalation (state capability gap + proposed tool).
 
 - **“Always check docs” without hard-coding:**
-  - Policies add `docs.search` capability when new/unknown APIs are detected; registry resolves it (e.g., Ref MCP).
+  - Policies add `docs.search` capability when new/unknown APIs are detected; registry resolves it using `ref`.
 
 - **Fallbacks:**
   - If Secondary is denied/unavailable, route to local equivalents (e.g., local Postgres/Docker staging) to keep “working at every commit”.

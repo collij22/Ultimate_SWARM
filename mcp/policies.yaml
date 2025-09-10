@@ -25,6 +25,9 @@ tiers:
       datadog: 0.20
       sbom: 0.15
       license-checker: 0.10
+      firecrawl: 0.10
+      stripe: 0.10
+      supabase: 0.10
 
 # Global environment safety
 safety:
@@ -32,6 +35,10 @@ safety:
   require_test_mode_for:
     - payments
     - external_search
+    - web.search
+    - external_crawl
+    - cloud_db
+    - tts.cloud
     - email
   redact_logs:
     - api_keys
@@ -44,7 +51,8 @@ capability_map:
   screenshot: [playwright]
   api.test: [http]
   db.query: [postgres]
-  docs.search: [refdocs]
+  docs.search: [ref, refdocs]
+  docs.read: [ref]
   security.scan: [semgrep]
   security.secrets: [gitleaks]
   security.iac: [checkov]
@@ -61,6 +69,8 @@ capability_map:
   deploy.k8s: [kubectl, helm]
   deploy.preview: [vercel]
   header.csp: [fetch]
+  web.fetch: [fetch]
+  web.search: [brave-search]
   dep.graph: [depgraph]
   code.codemod: [jscodeshift, ts-morph]
   typecheck: [tsc]
@@ -68,22 +78,60 @@ capability_map:
   perf.load: [k6]
   monitoring.saas: [datadog]
 
+  # New capabilities (Primary-first; Secondary as fallback where applicable)
+  data.ingest: [duckdb]
+  data.query: [duckdb]
+  data.insights: [insights]
+  chart.render: [chart-renderer]
+  audio.tts: [tts-piper]
+  video.compose: [ffmpeg]
+  seo.audit: [seo-auditor]
+  web.crawl: [crawler-lite, firecrawl]
+  doc.generate: [report-lite]
+  doc.convert: [pandoc]
+  image.process: [imagemagick]
+  nlp.translate: [argos-translate]
+  payments.test: [stripe]
+  cloud.db: [supabase]
+
 # Agent-level allowlists (used by router for filtering)
 agents:
   allowlist:
-    A1.orchestrator: [playwright, lighthouse, http, semgrep, gitleaks]
-    A2.requirements_analyst: [refdocs]
+    A1.orchestrator: [playwright, lighthouse, http, semgrep, gitleaks, ref, brave-search, fetch]
+    A2.requirements_analyst: [refdocs, ref, brave-search, fetch]
     A3.capability_validator: [playwright, lighthouse, http]
     A4.user_robot: [playwright, http]
     A5.finalizer_integrator: [zip, checksum]
     B6.project_architect: [depgraph, tsc, eslint]
-    B7.rapid_builder: [playwright, lighthouse, http, tsc, eslint]
-    B8.frontend_specialist: [playwright, lighthouse, bundle-analyzer, visual-compare]
-    B9.backend_api_integrator: [http, postgres, latency-sampler, explain]
-    B10.database_expert: [postgres, explain]
+    B7.rapid_builder:
+      [
+        playwright,
+        lighthouse,
+        http,
+        tsc,
+        eslint,
+        duckdb,
+        insights,
+        chart-renderer,
+        report-lite,
+        imagemagick,
+        pandoc,
+        argos-translate,
+        crawler-lite,
+        tts-piper,
+        ffmpeg,
+        ref,
+        brave-search,
+        fetch,
+      ]
+    B8.frontend_specialist:
+      [playwright, lighthouse, bundle-analyzer, visual-compare, chart-renderer, imagemagick]
+    B9.backend_api_integrator: [http, postgres, latency-sampler, explain, duckdb]
+    B10.database_expert: [postgres, explain, duckdb]
     B11.ai_ml_specialist: [http, traces]
-    B12.documentation_writer: [refdocs]
-    C13.quality_guardian: [playwright, lighthouse, http, visual-compare]
+    B12.documentation_writer: [refdocs, ref, fetch]
+    C13.quality_guardian:
+      [playwright, lighthouse, http, visual-compare, seo-auditor, crawler-lite, report-lite, fetch]
     C14.debugger: [traces, explain, depgraph]
     C15.security_auditor: [semgrep, gitleaks, checkov, trivy]
     C16.devops_engineer: [kubectl, helm, docker-buildx, vercel]
@@ -100,6 +148,18 @@ agents:
         code.codemod: 0.50
         lint: 0.25
         typecheck: 0.25
+        data.ingest: 0.05
+        data.query: 0.05
+        data.insights: 0.05
+        chart.render: 0.05
+        doc.generate: 0.05
+        web.crawl: 0.05
+        audio.tts: 0.05
+        video.compose: 0.05
+    C16.devops_engineer:
+      total_usd: 1.00
+      per_capability_usd:
+        deploy.preview: 0.50
 
   # Auxiliary agents
   performance-optimizer:
@@ -145,9 +205,24 @@ tenants:
       - api.test
       - data.validation
       - docs.search
+      - docs.read
       - code.analysis
       - perf.web
       - security.scan
+      - data.ingest
+      - data.query
+      - data.insights
+      - chart.render
+      - seo.audit
+      - web.crawl
+      - web.search
+      - web.fetch
+      - doc.generate
+      - doc.convert
+      - image.process
+      - nlp.translate
+      - audio.tts
+      - video.compose
     max_concurrent_jobs: 3
     max_job_runtime_ms: 300000 # 5 minutes
     allow_secondary_tools: false

@@ -91,6 +91,17 @@ jq -r '.error' runs/observability/hooks.jsonl | sort | uniq -c | sort -rn
 4. **Debugging**: Check `runs/observability/hooks.jsonl` for issues
 5. **Performance**: Hooks add <50ms overhead when active, 0ms when inactive
 
+## Phase 10a Operations Notes
+
+- Router Coverage Report
+  - Generate: `node mcp/router-report.mjs`
+  - Location: `runs/router/coverage-report.json`
+
+- Search & Fetch (tangible proof)
+  - CLI: `node orchestration/cli.mjs search-fetch "<query>"`
+  - Artifacts: `runs/websearch_demo/{summary.json, brave_search.json, first_result.html, first_result_snippet.txt}`
+  - Env: `BRAVE_API_KEY` required; router planning for `web.search` typically requires `TEST_MODE=true`.
+
 ## Bundle Verification & Operations (Phase 7)
 
 ### Verify Delivered Bundles

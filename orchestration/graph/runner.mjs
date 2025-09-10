@@ -489,6 +489,31 @@ class NodeExecutors {
     }
   }
 
+  async web_search_fetch(node, _env) {
+    const query = node.params?.query || 'swarm1 web search demo';
+    const outDir = node.params?.outDir || 'websearch';
+
+    try {
+      const { runWebSearchFetch } = await import('../lib/web_search_fetch.mjs');
+      const result = await runWebSearchFetch({
+        query,
+        tenant: this.tenant,
+        outDir,
+      });
+
+      console.log(`[web_search_fetch] ✅ ${result.title} -> ${result.url}`);
+      return { status: 'success', message: 'web_search_fetch completed', result };
+    } catch (error) {
+      const err = new GraphRunnerError(
+        `web_search_fetch failed: ${error.message}`,
+        'SEARCH_FAILED',
+      );
+      err.stderr = error.stack || error.message;
+      err.exitCode = 1;
+      throw err;
+    }
+  }
+
   async work_simulation(node, _env) {
     // Simulated work for testing parallelization
     const duration = node.params?.duration_ms || 200;

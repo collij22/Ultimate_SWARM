@@ -10,6 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - (planned) AUV-0006: Order confirmation (GET `/api/orders/{id}` + `/order.html`).
+- Phase 10a: New Primary MCPs `ref` (docs.search/docs.read), `brave-search` (web.search), and extended `fetch` (web.fetch); CLI `search-fetch`; DAG node `web_search_fetch`; router coverage report path.
+
+### Changed
+
+- Updated `mcp/policies.yaml` with capability mappings, allowlists, budgets, and TEST_MODE gating for `web.search`.
+- Updated `orchestration/graph/projects/seo-audit-demo.yaml` to start with `web_search_fetch` step.
+
+### Fixed
+
+- `mcp/router-report.mjs` Windows CLI detection; now writes `runs/router/coverage-report.json` reliably.
 
 ### Changed
 

@@ -63,6 +63,11 @@
       "maximum": 100,
       "default": 50
     },
+    "enqueued_at": {
+      "description": "ISO timestamp when job was enqueued",
+      "type": "string",
+      "format": "date-time"
+    },
     "metadata": {
       "description": "Additional metadata for tracking",
       "type": "object",

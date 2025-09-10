@@ -45,6 +45,7 @@ properties:
             - package
             - report
             - work_simulation
+            - web_search_fetch
           description: 'Node execution type'
 
         params:
@@ -90,6 +91,12 @@ properties:
               minimum: 1
               maximum: 10000
               description: 'Duration of simulated work in milliseconds'
+
+            # Web search + fetch params
+            query:
+              type: string
+            outDir:
+              type: string
 
         requires:
           type: array
