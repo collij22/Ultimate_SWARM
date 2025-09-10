@@ -241,7 +241,7 @@ function analyzeSEO(seoData) {
  * @param {string} params.url - URL to audit (optional, will use fetched or fixture)
  * @param {string} params.tenant - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
- * @returns {Object} Result with status and artifacts
+ * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function executeSEOAudit(params) {
   const { url } = params;
@@ -303,7 +303,7 @@ export async function executeSEOAudit(params) {
   );
 
   // Analyze SEO
-  const analysis = analyzeSEO(seoData, auditUrl);
+  const analysis = analyzeSEO(seoData);
   console.log(
     `[seo.audit] SEO Score: ${analysis.score}% (${analysis.passed.length} passed, ${analysis.warnings.length} warnings, ${analysis.issues.length} issues)`,
   );

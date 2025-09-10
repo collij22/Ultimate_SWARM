@@ -34,12 +34,12 @@ export class ReferenceIngestError extends Error {
  *
  * @param {Array} references - Array of reference objects from brief
  * @param {Object} options - Ingestion options
- * @param {string} options.auvId - AUV identifier
- * @param {string} options.runId - Run identifier
- * @param {string} options.tenant - Tenant identifier
- * @param {boolean} options.testMode - Use fixtures instead of fetching
- * @param {number} options.maxSize - Max file size in bytes
- * @returns {Object} Ingestion results with index
+ * @param {string} [options.auvId] - AUV identifier
+ * @param {string} [options.runId] - Run identifier
+ * @param {string} [options.tenant] - Tenant identifier
+ * @param {boolean} [options.testMode] - Use fixtures instead of fetching
+ * @param {number} [options.maxSize] - Max file size in bytes
+ * @returns {Promise<Object>} Ingestion results with index
  */
 export async function ingestReferences(references = [], options = {}) {
   const {

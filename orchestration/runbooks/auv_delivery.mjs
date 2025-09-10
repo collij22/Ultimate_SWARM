@@ -281,6 +281,7 @@ export async function runAuv(auvId, options = {}) {
         env: ENV,
         registry,
         policies,
+        hints: {}, // Optional hints
       });
 
       // Write preview next to result card

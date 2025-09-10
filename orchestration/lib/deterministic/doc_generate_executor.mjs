@@ -567,19 +567,19 @@ function generateDatabaseReport(data, format) {
 /**
  * Execute document generation
  * @param {Object} params - Execution parameters
- * @param {string} params.template - Template type (seo_report, payment_receipt, media_report)
- * @param {string} params.format - Output format (markdown, html, both)
- * @param {string} params.tenant - Tenant ID (default: 'default')
+ * @param {string} [params.template] - Template type (seo_report, payment_receipt, media_report)
+ * @param {string} [params.format] - Output format (markdown, html, both)
+ * @param {string} [params.tenant] - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
- * @param {string} params.dataPath - Path to data file for templates
- * @param {string} params.scriptPath - Path to script file
- * @param {string} params.composePath - Path to compose metadata
- * @param {string} params.videoPath - Path to video file
- * @param {string} params.connectivityPath - Path to connectivity test results
- * @param {string} params.roundtripPath - Path to roundtrip test results
- * @param {string} params.schemaPath - Path to schema validation results
- * @param {Object} params.input - Input configuration object
- * @param {string} params.content - Direct content to process
+ * @param {string} [params.dataPath] - Path to data file for templates
+ * @param {string} [params.scriptPath] - Path to script file
+ * @param {string} [params.composePath] - Path to compose metadata
+ * @param {string} [params.videoPath] - Path to video file
+ * @param {string} [params.connectivityPath] - Path to connectivity test results
+ * @param {string} [params.roundtripPath] - Path to roundtrip test results
+ * @param {string} [params.schemaPath] - Path to schema validation results
+ * @param {Object} [params.input] - Input configuration object
+ * @param {string} [params.content] - Direct content to process
  * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function executeDocGenerate(params) {

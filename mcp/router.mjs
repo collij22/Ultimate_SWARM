@@ -30,10 +30,10 @@ const ROUTER_VERSION = '1.0.0';
  * @param {Object.<string, string>} params.env - Environment variables
  * @param {Object} params.registry - Tool registry
  * @param {Object} params.policies - Policy configuration
- * @param {Object} params.hints - Hints for scale/constraint indication
- * @param {Object} params.hints.crawl - Crawl hints
- * @param {number} params.hints.crawl.max_pages - Maximum pages to crawl
- * @param {number} params.hints.crawl.depth - Crawl depth
+ * @param {Object} [params.hints] - Optional hints for scale/constraint indication
+ * @param {Object} [params.hints.crawl] - Optional crawl hints
+ * @param {number} [params.hints.crawl.max_pages] - Maximum pages to crawl
+ * @param {number} [params.hints.crawl.depth] - Crawl depth
  * @returns {Object} Tool planning decision
  */
 export function planTools({

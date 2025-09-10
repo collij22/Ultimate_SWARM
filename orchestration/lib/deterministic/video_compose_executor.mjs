@@ -123,7 +123,7 @@ async function runFFmpeg(chartPath, audioPath, outputPath, duration) {
  * @param {Object} params - Execution parameters
  * @param {string} params.tenant - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
- * @returns {Object} Result with status and artifacts
+ * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function executeVideoCompose(params) {
   const { tenant = 'default', runId } = params;

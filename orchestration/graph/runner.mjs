@@ -223,6 +223,7 @@ class NodeExecutors {
           env: nodeEnv,
           registry,
           policies,
+          hints: {}, // Optional hints
         });
 
         // Write preview
