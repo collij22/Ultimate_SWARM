@@ -236,9 +236,11 @@ export async function runSubagent(request, opts = {}) {
     });
 
     // Attempt to parse JSON content produced by subagent
+    /** @type {any} */
     let parsed;
     try {
-      parsed = /** @type {any} */ (JSON.parse(assistant.content));
+      const parsedJson = JSON.parse(assistant.content);
+      parsed = parsedJson;
     } catch (e) {
       errors.push('assistant_response_not_json');
       break;

@@ -83,7 +83,9 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
   try {
     // Load audit data
     const auditData = await readFile(auditPath, 'utf8');
-    const audit = /** @type {any} */ (JSON.parse(auditData));
+    const parsedData = JSON.parse(auditData);
+    /** @type {any} */
+    const audit = parsedData;
     result.data = audit;
 
     // Validate against schema
