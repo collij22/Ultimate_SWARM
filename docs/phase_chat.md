@@ -25,9 +25,11 @@ I'll update the data-video graph to remove the invalid string input for the inge
 - I created a realistic non-website Upwork brief (data → insights → narrated video), then executed the existing data-video pipeline twice (deterministic and subagent mode). Deterministic run succeeded through all agent tasks; packaging/report hit a runbook precondition we worked around; subagent mode defaulted to deterministic engine per policy.
 
 ### What I set up
+
 - Brief: `briefs/data-video-upwork.md` (CSV ingest ≥100 rows, insights, 1280x720 chart, TTS narration ~30–45s, 720p MP4, offline HTML report, Primary-only budget $0.10).
 
 ### Deterministic E2E run (classical)
+
 - Command:
   - Windows CMD:
     - set TEST_MODE=true && set SWARM_MODE=deterministic && node orchestration\graph\runner.mjs orchestration\graph\projects\data-video-demo.yaml
@@ -54,6 +56,7 @@ I'll update the data-video graph to remove the invalid string input for the inge
 - Verdict (deterministic): Functional steps succeeded end-to-end with tangible artifacts. Packaging/report gate needs minor orchestration fix (see improvements).
 
 ### Subagent run (full subagent approach)
+
 - Command:
   - set TEST_MODE=true && set SWARM_MODE=claude && set SUBAGENTS_INCLUDE=A2.requirements_analyst,B7.rapid_builder && node orchestration\graph\runner.mjs orchestration\graph\projects\data-video-demo.yaml
 - Behavior:
@@ -62,6 +65,7 @@ I'll update the data-video graph to remove the invalid string input for the inge
 - Verdict (subagent): Works, but subagents weren’t engaged for these nodes due to policy (Primary local determinism preferred). For a “full subagent” flavor, we’d add `params.execution: claude` per node or a different graph that uses `agent_task` with tool_requests via router.
 
 ### Analysis of flow, MCPs, agents, models
+
 - MCPs exercised (deterministic equivalents):
   - data.ingest: local CSV parse/normalize (duckdb-like behavior stubbed)
   - data.insights: local aggregator
@@ -80,6 +84,7 @@ I'll update the data-video graph to remove the invalid string input for the inge
   - Deterministic steps completed; produced all domain artifacts needed for CVF strict checks (data/charts/media). Packaging auto-step failed due to missing runbook; when we wrote one, CLI still errored on JSON parsing—likely a small encoding/format nuance.
 
 ### Findings as an end user
+
 - What worked well:
   - One command ran a realistic non-web pipeline and wrote concrete artifacts: CSV → insights → chart → narration → mp4.
   - TEST_MODE enforced determinism and offline behavior.
@@ -88,6 +93,7 @@ I'll update the data-video graph to remove the invalid string input for the inge
   - Packaging CLI JSON parse error even though the runbook JSON validated; likely encoding/newline echo issue in console or unexpected content read. Needs a small hardening fix in `PackageBuilder.resolveRunId()`/`readRunbookSummary()` to sanitize/strict-parse.
 
 ### Recommendations to harden UX
+
 - Ensure `demo_runbook` honors TEST_MODE for AUV-1201/1202, or generate runbook by default in this demo graph.
 - In `package.mjs`:
   - Be explicit about which runbook summary to read: prefer the latest RUN_ID from the current graph execution rather than scanning.
@@ -95,6 +101,7 @@ I'll update the data-video graph to remove the invalid string input for the inge
 - Optionally provide `report-lite` `doc.generate` node at the end of the graph to produce a small HTML report without requiring the packaging runbook path.
 
 ### Example commands (copiable)
+
 - Deterministic:
   - set TEST_MODE=true && set SWARM_MODE=deterministic && node orchestration\graph\runner.mjs orchestration\graph\projects\data-video-demo.yaml
 - Subagent (will still run deterministic for these capabilities unless forced):
@@ -119,6 +126,7 @@ I'll update the data-video graph to remove the invalid string input for the inge
   - `briefs/demo-01/data-video-upwork.md`
 
 All tasks completed:
+
 - Created brief; ran deterministic and subagent modes; gathered artifacts; analyzed MCP/agents/budgets; and summarized outcomes and fixes.
 
 - Deterministic run succeeded through all agent tasks; artifacts match expectations. Packaging/report needs a small orchestration/runbook fix. Subagent mode defaulted to deterministic for these Primary capabilities; to fully exercise subagents, mark nodes `execution: claude` or use a graph whose tasks rely on router-planned tool_requests.
