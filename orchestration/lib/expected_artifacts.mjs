@@ -26,7 +26,6 @@ function lookupFromCapabilityYaml(auvId) {
  * Get expected artifacts for a given AUV
  * @param {string} auvId - The AUV identifier (e.g., 'AUV-0002')
  * @param {string} [tenant] - Optional tenant ID (defaults to process.env.TENANT_ID or 'default')
- * @param {Object} [options] - Additional options for artifact selection
  * @returns {string[]} Array of expected artifact paths
  */
 export function expectedArtifacts(auvId, tenant = process.env.TENANT_ID || 'default') {

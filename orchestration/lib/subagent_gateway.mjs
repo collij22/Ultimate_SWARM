@@ -236,10 +236,9 @@ export async function runSubagent(request, opts = {}) {
     });
 
     // Attempt to parse JSON content produced by subagent
-    /** @type {any} */
     let parsed;
     try {
-      parsed = JSON.parse(assistant.content);
+      parsed = /** @type {any} */ (JSON.parse(assistant.content));
     } catch (e) {
       errors.push('assistant_response_not_json');
       break;
@@ -247,14 +246,14 @@ export async function runSubagent(request, opts = {}) {
 
     // If no tool_requests provided, synthesize one from node context capability to enable handshake demo
     try {
-      const cap = request?.context?.node_context?.params?.capability;
+      const cap = /** @type {any} */ (request?.context?.node_context)?.params?.capability;
       if (cap && (!parsed.tool_requests || parsed.tool_requests.length === 0)) {
         const placeholderArtifact = `runs/agents/${request.role_id}/${sessionId}/auto_${cap}.json`;
         parsed.tool_requests = [
           {
             capability: String(cap),
             purpose: `auto-synthesized request for ${cap}`,
-            input_spec: request?.context?.node_context?.params || {},
+            input_spec: /** @type {any} */ (request?.context?.node_context)?.params || {},
             expected_artifacts: [placeholderArtifact],
             constraints: { test_mode: true, max_cost_usd: 0.05, side_effects: [] },
             acceptance: ['expected_artifacts exist'],
