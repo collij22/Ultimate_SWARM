@@ -237,3 +237,11 @@ Domain thresholds can be configured at multiple levels:
 - **No Green Gates → No Merge**: All gates must pass before AUV is considered complete
 
 > Thresholds are defaults; adjust per AUV in `mcp/policies.yaml` or capability-specific overrides.
+
+---
+
+## Advisory Sections (Phase 14)
+
+- Intent comparison and reference visuals are **advisory only** and do not affect CVF or exit codes.
+- Reports must remain fully offline: assets are embedded or copied under `dist/<AUV>/assets/**`; no `runs/**` or external URLs in HTML.
+- `report-metadata.json` may include `report.sections.intent_compare` and `spend_summary` for client-facing transparency; these are not gates.

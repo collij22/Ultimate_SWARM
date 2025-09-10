@@ -43,6 +43,10 @@ nodes:
     requires: [package]
     params:
       auv: AUV-1202
+      includeReferences: true
+      intentCompare: true
+      theme: light
+      embedSmallAssetsKb: 100
 
 edges:
   - [search, audit]

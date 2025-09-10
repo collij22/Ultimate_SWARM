@@ -17,6 +17,7 @@ import path from 'path';
 import { PNG } from 'pngjs';
 import pixelmatch from 'pixelmatch';
 import { parse as parseYaml } from 'yaml';
+import fsPromises from 'fs/promises';
 
 class VisualCompare {
   constructor() {
@@ -236,6 +237,174 @@ class VisualCompare {
     }
   }
 
+  /**
+   * Compare UI screenshots against reference visuals (intent mode)
+   * Advisory only - does not block on failures
+   */
+  async compareIntent(auvId, references, options = {}) {
+    const {
+      method = 'pixelmatch',
+      threshold = 0.1,
+      runId = process.env.RUN_ID || 'latest',
+    } = options;
+
+    const results = {
+      auv_id: auvId,
+      run_id: runId,
+      mode: 'intent',
+      method,
+      threshold,
+      timestamp: new Date().toISOString(),
+      comparisons: [],
+      total: 0,
+      avg_diff_pct: 0,
+    };
+
+    // Emit start hook
+    try {
+      await emitHook('IntentCompareStart', { auv_id: auvId, run_id: runId, method, threshold });
+    } catch {}
+
+    for (const ref of references) {
+      if (ref.type !== 'image' || !ref.route || !ref.path) {
+        continue; // Skip non-image or non-routed references
+      }
+
+      try {
+        // Find corresponding UI screenshot
+        const actualPath = await this.findScreenshotForRoute(auvId, ref.route);
+        if (!actualPath) {
+          results.comparisons.push({
+            label: ref.label,
+            route: ref.route,
+            status: 'skipped',
+            reason: 'No screenshot found for route',
+          });
+          continue;
+        }
+
+        // Generate diff path
+        const safeLabel = ref.label.replace(/[^a-zA-Z0-9-_]/g, '_');
+        const diffPath = path.join(
+          process.cwd(),
+          'reports/visual/diffs',
+          `${auvId}_${safeLabel}_${ref.route.replace(/\//g, '_')}.png`,
+        );
+
+        // Compare reference vs actual
+        const comparison = await this.compareImages(
+          ref.path,
+          actualPath,
+          diffPath,
+          threshold * 100, // Convert to percentage
+        );
+
+        const diffPct = comparison.diffPercent / 100; // Normalize to 0-1
+
+        results.comparisons.push({
+          label: ref.label,
+          route: ref.route,
+          actual: actualPath,
+          reference: ref.path,
+          diff_pct: diffPct,
+          method,
+          width: comparison.totalPixels ? Math.sqrt(comparison.totalPixels) : null,
+          height: comparison.totalPixels ? Math.sqrt(comparison.totalPixels) : null,
+          status: diffPct <= threshold ? 'pass' : 'advisory',
+          diff_path: comparison.diffPixels > 0 ? diffPath : null,
+        });
+
+        results.total++;
+        results.avg_diff_pct += diffPct;
+
+        // Log comparison (advisory)
+        const status = diffPct <= threshold ? 'MATCH' : 'DIFFER';
+        console.log(
+          `[intent-compare] ${status}: ${ref.label} @ ${ref.route} ` +
+            `(${(diffPct * 100).toFixed(2)}% diff)`,
+        );
+      } catch (error) {
+        results.comparisons.push({
+          label: ref.label,
+          route: ref.route,
+          status: 'error',
+          error: error.message,
+        });
+        console.error(`[intent-compare] Error comparing ${ref.label}:`, error.message);
+      }
+    }
+
+    // Calculate average
+    if (results.total > 0) {
+      results.avg_diff_pct = results.avg_diff_pct / results.total;
+    }
+
+    // Save results
+    const outputPath = path.join(process.cwd(), 'reports/visual/intent_compare.json');
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+    fs.writeFileSync(outputPath, JSON.stringify(results, null, 2));
+
+    console.log(
+      `[intent-compare] Completed ${results.total} comparisons ` +
+        `(avg diff: ${(results.avg_diff_pct * 100).toFixed(2)}%)`,
+    );
+
+    // Emit complete hook
+    try {
+      await emitHook('IntentCompareComplete', {
+        auv_id: auvId,
+        run_id: runId,
+        total: results.total,
+        avg_diff_pct: results.avg_diff_pct,
+        ok: true,
+      });
+    } catch {}
+
+    return results;
+  }
+
+  /**
+   * Find screenshot for a given route
+   */
+  async findScreenshotForRoute(auvId, route) {
+    // Remove leading slash and convert to safe filename
+    const routeHint = route.replace(/^\//, '').replace(/\//g, '_') || 'index';
+
+    // Try different possible locations
+    const candidates = [
+      // Exact route match
+      path.join(process.cwd(), 'runs', auvId, 'ui', `${routeHint}.png`),
+      path.join(process.cwd(), 'runs', auvId, 'ui', `${routeHint}_screenshot.png`),
+      // Visual regression captures
+      path.join(process.cwd(), 'runs/visual', auvId, `${routeHint}-actual.png`),
+      // Playwright screenshots
+      path.join(process.cwd(), 'runs', auvId, 'ui', `${routeHint.replace('_', '-')}.png`),
+    ];
+
+    // Also check for any screenshots that might contain the route hint
+    const uiDir = path.join(process.cwd(), 'runs', auvId, 'ui');
+    if (fs.existsSync(uiDir)) {
+      const files = fs.readdirSync(uiDir);
+      for (const file of files) {
+        if (file.includes(routeHint) && file.endsWith('.png')) {
+          candidates.push(path.join(uiDir, file));
+        }
+      }
+    }
+
+    // Return first existing candidate
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
   async generateReport(outputPath) {
     // Ensure reports directory exists
     const reportsDir = path.dirname(outputPath);
@@ -270,6 +439,9 @@ async function main() {
   const args = process.argv.slice(2);
   let auvId = null;
   let outputPath = null;
+  let intentMode = false;
+  let method = 'pixelmatch';
+  let threshold = 0.1;
 
   // Parse arguments
   for (let i = 0; i < args.length; i++) {
@@ -279,11 +451,21 @@ async function main() {
     } else if (args[i] === '--output' && args[i + 1]) {
       outputPath = args[i + 1];
       i++;
+    } else if (args[i] === '--intent') {
+      intentMode = true;
+    } else if (args[i] === '--method' && args[i + 1]) {
+      method = args[i + 1];
+      i++;
+    } else if (args[i] === '--threshold' && args[i + 1]) {
+      threshold = parseFloat(args[i + 1]);
+      i++;
     }
   }
 
   if (!auvId) {
-    console.error('Usage: node orchestration/visual/compare.mjs --auv <AUV-ID>');
+    console.error(
+      'Usage: node orchestration/visual/compare.mjs --auv <AUV-ID> [--intent] [--method pixelmatch|ssim] [--threshold 0.10]',
+    );
     process.exit(2);
   }
 
@@ -294,30 +476,74 @@ async function main() {
   const compare = new VisualCompare();
 
   try {
-    // Load AUV visual configuration
-    const routes = await compare.loadAuvConfig(auvId);
+    if (intentMode) {
+      // Intent comparison mode - compare against references
+      console.log('[intent-compare] Running intent comparison (advisory)');
 
-    if (routes.length === 0) {
-      console.log(`[visual-compare] No visual routes to compare for ${auvId}`);
+      // Load references from ingested index
+      const referencesPath = path.join(
+        process.cwd(),
+        'runs',
+        auvId,
+        'references',
+        'references_index.json',
+      );
+
+      if (!fs.existsSync(referencesPath)) {
+        console.log('[intent-compare] No references found. Run reference ingestion first.');
+        process.exit(0);
+      }
+
+      const referencesData = JSON.parse(fs.readFileSync(referencesPath, 'utf-8'));
+
+      if (!referencesData.items || referencesData.items.length === 0) {
+        console.log('[intent-compare] No reference items to compare');
+        process.exit(0);
+      }
+
+      // Run intent comparison
+      await compare.compareIntent(auvId, referencesData.items, {
+        method,
+        threshold,
+      });
+
+      // Intent comparisons are advisory only - always exit 0
+      console.log('[intent-compare] Intent comparison complete (advisory)');
+      process.exit(0);
+    } else {
+      // Regular visual regression mode
+      const routes = await compare.loadAuvConfig(auvId);
+
+      if (routes.length === 0) {
+        console.log(`[visual-compare] No visual routes to compare for ${auvId}`);
+        process.exit(0);
+      }
+
+      // Run comparison
+      await compare.compareAuv(auvId, routes);
+
+      // Generate report
+      await compare.generateReport(outputPath);
+
+      // Exit with appropriate code
+      if (compare.shouldBlock()) {
+        console.error('[visual-compare] BLOCKED: Visual regression detected');
+        process.exit(303);
+      }
+
+      console.log('[visual-compare] PASSED: All routes within threshold');
       process.exit(0);
     }
-
-    // Run comparison
-    await compare.compareAuv(auvId, routes);
-
-    // Generate report
-    await compare.generateReport(outputPath);
-
-    // Exit with appropriate code
-    if (compare.shouldBlock()) {
-      console.error('[visual-compare] BLOCKED: Visual regression detected');
-      process.exit(303);
-    }
-
-    console.log('[visual-compare] PASSED: All routes within threshold');
-    process.exit(0);
   } catch (error) {
     console.error('[visual-compare] Error:', error.message);
+    try {
+      await emitHook('IntentCompareComplete', {
+        auv_id: auvId,
+        run_id: undefined,
+        ok: false,
+        error: error.message,
+      });
+    } catch {}
     process.exit(1);
   }
 }
@@ -330,3 +556,15 @@ if (process.argv[1] === __filename) {
 }
 
 export { VisualCompare };
+
+async function emitHook(event, data = {}) {
+  try {
+    const hooksPath = path.join(process.cwd(), 'runs', 'observability', 'hooks.jsonl');
+    await fsPromises.mkdir(path.dirname(hooksPath), { recursive: true });
+    await fsPromises.writeFile(
+      hooksPath,
+      JSON.stringify({ ts: Date.now() / 1000, event, module: 'visual_compare', ...data }) + '\n',
+      { flag: 'a' },
+    );
+  } catch {}
+}

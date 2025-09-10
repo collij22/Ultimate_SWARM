@@ -829,7 +829,13 @@ class NodeExecutors {
 
     try {
       const { ReportGenerator } = await import('../report.mjs');
-      const generator = new ReportGenerator(auv);
+      // Pass Phase 14 options through from node params
+      const generator = new ReportGenerator(auv, {
+        theme: node.params?.theme,
+        includeReferences: node.params?.includeReferences === true,
+        intentCompare: node.params?.intentCompare === true,
+        embedSmallAssetsKb: node.params?.embedSmallAssetsKb,
+      });
       const reportPath = await generator.generate();
 
       console.log(`[report] ✅ Report generated: ${reportPath}`);

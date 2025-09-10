@@ -1,0 +1,38 @@
+{
+  "references": [
+    {
+      "label": "Hero Section",
+      "type": "image",
+      "source": "briefs/demo-01/references/hero-mockup.png",
+      "route": "/",
+      "notes": "Main landing page hero section with product showcase"
+    },
+    {
+      "label": "Product Grid",
+      "type": "image",
+      "source": "briefs/demo-01/references/product-grid.png",
+      "route": "/products",
+      "notes": "Product listing page with grid layout and filters"
+    },
+    {
+      "label": "Shopping Cart",
+      "type": "image",
+      "source": "briefs/demo-01/references/cart-view.png",
+      "route": "/cart",
+      "notes": "Shopping cart with line items and totals"
+    },
+    {
+      "label": "Checkout Form",
+      "type": "image",
+      "source": "briefs/demo-01/references/checkout.png",
+      "route": "/checkout",
+      "notes": "Multi-step checkout process"
+    },
+    {
+      "label": "Design System",
+      "type": "url",
+      "source": "https://example.com/design-system",
+      "notes": "External design system reference"
+    }
+  ]
+}

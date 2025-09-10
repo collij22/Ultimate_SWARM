@@ -79,3 +79,10 @@ Phase 13 highlights:
 - Doc generation templates for DB and narration script; media report standardized under `reports/media/production_report.*`
 - Claude path hardened (proper `input_spec`, consent propagation, hints), and router TEST_MODE bypass for API keys during planning
 - Tenant‑scoped artifacts across all demos; spend ledger includes capabilities and aggregates by capability
+
+Phase 14 highlights:
+
+- Reporting enhanced with references browser (advisory), intent comparison (advisory), and spend summary.
+- Offline-first: small assets embedded; large assets copied under `dist/<AUV>/assets/**`.
+- CLI flags: `--references-brief`, `--strict-references`, `--embed-small-assets-kb`, `--spend-source`.
+- Metadata: `dist/<AUV>/report-metadata.json` with advisory summaries.

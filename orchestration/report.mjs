@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile, mkdir, copyFile } from 'fs/promises';
-import { existsSync } from 'fs';
+import { readFile, writeFile, mkdir, copyFile, stat as fsStat } from 'fs/promises';
+import { existsSync, readdirSync } from 'fs';
 import { join, dirname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { normalizeTenant } from './lib/tenant.mjs';
@@ -22,6 +22,20 @@ class ReportGenerator {
     this.outputPath = options.outputPath || this.getDistPath('report.html');
     this.manifestPath = options.manifestPath || this.getDistPath('manifest.json');
     this.startTime = Date.now();
+    // Phase 14 options with safe defaults
+    this.options = {
+      theme: 'light',
+      includeReferences: false,
+      intentCompare: false,
+      embedSmallAssetsKb: 100,
+      spendSource: 'auto',
+      ...options,
+    };
+    // Asset copy cache to avoid redundant copies
+    this.assetCopyCache = new Map();
+    // Advisory report summaries for metadata
+    this._intentSummary = null;
+    this._spendSummaryTotals = null;
   }
 
   /**
@@ -58,6 +72,9 @@ class ReportGenerator {
 
       // Step 5: Write report
       await this.writeReport(html);
+
+      // Step 6: Write advisory report metadata (non-destructive)
+      await this.writeReportMetadata();
 
       await this.emitHooks('ReportComplete', {
         ok: true,
@@ -195,6 +212,17 @@ class ReportGenerator {
 
       // Subagent narrative (Phase 10b-5)
       subagent_narrative: await this.buildSubagentNarrative(),
+
+      // Phase 14 Sections are injected as full HTML blocks
+      references_section: await this.buildReferencesSection(manifest),
+      intent_compare_section: await this.buildIntentCompareSection(manifest),
+      spend_summary_section: await this.buildSpendSummary(manifest),
+
+      // Report metadata
+      report_theme: this.options.theme || 'light',
+      report_offline_ready: true,
+      report_generated_at: new Date().toISOString(),
+      embed_threshold_kb: this.options.embedSmallAssetsKb || 100,
     };
 
     return data;
@@ -211,7 +239,7 @@ class ReportGenerator {
       const entries = [];
       const walk = (dir) => {
         try {
-          const names = require('fs').readdirSync(dir, { withFileTypes: true });
+          const names = readdirSync(dir, { withFileTypes: true });
           for (const d of names) {
             const p = join(dir, d.name);
             if (d.isDirectory()) walk(p);
@@ -293,20 +321,21 @@ class ReportGenerator {
     const screenshots = [];
     const assetsDir = join(dirname(this.outputPath), 'assets');
 
-    // Create assets directory if we have large images
-    let hasLargeImages = false;
+    // Create assets directory lazily if any image exceeds embed threshold
+    const embedThreshold = (this.options.embedSmallAssetsKb || 100) * 1024;
+    let needsAssetsDir = false;
     for (const artifact of manifest.artifacts || []) {
       if (
         artifact.type === 'screenshot' &&
         artifact.path.endsWith('.png') &&
-        artifact.bytes >= 100000
+        artifact.bytes >= embedThreshold
       ) {
-        hasLargeImages = true;
+        needsAssetsDir = true;
         break;
       }
     }
 
-    if (hasLargeImages) {
+    if (needsAssetsDir) {
       await mkdir(assetsDir, { recursive: true });
     }
 
@@ -317,8 +346,8 @@ class ReportGenerator {
 
         if (existsSync(imagePath)) {
           // For large files, copy to assets and use relative link; for small ones, embed as base64
-          if (artifact.bytes < 100000) {
-            // 100KB threshold
+          if (artifact.bytes < embedThreshold) {
+            // Embed threshold
             const imageData = await readFile(imagePath);
             const base64 = imageData.toString('base64');
             screenshots.push({
@@ -907,6 +936,10 @@ class ReportGenerator {
       {{subagent_narrative}}
     </section>
 
+    {{references_section}}
+    {{intent_compare_section}}
+    {{spend_summary_section}}
+
     <section class="provenance">
       <h2>Provenance</h2>
       <div class="provenance-details">
@@ -937,9 +970,12 @@ class ReportGenerator {
   }
 
   /**
-   * Get embedded styles (fallback)
+   * Get embedded styles (fallback) - Phase 14 enhanced
    */
   getEmbeddedStyles() {
+    const theme = this.options.theme || 'light';
+    const isDark = theme === 'dark';
+
     return `
     * {
       margin: 0;
@@ -947,18 +983,30 @@ class ReportGenerator {
       box-sizing: border-box;
     }
 
+    :root {
+      --bg-primary: ${isDark ? '#1a1a1a' : '#ffffff'};
+      --bg-secondary: ${isDark ? '#2a2a2a' : '#f5f5f5'};
+      --text-primary: ${isDark ? '#e0e0e0' : '#333333'};
+      --text-secondary: ${isDark ? '#a0a0a0' : '#666666'};
+      --border-color: ${isDark ? '#444444' : '#dddddd'};
+      --accent-color: ${isDark ? '#4a9eff' : '#007acc'};
+      --success-color: #4caf50;
+      --warning-color: #ff9800;
+      --error-color: #f44336;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
       line-height: 1.6;
-      color: #333;
-      background: #f5f5f5;
+      color: var(--text-primary);
+      background: var(--bg-secondary);
     }
 
     .container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
-      background: white;
+      background: var(--bg-primary);
       min-height: 100vh;
     }
 
@@ -1154,6 +1202,213 @@ class ReportGenerator {
       font-size: 12px;
       overflow-x: auto;
     }
+
+    /* Phase 14: References Browser */
+    .references-browser {
+      margin: 20px 0;
+    }
+
+    .references-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 15px;
+    }
+
+    .reference-item {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 15px;
+      background: var(--bg-secondary);
+    }
+
+    .reference-item img,
+    .reference-item video {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+
+    .reference-label {
+      font-weight: bold;
+      color: var(--accent-color);
+      margin-bottom: 10px;
+    }
+
+    .reference-notes {
+      font-size: 0.9em;
+      color: var(--text-secondary);
+      margin-top: 10px;
+    }
+
+    /* Phase 14: Intent Compare */
+    .intent-compare {
+      margin: 20px 0;
+    }
+
+    .intent-summary {
+      display: flex;
+      gap: 30px;
+      padding: 15px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .intent-summary span {
+      font-weight: 500;
+    }
+
+    .intent-comparison {
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .intent-pass {
+      border-left: 4px solid var(--success-color);
+    }
+
+    .intent-advisory {
+      border-left: 4px solid var(--warning-color);
+    }
+
+    .intent-slider-container {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    .intent-slider input[type="range"] {
+      width: 100%;
+      margin: 10px 0;
+    }
+
+    .slider-images {
+      position: relative;
+      width: 100%;
+      height: auto;
+      overflow: hidden;
+    }
+
+    .slider-images img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .slider-images .actual-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      clip-path: inset(0 50% 0 0);
+    }
+
+    .intent-metrics {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+
+    /* Phase 14: Spend Summary */
+    .spend-summary {
+      margin: 20px 0;
+    }
+
+    .spend-totals {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    .spend-item {
+      padding: 15px;
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .spend-item.primary {
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .spend-item.secondary {
+      border-left: 4px solid var(--warning-color);
+    }
+
+    .spend-item.total {
+      border-left: 4px solid var(--success-color);
+      font-weight: bold;
+    }
+
+    .spend-amount {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+    }
+
+    .spend-by-capability {
+      margin-top: 20px;
+      padding: 15px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+    }
+
+    .spend-by-capability ul {
+      list-style: none;
+      margin-top: 10px;
+    }
+
+    .spend-by-capability li {
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .spend-by-capability li:last-child {
+      border-bottom: none;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .references-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .intent-summary {
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .spend-totals {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+
+      .intent-slider input[type="range"] {
+        display: none;
+      }
+
+      a {
+        color: black;
+        text-decoration: underline;
+      }
+    }
     `;
   }
 
@@ -1174,6 +1429,425 @@ class ReportGenerator {
     await mkdir(dirname(hooksPath), { recursive: true });
     await writeFile(hooksPath, JSON.stringify(hookData) + '\n', { flag: 'a' });
   }
+
+  /**
+   * Phase 14: Build References Section (includes copying/embedding assets)
+   */
+  async buildReferencesSection(manifest) {
+    try {
+      // Load items from manifest if present; otherwise fall back to runs index
+      let items = (manifest.references && manifest.references.items) || [];
+
+      if (items.length === 0) {
+        const runsRoot =
+          this.tenant === 'default'
+            ? join(PROJECT_ROOT, 'runs')
+            : join(PROJECT_ROOT, 'runs', 'tenants', this.tenant);
+        const idxPath = join(runsRoot, this.auvId, 'references', 'references_index.json');
+        if (existsSync(idxPath)) {
+          try {
+            const idx = JSON.parse(await readFile(idxPath, 'utf8'));
+            items = Array.isArray(idx.items) ? idx.items : [];
+          } catch {}
+        }
+      }
+
+      if (items.length === 0) return '';
+
+      const assetsDir = join(dirname(this.outputPath), 'assets');
+      await mkdir(assetsDir, { recursive: true });
+      const thresholdBytes = (this.options.embedSmallAssetsKb || 100) * 1024;
+
+      const grid = [];
+      for (const item of items) {
+        // Basic schema validation per item
+        const type = item?.type;
+        if (!['image', 'video', 'url'].includes(type)) {
+          continue;
+        }
+        const label = this.escapeHtml(item.label || '');
+        const notes = item.notes
+          ? `<div class="reference-notes">${this.escapeHtml(item.notes)}</div>`
+          : '';
+
+        if (item.type === 'url') {
+          const url = this.escapeHtml(item.source || '#');
+          grid.push(`
+            <div class="reference-item">
+              <div class="reference-label">${label}</div>
+              <a href="${url}" target="_blank" rel="noopener noreferrer">External URL</a>
+              ${notes}
+            </div>`);
+          continue;
+        }
+
+        const relPath = (item.path || '').replace(/\\/g, '/');
+        if (!relPath) {
+          console.warn('[report] Skipping reference without path:', item);
+          continue;
+        }
+        const absPath = join(PROJECT_ROOT, relPath);
+        let src = '';
+
+        try {
+          const st = await fsStat(absPath);
+          if (item.type === 'image' && st.size <= thresholdBytes) {
+            src = await this.embedImageAsDataUri(absPath);
+          } else {
+            const relFromRoot = relPath;
+            const dest = join(assetsDir, relFromRoot);
+            await mkdir(dirname(dest), { recursive: true });
+            await copyFile(absPath, dest);
+            src = `./assets/${relFromRoot}`;
+          }
+        } catch {
+          continue;
+        }
+
+        const media =
+          item.type === 'image'
+            ? `<img src="${src}" alt="${label}" loading="lazy" />`
+            : `<video controls src="${src}"></video>`;
+
+        grid.push(`
+          <div class="reference-item">
+            <div class="reference-label">${label}</div>
+            ${media}
+            ${notes}
+          </div>`);
+      }
+
+      return `
+      <section class="references">
+        <h2>Reference Visuals</h2>
+        <div class="references-browser">
+          <div class="references-grid">
+            ${grid.join('\n')}
+          </div>
+        </div>
+      </section>`;
+    } catch (error) {
+      console.warn('[report] Failed to build references browser:', error.message);
+      return '';
+    }
+  }
+
+  /**
+   * Phase 14: Build Intent Compare section
+   */
+  async buildIntentCompareSection(_manifest) {
+    try {
+      const intentComparePath = join(PROJECT_ROOT, 'reports/visual/intent_compare.json');
+      if (!existsSync(intentComparePath)) {
+        return '';
+      }
+
+      const intentData = JSON.parse(await readFile(intentComparePath, 'utf8'));
+      if (!intentData.comparisons || intentData.comparisons.length === 0) {
+        return '';
+      }
+
+      let html = `<section class="intent">
+        <h2>Intent Comparison</h2>
+        <div class="intent-compare">
+          <h3>Intent Comparison (Advisory)</h3>
+          <div class="intent-summary">
+            <span>Method: ${intentData.method}</span>
+            <span>Threshold: ${(intentData.threshold * 100).toFixed(0)}%</span>
+            <span>Average Diff: ${(intentData.avg_diff_pct * 100).toFixed(2)}%</span>
+          </div>
+          <div class="intent-comparisons">`;
+
+      for (const comp of intentData.comparisons) {
+        if (comp.status === 'skipped' || comp.status === 'error') continue;
+
+        const statusClass = comp.status === 'pass' ? 'intent-pass' : 'intent-advisory';
+        const safeId =
+          `${(comp.label || 'ref').replace(/[^a-zA-Z0-9_-]/g, '_')}_${(comp.route || '').replace(/[^a-zA-Z0-9_-]/g, '_')}`.slice(
+            0,
+            80,
+          );
+
+        // Process assets to dist or embed
+        const refSrc = await this.processAssetToDistOrEmbed(
+          (comp.reference || '').replace(/\\/g, '/'),
+          true,
+        );
+        const actSrc = await this.processAssetToDistOrEmbed(
+          (comp.actual || '').replace(/\\/g, '/'),
+          true,
+        );
+        const diffLink = comp.diff_path
+          ? await this.processAssetToDistOrEmbed((comp.diff_path || '').replace(/\\/g, '/'), false)
+          : null;
+
+        const labelText = this.escapeHtml(comp.label || '');
+        const routeText = this.escapeHtml(comp.route || '');
+        const ariaLabel = this.escapeHtml(
+          `Compare reference and actual for ${comp.label || ''} ${comp.route || ''}`,
+        );
+        html += `
+          <div class="intent-comparison ${statusClass}">
+            <h4>${labelText} @ ${routeText}</h4>
+            <div class="intent-slider-container">
+              <div class="intent-slider">
+                <input type="range" min="0" max="100" value="50" role="slider" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50" aria-label="${ariaLabel}"
+                  oninput="updateSlider(this, '${safeId}')" />
+                <div class="slider-images" id="${safeId}">
+                  <img class="reference-img" src="${refSrc}" alt="Reference ${labelText} ${routeText}" />
+                  <img class="actual-img" src="${actSrc}" alt="Actual ${labelText} ${routeText}" />
+                </div>
+              </div>
+              <div class="intent-metrics">
+                <span>Difference: ${(comp.diff_pct * 100).toFixed(2)}%</span>
+                ${diffLink ? `<a href="${diffLink}" target="_blank">View Diff</a>` : ''}
+              </div>
+            </div>
+          </div>`;
+      }
+
+      html += '</div></div></section>';
+
+      // Add slider JavaScript (will be inlined)
+      html += `
+        <script>
+          function updateSlider(slider, id) {
+            const container = document.getElementById(id);
+            if (container) {
+              const actualImg = container.querySelector('.actual-img');
+              if (actualImg) {
+                actualImg.style.clipPath = 'inset(0 ' + (100 - slider.value) + '% 0 0)';
+              }
+            }
+            try { slider.setAttribute('aria-valuenow', String(slider.value)); } catch (e) {}
+          }
+        </script>`;
+
+      // Save summary for metadata
+      this._intentSummary = {
+        total:
+          intentData.total || (intentData.comparisons ? intentData.comparisons.length : 0) || 0,
+        avg_diff_pct: intentData.avg_diff_pct || 0,
+        method: intentData.method || 'pixelmatch',
+        threshold: intentData.threshold || 0,
+      };
+
+      return html;
+    } catch (error) {
+      console.warn('[report] Failed to build intent compare section:', error.message);
+      return '';
+    }
+  }
+
+  /**
+   * Phase 14: Helper to embed small asset or copy to dist assets and return src/href.
+   */
+  async processAssetToDistOrEmbed(relPath, embedIfSmall = false) {
+    try {
+      if (!relPath) return '#';
+      // Normalize and validate path to prevent traversal
+      const sanitizedRel = relPath.replace(/^\/+/, '').replace(/\\/g, '/');
+      const normalizedRel = sanitizedRel
+        .split('/')
+        .reduce((acc, seg) => {
+          if (!seg || seg === '.') return acc;
+          if (seg === '..') return acc; // drop traversals
+          acc.push(seg);
+          return acc;
+        }, [])
+        .join('/');
+      const abs = join(PROJECT_ROOT, normalizedRel);
+      if (!abs.startsWith(PROJECT_ROOT)) {
+        console.warn(`[report] Blocked unsafe asset path (outside project root): ${relPath}`);
+        return '#';
+      }
+      if (!existsSync(abs)) {
+        console.warn(`[report] Asset not found: ${normalizedRel}`);
+        return normalizedRel;
+      }
+
+      const thresholdBytes = (this.options.embedSmallAssetsKb || 100) * 1024;
+      if (embedIfSmall) {
+        const st = await fsStat(abs);
+        if (st.size <= thresholdBytes) {
+          return await this.embedImageAsDataUri(abs);
+        }
+      }
+      const assetsDir = join(dirname(this.outputPath), 'assets');
+      await mkdir(assetsDir, { recursive: true });
+      const dest = join(assetsDir, normalizedRel);
+      if (!dest.startsWith(assetsDir)) {
+        console.warn(`[report] Blocked unsafe destination path (outside assets): ${normalizedRel}`);
+        return '#';
+      }
+      await mkdir(dirname(dest), { recursive: true });
+      if (!this.assetCopyCache.has(abs)) {
+        await copyFile(abs, dest);
+        this.assetCopyCache.set(abs, normalizedRel);
+      }
+      return `./assets/${normalizedRel}`;
+    } catch (e) {
+      console.warn(`[report] Failed to process asset '${relPath}': ${e?.message || e}`);
+      return relPath;
+    }
+  }
+
+  /**
+   * Phase 14: Build Spend Summary section
+   */
+  async buildSpendSummary(manifest) {
+    try {
+      // Prefer aggregated spend report if present
+      const spendAggPath = join(PROJECT_ROOT, 'reports/observability/spend.json');
+      let primarySpend = 0;
+      let secondarySpend = 0;
+      const spendByCapability = {};
+
+      // Aggregator
+      if (existsSync(spendAggPath)) {
+        try {
+          const agg = JSON.parse(await readFile(spendAggPath, 'utf8'));
+          // Try per-auv bucket first
+          const byAuv = agg.byAuv || agg.by_auv || {};
+          const auvEntry = byAuv[this.auvId];
+          if (auvEntry && typeof auvEntry === 'object') {
+            primarySpend = Number(auvEntry.primary_usd || auvEntry.primary || 0);
+            secondarySpend = Number(auvEntry.secondary_usd || auvEntry.secondary || 0);
+            Object.entries(auvEntry.by_capability || {}).forEach(([cap, amt]) => {
+              spendByCapability[cap] = (spendByCapability[cap] || 0) + Number(amt || 0);
+            });
+          } else if (agg.totals) {
+            primarySpend = Number(agg.totals.primary_usd || 0);
+            secondarySpend = Number(agg.totals.secondary_usd || 0);
+          }
+        } catch {}
+      }
+
+      // Fallback to scanning ledgers
+      if (primarySpend === 0 && secondarySpend === 0) {
+        const ledgersDir = join(PROJECT_ROOT, 'runs/observability/ledgers');
+        try {
+          const files = existsSync(ledgersDir) ? readdirSync(ledgersDir) : [];
+          for (const f of files) {
+            if (!f.endsWith('.jsonl')) continue;
+            const lines = (await readFile(join(ledgersDir, f), 'utf8')).split('\n').filter(Boolean);
+            for (const line of lines) {
+              try {
+                const entry = JSON.parse(line);
+                if (entry.auv_id === this.auvId || entry.run_id === this.runId) {
+                  const amount = Number(entry.amount_usd || 0);
+                  if (entry.tier === 'primary') primarySpend += amount;
+                  else if (entry.tier === 'secondary') secondarySpend += amount;
+                  if (entry.capability) {
+                    spendByCapability[entry.capability] =
+                      (spendByCapability[entry.capability] || 0) + amount;
+                  }
+                }
+              } catch {}
+            }
+          }
+        } catch {}
+      }
+
+      // Also check manifest.report.sections.spend_summary if present (v1.2+)
+      if (manifest.report?.sections?.spend_summary) {
+        primarySpend = manifest.report.sections.spend_summary.primary_usd || primarySpend;
+        secondarySpend = manifest.report.sections.spend_summary.secondary_usd || secondarySpend;
+      }
+
+      const totalSpend = primarySpend + secondarySpend;
+
+      if (totalSpend === 0) {
+        return '';
+      }
+
+      let html = `<div class="spend-summary">
+        <h3>MCP Tool Spend Summary</h3>
+        <div class="spend-totals">
+          <div class="spend-item primary">
+            <span class="spend-label">Primary Tools:</span>
+            <span class="spend-amount">$${primarySpend.toFixed(4)}</span>
+          </div>
+          <div class="spend-item secondary">
+            <span class="spend-label">Secondary Tools:</span>
+            <span class="spend-amount">$${secondarySpend.toFixed(4)}</span>
+          </div>
+          <div class="spend-item total">
+            <span class="spend-label">Total:</span>
+            <span class="spend-amount">$${totalSpend.toFixed(4)}</span>
+          </div>
+        </div>`;
+
+      if (Object.keys(spendByCapability).length > 0) {
+        html += `<div class="spend-by-capability">
+          <h4>Spend by Capability</h4>
+          <ul>`;
+
+        for (const [cap, amount] of Object.entries(spendByCapability).sort((a, b) => b[1] - a[1])) {
+          html += `<li>${this.escapeHtml(cap)}: $${amount.toFixed(4)}</li>`;
+        }
+
+        html += '</ul></div>';
+      }
+
+      html += '</div>';
+      // Persist totals for metadata file
+      this._spendSummaryTotals = {
+        primary_usd: primarySpend,
+        secondary_usd: secondarySpend,
+        total_usd: totalSpend,
+      };
+      return html;
+    } catch (error) {
+      console.warn('[report] Failed to build spend summary:', error.message);
+      return '';
+    }
+  }
+
+  /**
+   * Write companion metadata file with advisory report summaries.
+   */
+  async writeReportMetadata() {
+    try {
+      const metaSections = {};
+      if (this._intentSummary) {
+        metaSections.intent_compare = this._intentSummary;
+      }
+      if (this._spendSummaryTotals) {
+        metaSections.spend_summary = this._spendSummaryTotals;
+      }
+      if (Object.keys(metaSections).length === 0) return;
+      const outPath = join(dirname(this.outputPath), 'report-metadata.json');
+      await writeFile(outPath, JSON.stringify({ report: { sections: metaSections } }, null, 2));
+    } catch {}
+  }
+
+  /**
+   * Helper: Embed small image as data URI
+   */
+  async embedImageAsDataUri(imagePath) {
+    try {
+      if (!existsSync(imagePath)) {
+        return '#';
+      }
+
+      const imageBuffer = await readFile(imagePath);
+      const extension = imagePath.split('.').pop().toLowerCase();
+      const mimeType =
+        extension === 'png'
+          ? 'image/png'
+          : extension === 'jpg' || extension === 'jpeg'
+            ? 'image/jpeg'
+            : extension === 'webp'
+              ? 'image/webp'
+              : 'image/png';
+
+      return `data:${mimeType};base64,${imageBuffer.toString('base64')}`;
+    } catch (error) {
+      console.warn('[report] Failed to embed image:', error.message);
+      return '#';
+    }
+  }
 }
 
 /**
@@ -1185,9 +1859,15 @@ async function main() {
   if (args.length < 1) {
     console.error('Usage: node report.mjs <AUV-ID> [options]');
     console.error('Options:');
-    console.error('  --run-id <RUN>     Use specific run ID');
-    console.error('  -o <path>          Output file path');
-    console.error('  --manifest <path>  Path to manifest.json');
+    console.error('  --run-id <RUN>                  Use specific run ID');
+    console.error('  -o <path>                       Output file path');
+    console.error('  --manifest <path>               Path to manifest.json');
+    console.error('  --include-references            Include reference visuals (Phase 14)');
+    console.error('  --intent-compare                Run intent comparison (Phase 14)');
+    console.error('  --theme <light|dark>            Report theme (default: light)');
+    console.error(
+      '  --embed-small-assets-kb <N>     Embed assets smaller than N KB (default: 100)',
+    );
     process.exit(1);
   }
 
@@ -1205,6 +1885,18 @@ async function main() {
         break;
       case '--manifest':
         options.manifestPath = args[++i];
+        break;
+      case '--include-references':
+        options.includeReferences = true;
+        break;
+      case '--intent-compare':
+        options.intentCompare = true;
+        break;
+      case '--theme':
+        options.theme = args[++i];
+        break;
+      case '--embed-small-assets-kb':
+        options.embedSmallAssetsKb = parseInt(args[++i]);
         break;
     }
   }

@@ -15,6 +15,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Phase 13: Optional Secondary Integrations (2025-09-10)
 
+### Phase 14: Reporting & UX Polish (2025-09-10)
+
+#### Added
+
+- Report generator enhancements:
+  - References browser (advisory) with offline-first assets (embed small, copy large → `dist/<AUV>/assets/**`).
+  - Intent comparison (advisory) with accessible sliders and offline-safe images/diffs.
+  - Spend summary sourced from aggregator with ledger fallback and per-capability breakdown.
+  - Advisory metadata output: `dist/<AUV>/report-metadata.json`.
+- CLI flags: `--references-brief`, `--strict-references`, `--embed-small-assets-kb`, `--spend-source`.
+- Hooks: `IntentCompareStart/Complete`, `ReportStart/Complete`.
+
+#### Changed
+
+- Manifest upgraded to v1.2 with `references` and `report.sections`.
+- Tenant-aware bundle path schema accepts `dist/tenants/{tenant}/{AUV}/package.zip`.
+
+#### Documentation
+
+- `docs/REPORTING.md`: Updated usage, CLI flags, offline policy, metadata.
+- `docs/ORCHESTRATION.md`: Manifest v1.2 example and notes.
+- `docs/hooks.md`: New Phase 14 events.
+- `docs/verify.md`: Phase 14 offline verification steps.
+- `docs/QUALITY-GATES.md`: Clarified advisory nature of Phase 14 sections.
+
 #### Added
 
 - Secondary MCP demos and TEST_MODE stubs:

@@ -62,7 +62,15 @@ Commands:
   graph-from-backlog <backlog.yaml> [-o output]   Compile backlog to executable graph
   build-lane <AUV-ID> --patch <file> [options]    Run autonomous build lane
   package <AUV-ID>                                Create distribution bundle for AUV
-  report <AUV-ID>                                 Generate HTML report from manifest
+  report <AUV-ID> [options]                       Generate HTML report from manifest
+    --include-references                          Include reference visuals (Phase 14)
+    --references-brief <path>                     Path to references JSON for ingestion
+    --intent-compare                              Run intent comparison (Phase 14)
+    --theme <light|dark>                          Report theme
+    --embed-small-assets-kb <N>                   Embed assets smaller than N KB
+    --strict-references                           Fail if no references ingested when included
+    --spend-source <auto|aggregator|ledger>       Source of spend data (default: auto)
+  ingest-references <AUV-ID> [brief-path]         Ingest reference visuals for AUV (Phase 14)
   deliver <AUV-ID>                                Full delivery pipeline (run → package → report)
 
 Engine Commands (Durable Execution):
@@ -443,6 +451,46 @@ async function main() {
     }
   }
 
+  // Handle ingest-references command (Phase 14)
+  if (command === 'ingest-references') {
+    const auvId = args[1];
+    const briefPath = args[2] || 'briefs/demo-01/references/references.json';
+
+    if (!auvId) {
+      console.error('Usage: node orchestration/cli.mjs ingest-references <AUV-ID> [brief-path]');
+      process.exit(2);
+    }
+
+    console.log(`[cli] Ingesting references for ${auvId}`);
+
+    try {
+      const { ingestReferences } = await import('./lib/reference_ingest.mjs');
+
+      // Load references from brief
+      let references = [];
+      if (fs.existsSync(briefPath)) {
+        const briefData = JSON.parse(fs.readFileSync(briefPath, 'utf8'));
+        references = briefData.references || [];
+      }
+
+      const results = await ingestReferences(references, {
+        auvId,
+        testMode: process.env.TEST_MODE === 'true',
+      });
+
+      console.log('\n✅ References ingested successfully:');
+      console.log(`  Count: ${results.count}`);
+      console.log(`  Skipped: ${results.skipped.length}`);
+      console.log(`  Deduped: ${results.deduped}`);
+      console.log(`  Total bytes: ${results.bytes_total}`);
+
+      process.exit(0);
+    } catch (error) {
+      console.error(`[cli] Reference ingestion error: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
   // Handle report command
   if (command === 'report') {
     const auvId = args[1];
@@ -453,8 +501,95 @@ async function main() {
 
     console.log(`[cli] Generating report for ${auvId}`);
 
+    // Parse Phase 14 options
+    const options = {};
+    let referencesBrief = null;
+    let strictReferences = false;
+    let spendSource = 'auto';
+    for (let i = 2; i < args.length; i++) {
+      switch (args[i]) {
+        case '--include-references':
+          options.includeReferences = true;
+          break;
+        case '--references-brief':
+          referencesBrief = args[++i];
+          break;
+        case '--intent-compare':
+          options.intentCompare = true;
+          break;
+        case '--theme':
+          options.theme = args[++i];
+          break;
+        case '--embed-small-assets-kb':
+          options.embedSmallAssetsKb = parseInt(args[++i]);
+          break;
+        case '--strict-references':
+          strictReferences = true;
+          break;
+        case '--spend-source':
+          spendSource = (args[++i] || 'auto').toLowerCase();
+          break;
+      }
+    }
+
+    // Run reference ingestion if requested
+    if (options.includeReferences) {
+      console.log('[cli] Running reference ingestion...');
+      try {
+        const { ingestReferences } = await import('./lib/reference_ingest.mjs');
+        const briefPath = referencesBrief || 'briefs/demo-01/references/references.json';
+
+        if (fs.existsSync(briefPath)) {
+          const briefData = JSON.parse(fs.readFileSync(briefPath, 'utf8'));
+          const references = briefData.references || [];
+
+          const results = await ingestReferences(references, {
+            auvId,
+            testMode: process.env.TEST_MODE === 'true',
+          });
+          console.log('  ✅ References ingested');
+          if (strictReferences && (!results || results.count === 0)) {
+            console.error(
+              '[cli] --strict-references: no valid references ingested. Aborting report.',
+            );
+            process.exit(2);
+          }
+        } else {
+          console.warn(`[cli] References brief not found: ${briefPath}`);
+          if (strictReferences) {
+            console.error('[cli] --strict-references: references brief missing. Aborting report.');
+            process.exit(2);
+          }
+        }
+      } catch (error) {
+        console.warn('[cli] Reference ingestion failed:', error.message);
+        if (strictReferences) {
+          console.error('[cli] --strict-references: ingestion error. Aborting report.');
+          process.exit(2);
+        }
+      }
+    }
+
+    // Run intent comparison if requested
+    if (options.intentCompare) {
+      console.log('[cli] Running intent comparison...');
+      try {
+        const { VisualCompare } = await import('./visual/compare.mjs');
+        const compare = new VisualCompare();
+
+        const referencesPath = path.join('runs', auvId, 'references', 'references_index.json');
+        if (fs.existsSync(referencesPath)) {
+          const referencesData = JSON.parse(fs.readFileSync(referencesPath, 'utf8'));
+          await compare.compareIntent(auvId, referencesData.items);
+          console.log('  ✅ Intent comparison complete');
+        }
+      } catch (error) {
+        console.warn('[cli] Intent comparison failed:', error.message);
+      }
+    }
+
     try {
-      const generator = new ReportGenerator(auvId);
+      const generator = new ReportGenerator(auvId, { ...options, spendSource });
       const reportPath = await generator.generate();
 
       console.log('\n✅ Report generated successfully:');

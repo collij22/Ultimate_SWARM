@@ -476,7 +476,7 @@ class PackageBuilder {
     const toolVersions = await this.getToolVersions();
 
     const manifest = {
-      version: '1.1',
+      version: '1.2',
       auv_id: this.auvId,
       run_id: this.runId,
       commit: gitInfo,
@@ -537,6 +537,36 @@ class PackageBuilder {
     }
 
     manifest.timings_ms.total = manifest.timings_ms.runbook + manifest.timings_ms.packaging;
+
+    // Phase 14: references (from runs index if present)
+    try {
+      const idxPath = join(
+        PROJECT_ROOT,
+        tenantPath(this.tenant, `${this.auvId}/references/references_index.json`),
+      );
+      if (existsSync(idxPath)) {
+        const idx = JSON.parse(await readFile(idxPath, 'utf8'));
+        if (idx && Array.isArray(idx.items)) {
+          // Normalize to manifest-friendly paths
+          manifest.references = {
+            count: idx.items.length,
+            items: idx.items
+              .filter((it) => it.type !== 'url')
+              .map((it) => ({
+                label: it.label,
+                type: it.type,
+                path: it.path,
+                sha256: it.sha256 || '',
+                bytes: it.bytes || 0,
+              })),
+          };
+        }
+      }
+    } catch {}
+
+    // Phase 14: report.sections skeleton (filled by report generator as needed)
+    manifest.report = manifest.report || {};
+    manifest.report.sections = manifest.report.sections || {};
 
     return manifest;
   }

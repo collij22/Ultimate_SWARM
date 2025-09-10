@@ -18,8 +18,8 @@
     "version": {
       "type": "string",
       "description": "Manifest schema version",
-      "enum": ["1.0", "1.1"],
-      "default": "1.1"
+      "enum": ["1.0", "1.1", "1.2"],
+      "default": "1.2"
     },
     "auv_id": {
       "type": "string",
@@ -430,7 +430,10 @@
       "properties": {
         "zip_path": {
           "type": "string",
-          "pattern": "^dist/AUV-\\d{4}/package\\.zip$"
+          "anyOf": [
+            { "pattern": "^dist/AUV-\\d{4}/package\\.zip$" },
+            { "pattern": "^dist/tenants/[\\\\/A-Za-z0-9_.-]+/AUV-\\d{4}/package\\.zip$" }
+          ]
         },
         "bytes": {
           "type": "integer",
@@ -443,6 +446,144 @@
         "compression": {
           "type": "string",
           "enum": ["deflate", "store", "bzip2"]
+        }
+      }
+    },
+    "references": {
+      "type": "object",
+      "description": "Reference visuals for intent comparison (v1.2+)",
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of reference items"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "type", "path", "sha256"],
+            "properties": {
+              "label": {
+                "type": "string",
+                "description": "Reference label"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["image", "video", "url"]
+              },
+              "path": {
+                "type": "string",
+                "description": "Path to the ingested reference"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "bytes": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "description": "Report generation metadata (v1.2+)",
+      "properties": {
+        "sections": {
+          "type": "object",
+          "properties": {
+            "intent_compare": {
+              "type": "object",
+              "description": "Intent comparison results (advisory)",
+              "properties": {
+                "total": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Total comparisons performed"
+                },
+                "avg_diff_pct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Average difference percentage"
+                },
+                "method": {
+                  "type": "string",
+                  "enum": ["pixelmatch", "ssim"],
+                  "description": "Comparison method used"
+                },
+                "threshold": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1,
+                  "description": "Threshold used for comparison"
+                }
+              }
+            },
+            "data_insights": {
+              "type": "object",
+              "properties": {
+                "rows_processed": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "metrics_generated": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "media": {
+              "type": "object",
+              "properties": {
+                "audio_duration_ms": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "video_duration_ms": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "has_audio_track": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "spend_summary": {
+              "type": "object",
+              "properties": {
+                "primary_usd": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "secondary_usd": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "total_usd": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark"],
+          "description": "Report theme used"
+        },
+        "offline_ready": {
+          "type": "boolean",
+          "description": "Whether report works offline"
+        },
+        "generated_at": {
+          "type": "integer",
+          "description": "Unix timestamp of report generation"
         }
       }
     },

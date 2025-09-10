@@ -788,13 +788,13 @@ node orchestration/cli.mjs deliver AUV-0005
 #   Report: dist/AUV-0005/report.html
 ```
 
-### Manifest Schema v1.1
+### Manifest Schema v1.2 (Phase 14)
 
-The enhanced manifest includes:
+The enhanced manifest includes (new in v1.2: references, report.sections, tenant bundle path variants):
 
 ```json
 {
-  "version": "1.1",
+  "version": "1.2",
   "auv_id": "AUV-0005",
   "build_id": "build-abc123",
   "timestamp": "2025-01-09T10:30:00Z",
@@ -815,9 +815,19 @@ The enhanced manifest includes:
   },
   "artifacts": [...],
   "bundle": {
-    "path": "dist/AUV-0005/AUV-0005_bundle.zip",
-    "size_bytes": 251576,
+    "zip_path": "dist/AUV-0005/package.zip",
+    "bytes": 251576,
     "sha256": "abc123..."
+  },
+  "references": {
+    "count": 3,
+    "items": [ { "label": "Hero", "type": "image", "path": "runs/AUV-0005/references/hero.png" } ]
+  },
+  "report": {
+    "sections": {
+      "intent_compare": { "total": 2, "avg_diff_pct": 0.07 },
+      "spend_summary": { "primary_usd": 0.0000, "secondary_usd": 0.0500 }
+    }
   },
   "deliverable": {
     "level": 3,

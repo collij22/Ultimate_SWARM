@@ -23,6 +23,11 @@ This prevents performance overhead during simple file reads, questions, or gener
 - `scripts/hooks/subagent_stop.py` — writes per-agent result cards to `runs/<AUV>/result-cards/*` **[Swarm Mode Only]**
 - `scripts/hooks/session_end.py` — session summary card **[Swarm Mode Only]**
 
+Phase 14 visual/reporting hooks:
+
+- `IntentCompareStart` / `IntentCompareComplete` — emitted by `orchestration/visual/compare.mjs` at start/finish with `{ auv_id, run_id, method, threshold, comparisons, avg_diff_pct }` (Complete only)
+- `ReportStart` / `ReportComplete` — emitted by `orchestration/report.mjs` for report lifecycle with `{ ok, duration_ms }` on Complete
+
 **Logs:** `runs/observability/hooks.jsonl`  
 **Result Cards:** `runs/<AUV-ID>/result-cards/*.json`
 

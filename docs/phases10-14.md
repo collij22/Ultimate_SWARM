@@ -445,12 +445,13 @@ nodes:
   - Observability: ledgers reflect Secondary spend; ToolDecision events record alternatives
   - Acceptance: Secondary proposed only under policy; spend recorded; artifacts remain deterministic and auditable.
 
-- Phase 14 — Reporting/UX Polish
-  - Reference visuals (advisory): brief schema `references[]` (image/video/url, label); ingest to `runs/<AUV>/references/`; link in report
-  - Side‑by‑side: where screenshots match reference labels/routes, show side‑by‑side; soft “intent fit” via existing visual module (non‑blocking)
-  - Data/Media in report: embed `insights.json`, chart galleries, and media thumbnails; large assets preserved under `dist/<AUV>/assets/`
-  - Offline/UX: preserved asset paths, escaped JSON, deterministic ordering
-  - Acceptance: reports render offline with references and Subagent Narrative; assets resolved; no regressions.
+- Phase 14 — Reporting/UX Polish (Completed)
+  - Reference visuals (advisory): brief schema `references[]` (image/video/url, label); tenant-aware ingestion to `runs/tenants/{tenant}/<AUV>/references/`; rendered in report; small assets embedded, large copied under `dist/<AUV>/assets/**`.
+  - Side‑by‑side (advisory): intent compare renders offline-safe sliders with sanitized IDs; method/threshold/avg diff summarized; diffs linked if present.
+  - Spend summary: aggregator-first (`reports/observability/spend.json`), ledger fallback; totals and per-capability breakdown; tenant-aware.
+  - Manifest v1.2: `references`, `report.sections.intent_compare` and `spend_summary`; bundle path uses `bundle.zip_path` with tenant variants.
+  - Offline/UX: strict removal of `runs/**` links, data-URI policy for small assets, a11y on sliders, deterministic ordering.
+  - Acceptance: reports render offline with references/intent/spend; metadata written to `dist/<AUV>/report-metadata.json`; hooks emitted for `ReportStart/Complete` and `IntentCompare*`.
 
 ---
 

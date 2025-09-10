@@ -53,6 +53,31 @@ set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/pr
 set RUN_ID=RUN-demo && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
 ````
 
+### Phase 14 — Report Offline & Spend Verification
+
+```bash
+# Generate Phase 14 report with strict references and offline policy
+set TEST_MODE=true && node orchestration/cli.mjs report AUV-1202 \
+  --include-references \
+  --references-brief briefs/demo-01/references/references.json \
+  --intent-compare \
+  --embed-small-assets-kb 128 \
+  --strict-references \
+  --spend-source auto
+
+# Verify: no external paths in HTML (Windows PowerShell example)
+Select-String -Pattern "http://|https://|runs/" -Path "dist/AUV-1202/report.html"
+
+# Verify: metadata summaries present
+Get-Content "dist/AUV-1202/report-metadata.json" -Raw | ConvertFrom-Json | Format-List
+```
+
+Pass if:
+
+- `dist/<AUV>/report.html` contains no `runs/` or absolute `http(s)://` links for assets
+- `dist/<AUV>/assets/**` contains copied large assets; small assets appear as `data:` URIs
+- `dist/<AUV>/report-metadata.json` includes `report.sections.intent_compare` and `spend_summary` when applicable
+
 CVF strict auto‑detects domains. In TEST_MODE, performance budgets are evaluated when Lighthouse artifacts exist; otherwise, the budget evaluator records a "skipped" summary and CVF does not fail on missing perf data.
 
 ````

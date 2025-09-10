@@ -115,7 +115,16 @@
       "Bash(TEST_MODE=true SWARM_MODE=claude SECONDARY_CONSENT=true node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-large.yaml)",
       "Bash(TEST_MODE=true node orchestration/cvf-check.mjs payments-test --strict)",
       "Bash(TEST_MODE=true SWARM_MODE=deterministic SECONDARY_CONSENT=true node orchestration/graph/runner.mjs orchestration/graph/projects/payments-test-demo.yaml)",
-      "Bash(test_cloud_db.bat)"
+      "Bash(test_cloud_db.bat)",
+      "Bash(if [ -d \"runs/observability\" ])",
+      "Bash(then echo \"EXISTS: hooks.jsonl\")",
+      "Bash(else echo \"NO HOOKS LOG\")",
+      "Bash(if [ -d \"runs/AUV-1201/references\" ])",
+      "Bash(then echo \"Directory exists\")",
+      "Bash(else echo \"Directory not found\")",
+      "Bash(if [ -d \"runs/tenants/default/AUV-1201/references\" ])",
+      "Bash(then echo \"Found in tenant path\")",
+      "Bash(else echo \"Not in tenant path\")"
     ],
     "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
     "ask": []

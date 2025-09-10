@@ -95,6 +95,42 @@
       "type": "string",
       "description": "Additional context about the project background and motivations",
       "maxLength": 5000
+    },
+    "references": {
+      "type": "array",
+      "description": "Visual references for intent comparison (advisory only)",
+      "items": {
+        "type": "object",
+        "required": ["label", "type", "source"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Label for the reference (e.g., 'Hero', 'Product Grid')",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of reference",
+            "enum": ["image", "video", "url"]
+          },
+          "source": {
+            "type": "string",
+            "description": "Local path or URL to the reference",
+            "minLength": 1
+          },
+          "route": {
+            "type": "string",
+            "description": "Associated UI route for comparison (e.g., '/products', '/cart')"
+          },
+          "notes": {
+            "type": "string",
+            "description": "Additional notes about the reference",
+            "maxLength": 500
+          }
+        }
+      },
+      "maxItems": 20
     }
   },
   "additionalProperties": true
