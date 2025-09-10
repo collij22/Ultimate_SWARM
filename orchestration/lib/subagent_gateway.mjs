@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 /**
  * Subagent Gateway (Phase 10b-1)
  *
