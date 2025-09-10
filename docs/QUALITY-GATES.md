@@ -61,6 +61,7 @@
 - **Metrics**: LCP, TTI, CLS, FCP, TBT, SI, size, score
 - **Budgets**: Defined in `capabilities/<AUV>.yaml` under `perf_budgets`
 - **Enforcement**: >20% over = high severity (blocking)
+- **TEST_MODE Behavior (Phase 12)**: If Lighthouse results are unavailable in TEST_MODE, performance budget evaluation is marked as "skipped" and does not block CVF. A budget evaluation summary is still written to `runs/<AUV>/perf/budget-evaluation.json` documenting the skip reason.
 
 ### 8. Deliverable Level-3 Gate
 
@@ -108,6 +109,11 @@
 #### Auto-detection in Strict Mode
 
 When `--strict` is used without `--domains`, CVF automatically detects and validates all domains with artifacts present.
+
+#### Demo Nodes and Fixtures (Phase 12)
+
+- `demo_runbook` node (graphs: data-video-demo, seo-audit-demo) generates a minimal runbook summary only for demo AUVs (AUV‑1201/1202) under DEMO_MODE/TEST_MODE. Production runs should rely on the standard runbook.
+- `web_search_fetch` honors TEST_MODE and uses a canonical-rich local HTML fixture to produce deterministic SEO artifacts when API keys are unavailable.
 
 #### Threshold Configuration
 

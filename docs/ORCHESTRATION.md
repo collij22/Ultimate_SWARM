@@ -121,7 +121,8 @@ Node types:
   - Deterministic: placeholder or deterministic path
   - Claude: routes through subagent gateway → router plan → tool executor (caching) → artifacts
 - `web_search_fetch`: Brave search + fetch first result; writes `runs/websearch_*` artifacts
-- `package`/`report`: Future packaging/reporting
+- `package` / `report`: Create distribution bundles and HTML reports (Phase 7)
+- `demo_runbook`: Generate a minimal runbook summary for demo AUVs (Phase 12; gated by DEMO_MODE/TEST_MODE)
 
 #### Phase 10a Node Example
 
@@ -134,6 +135,7 @@ Node types:
   - `params.execution: claude|deterministic`
 - Windows examples:
   - `set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml`
+  - `set RUN_ID=RUN-demo && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml` (optional stable RUN_ID)
 
 Engine components:
 
@@ -155,6 +157,32 @@ nodes:
     params:
       capability: seo.audit
 ```
+
+### Phase 12 — End-to-End Demos
+
+Two demonstration graphs exercise data/media and SEO/reporting pipelines end-to-end with packaging and reporting. These are designed to be deterministic and policy-compliant.
+
+Run (Windows examples shown; set TEST_MODE to use local fixtures):
+
+```bash
+# Data → Insights → Chart → TTS → Video → Runbook → Package → Report
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
+
+# SEO Search/Fetch → SEO Audit → Doc Generate → Runbook → Package → Report
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+
+# Optional: Hybrid mode (subagent planning)
+set TEST_MODE=true && set SWARM_MODE=hybrid && set SUBAGENTS_INCLUDE=B7.rapid_builder && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+
+# Optional: Provide a stable RUN_ID for predictable artifact paths
+set RUN_ID=RUN-demo && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
+```
+
+Notes:
+
+- `demo_runbook` node creates a minimal runbook summary only for demo AUVs (AUV‑1201/1202) when DEMO_MODE or TEST_MODE is set; production runs should use the standard runbook.
+- `web_search_fetch` honors TEST_MODE and writes deterministic artifacts from a local HTML fixture when API keys are unavailable.
+- CVF strict auto-detects domains (data, charts, seo, media, db) and validates available artifacts; performance budgets are evaluated when Lighthouse data is present.
 
 #### Performance Benefits
 

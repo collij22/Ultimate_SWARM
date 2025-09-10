@@ -2,7 +2,7 @@
 
 import { readFile, writeFile, stat, mkdir, readdir } from 'fs/promises';
 import { createReadStream, createWriteStream, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, sep } from 'path';
 import { createHash, randomBytes } from 'crypto';
 import { pipeline } from 'stream/promises';
 import yazl from 'yazl';
@@ -186,9 +186,9 @@ class PackageBuilder {
       // Handle wildcard paths
       if (artifactPath.includes('*')) {
         const { glob } = await import('glob');
-        const pattern = artifactPath.split(path.sep).join('/'); // Use forward slashes for glob
+        const pattern = artifactPath.split(sep).join('/'); // Use forward slashes for glob
         const matches = glob.sync(pattern, { cwd: PROJECT_ROOT, nodir: true });
-        
+
         if (matches.length > 0) {
           // Use the first matching file
           const matchedPath = matches[0];

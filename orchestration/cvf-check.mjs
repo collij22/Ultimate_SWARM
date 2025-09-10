@@ -80,7 +80,7 @@ function validateSpecial(file) {
     filesToCheck = glob.sync(file, { nodir: true });
     if (filesToCheck.length === 0) return null; // No files to validate
   }
-  
+
   // Validate each matching file
   for (const actualFile of filesToCheck) {
     // Minimal sanity checks for certain artifact types
@@ -187,6 +187,10 @@ async function checkPerformanceBudgets(auvId) {
     } else {
       results.messages.push('Performance: All budgets met');
     }
+  } else if (budgetResult && budgetResult.skipped) {
+    // In TEST_MODE, missing Lighthouse is acceptable; record message but do not fail
+    const reason = budgetResult.reason || 'skipped';
+    results.messages.push(`Performance: Skipped (${reason})`);
   }
 
   return results;

@@ -1,0 +1,23 @@
+{
+  "generated_at": "2025-09-10T16:15:18.847Z",
+  "script_path": "media/script.txt",
+  "audio_path": "media/narration.wav",
+  "video_path": "media/final.mp4",
+  "expected_duration_s": 6.533333333333333,
+  "actual_duration_s": 6.533333333333333,
+  "video_width": 1280,
+  "video_height": 720,
+  "has_audio_track": true,
+  "duration_variance_pct": 0,
+  "video_codec": "h264",
+  "audio_codec": "aac",
+  "fps": 30,
+  "file_size": 36,
+  "version": "1.0",
+  "generator": "placeholder",
+  "inputs": {
+    "video_source": "bar.png",
+    "video_type": "png",
+    "audio_sample_rate": 44100
+  }
+}

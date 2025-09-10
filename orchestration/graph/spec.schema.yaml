@@ -46,6 +46,7 @@ properties:
             - report
             - work_simulation
             - web_search_fetch
+            - demo_runbook
           description: 'Node execution type'
 
         params:

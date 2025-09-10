@@ -32,6 +32,10 @@ set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph
 
 # Hybrid (include specific roles)
 set SWARM_MODE=hybrid && set SUBAGENTS_INCLUDE=A2.requirements_analyst,B7.rapid_builder && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+
+# Demo pipelines (Phase 12)
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
 ```
 
 ### Phase 10a — Search & Fetch Proof

@@ -1,0 +1,64 @@
+auv:
+  id: AUV-1202
+  name: SEO Audit and Reporting Pipeline
+  user_story: 'As a website owner, I can audit my site for SEO issues and receive a comprehensive report with recommendations'
+  priority: high
+  deliverable_level: 3
+  
+capabilities:
+  - web.search
+  - web.fetch
+  - seo.audit
+  - doc.generate
+
+acceptance:
+  outcome:
+    - Web search returns relevant results (or uses fallback)
+    - Target page fetched and parsed successfully
+    - SEO audit identifies titles, meta tags, canonicals
+    - Zero broken links detected on test page
+    - Comprehensive report generated with findings
+    - Artifacts stored in correct locations
+  
+  proofs:
+    - search_results: 'runs/websearch_demo/brave_search.json'
+    - fetched_html: 'runs/websearch_demo/first_result.html'
+    - audit_json: 'reports/seo/audit.json'
+    - audit_summary: 'reports/seo/summary.md'
+    - html_report: 'dist/AUV-1202/report.html'
+
+authoring_hints:
+  ui:
+    routes: []  # No UI for this pipeline
+  api:
+    endpoints: []  # No API endpoints
+  data:
+    test_url: 'http://127.0.0.1:3000'
+    fallback_fixture: 'tests/fixtures/mock-seo-page.html'
+
+artifacts:
+  required:
+    - 'runs/websearch_demo/brave_search.json'
+    - 'runs/websearch_demo/first_result.html'
+    - 'reports/seo/audit.json'
+    - 'reports/seo/summary.md'
+
+cvf:
+  thresholds:
+    seo:
+      max_broken_links: 0
+      min_canonical_rate: 0.8
+      max_load_time_ms: 3000
+      required_meta_tags: ['description', 'keywords', 'robots']
+      required_og_tags: ['og:title', 'og:description']
+      page_issue_fail_rate: 0.1
+
+test_mode:
+  enabled_by: 
+    - TEST_MODE=true
+    - Missing BRAVE_API_KEY
+  behavior: Use mock-seo-page.html fixture instead of live search
+
+dependencies: []
+budget_usd: 0.10
+estimated_hours: 0.25

@@ -52,6 +52,13 @@ export class BudgetEvaluator {
     );
 
     if (!fs.existsSync(lighthousePath)) {
+      // In TEST_MODE, allow budgets to be skipped when Lighthouse is unavailable
+      if (process.env.TEST_MODE === 'true') {
+        console.warn(
+          `[budget-evaluator] Lighthouse results not found at ${lighthousePath}; skipping in TEST_MODE`,
+        );
+        return null; // Signal caller to skip
+      }
       throw new Error(`Lighthouse results not found: ${lighthousePath}`);
     }
 
@@ -254,6 +261,31 @@ export class BudgetEvaluator {
 
       // Load Lighthouse results
       const lighthouseData = await this.loadLighthouseResults(auvId, tenant);
+
+      // If Lighthouse is unavailable in TEST_MODE, skip budget evaluation gracefully
+      if (lighthouseData === null) {
+        const skipSummary = {
+          auv_id: auvId,
+          timestamp: new Date().toISOString(),
+          passed: true,
+          skipped: true,
+          reason: 'lighthouse_missing_in_test_mode',
+          budgets,
+        };
+
+        const summaryPath = path.join(
+          process.cwd(),
+          tenantPath(tenant, `${auvId}/perf/budget-evaluation.json`),
+        );
+        fs.mkdirSync(path.dirname(summaryPath), { recursive: true });
+        fs.writeFileSync(summaryPath, JSON.stringify(skipSummary, null, 2));
+
+        console.log(
+          `[budget-evaluator] ${auvId}: Skipped performance budget evaluation (TEST_MODE; no Lighthouse)`,
+        );
+
+        return skipSummary;
+      }
 
       // Extract metrics
       const metrics = this.extractMetrics(lighthouseData);

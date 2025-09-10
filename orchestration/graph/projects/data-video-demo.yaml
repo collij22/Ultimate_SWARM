@@ -15,7 +15,7 @@ nodes:
     type: agent_task
     params:
       capability: data.ingest
-      input: briefs/demo-01/data.csv
+      input: tests/fixtures/sample-data.csv
 
   - id: insights
     type: agent_task
@@ -41,11 +41,24 @@ nodes:
     params:
       capability: video.compose
 
-  - id: report
-    type: report
+  - id: demo_runbook
+    type: demo_runbook
     requires: [video]
     params:
-      auv: AUV-9999
+      auv: AUV-1201
+      steps: ['data.ingest', 'data.insights', 'chart.render', 'audio.tts', 'video.compose']
+
+  - id: package
+    type: package
+    requires: [demo_runbook]
+    params:
+      auv: AUV-1201
+
+  - id: report
+    type: report
+    requires: [package]
+    params:
+      auv: AUV-1201
 
 edges:
   - [server, ingest]
@@ -54,4 +67,6 @@ edges:
   - [insights, tts]
   - [chart, video]
   - [tts, video]
-  - [video, report]
+  - [video, demo_runbook]
+  - [demo_runbook, package]
+  - [package, report]

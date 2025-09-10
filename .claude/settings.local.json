@@ -92,9 +92,23 @@
       "Bash(if [ -d \".claude/knowledge\" ])",
       "Bash(then echo \"EXISTS\")",
       "Bash(else echo \"MISSING\")",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(set TEST_MODE=true)",
+      "Bash(set SWARM_MODE=deterministic)",
+      "Bash(set DEMO_MODE=true)",
+      "Bash(set RUN_ID=test-cvf-run)",
+      "Bash(set RUN_ID=cvf-test-run)",
+      "Bash(set RUN_ID=test-123)",
+      "Bash(RUN_ID=cvf-test-run node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml)",
+      "Bash(RUN_ID=cvf-test-run TEST_MODE=true DEMO_MODE=true node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml)",
+      "Bash(TEST_MODE=true node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml)",
+      "Bash(del runsAUV-1201nul)"
     ],
-    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)"
+    ],
     "ask": []
   },
   "enableAllProjectMcpServers": true,

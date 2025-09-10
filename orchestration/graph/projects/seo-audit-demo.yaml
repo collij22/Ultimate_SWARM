@@ -25,6 +25,28 @@ nodes:
     params:
       capability: doc.generate
 
+  - id: demo_runbook
+    type: demo_runbook
+    requires: [doc]
+    params:
+      auv: AUV-1202
+      steps: ['web.search', 'web.fetch', 'seo.audit', 'doc.generate']
+
+  - id: package
+    type: package
+    requires: [demo_runbook]
+    params:
+      auv: AUV-1202
+
+  - id: report
+    type: report
+    requires: [package]
+    params:
+      auv: AUV-1202
+
 edges:
   - [search, audit]
   - [audit, doc]
+  - [doc, demo_runbook]
+  - [demo_runbook, package]
+  - [package, report]

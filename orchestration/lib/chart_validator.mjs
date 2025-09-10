@@ -10,6 +10,7 @@ import { readFile, stat } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
+import { PNG } from 'pngjs';
 
 const DEFAULT_MIN_WIDTH = 800;
 const DEFAULT_MIN_HEIGHT = 600;
@@ -35,18 +36,60 @@ function extractPNGDimensions(buffer) {
 }
 
 /**
- * Check if image has non-uniform pixels (not a blank image)
- * Simple heuristic: check if file size suggests compressed content
+ * Check if image has non-uniform pixels using pngjs decoder
  * @param {Buffer} buffer - Image buffer
- * @param {number} width - Image width
- * @param {number} height - Image height
- * @returns {boolean} True if likely has content
+ * @returns {Promise<{hasContent: boolean, colorCount: number, nonWhiteRatio: number}>}
  */
-function hasVisualContent(buffer, width, height) {
-  // A blank PNG of 800x600 with single color is typically < 10KB
-  // Real charts with data are typically > 20KB
-  const expectedMinSize = Math.min(20000, width * height * 0.01);
-  return buffer.length > expectedMinSize;
+async function analyzeVisualContent(buffer) {
+  return new Promise((resolve) => {
+    const png = new PNG();
+    
+    png.on('parsed', function() {
+      const { width, height, data } = this;
+      
+      // Build color histogram
+      const colorMap = new Map();
+      let nonWhitePixels = 0;
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const color = `${r},${g},${b}`;
+        
+        colorMap.set(color, (colorMap.get(color) || 0) + 1);
+        
+        // Count non-white pixels
+        if (r !== 255 || g !== 255 || b !== 255) {
+          nonWhitePixels++;
+        }
+      }
+      
+      const pixelCount = width * height;
+      const nonWhiteRatio = nonWhitePixels / pixelCount;
+      
+      // Chart should have at least 3 colors and 5% non-white pixels
+      const hasContent = colorMap.size >= 3 && nonWhiteRatio > 0.05;
+      
+      resolve({
+        hasContent,
+        colorCount: colorMap.size,
+        nonWhiteRatio
+      });
+    });
+    
+    png.on('error', () => {
+      // Fallback to size heuristic if decoder fails
+      const expectedMinSize = Math.min(20000, buffer.length * 0.01);
+      resolve({
+        hasContent: buffer.length > expectedMinSize,
+        colorCount: 0,
+        nonWhiteRatio: 0
+      });
+    });
+    
+    png.parse(buffer);
+  });
 }
 
 /**
@@ -125,12 +168,16 @@ export async function validateChart(chartPath, options = {}) {
       result.dimensionsValid = true;
     }
 
-    // Check for visual content
-    const hasContent = hasVisualContent(buffer, dimensions.width, dimensions.height);
-    result.hasContent = hasContent;
+    // Check for visual content using pngjs
+    const contentAnalysis = await analyzeVisualContent(buffer);
+    result.hasContent = contentAnalysis.hasContent;
+    result.metadata.colorCount = contentAnalysis.colorCount;
+    result.metadata.nonWhiteRatio = (contentAnalysis.nonWhiteRatio * 100).toFixed(2) + '%';
 
-    if (!hasContent) {
-      result.warnings.push('Chart appears to be blank or have uniform pixels');
+    if (!contentAnalysis.hasContent) {
+      result.warnings.push(
+        `Chart appears to be blank or uniform (${contentAnalysis.colorCount} colors, ${(contentAnalysis.nonWhiteRatio * 100).toFixed(1)}% non-white)`
+      );
       if (options.requireContent !== false) {
         result.valid = false;
         result.errors.push('Chart has no visual content');

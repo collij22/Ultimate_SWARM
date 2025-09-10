@@ -272,30 +272,55 @@ jobs:
           node tests/agents/synthetic/video.compose.test.mjs
           node tests/agents/synthetic/db.migration.test.mjs
 
-      - name: Run demo graphs for Phase 11
+      - name: Run Phase 12 Data-Video Demo
         shell: bash
-        continue-on-error: true
+        continue-on-error: false
+        env:
+          TEST_MODE: 'true'
+          SWARM_MODE: 'deterministic'
         run: |
-          echo "Running Phase 11 demo graphs..."
-          export SWARM_MODE=deterministic
-          if [ -f "orchestration/graph/projects/data-video-demo.yaml" ]; then
-            node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml --concurrency 2
-          fi
-          if [ -f "orchestration/graph/projects/seo-audit-demo.yaml" ]; then
-            node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 2
-          fi
+          echo "Running Phase 12 Data-Video Demo (AUV-1201)..."
+          node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml --concurrency 2
+          echo "✅ Data-Video demo completed"
 
-      - name: CVF domain validation (Phase 11)
+      - name: Run Phase 12 SEO Audit Demo
+        shell: bash
+        continue-on-error: false
+        env:
+          TEST_MODE: 'true'
+          SWARM_MODE: 'deterministic'
+        run: |
+          echo "Running Phase 12 SEO Audit Demo (AUV-1202)..."
+          node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 2
+          echo "✅ SEO Audit demo completed"
+
+      - name: Phase 12 CVF Validation
+        shell: bash
+        run: |
+          echo "Running Phase 12 CVF validation..."
+          # Validate Data-Video demo artifacts
+          if [ -f "capabilities/AUV-1201.yaml" ]; then
+            echo "Validating AUV-1201..."
+            node orchestration/cvf-check.mjs AUV-1201 --strict
+          fi
+          # Validate SEO demo artifacts
+          if [ -f "capabilities/AUV-1202.yaml" ]; then
+            echo "Validating AUV-1202..."
+            node orchestration/cvf-check.mjs AUV-1202 --strict
+          fi
+          echo "✅ Phase 12 CVF validation passed"
+
+      - name: Phase 12 Integration Tests
         shell: bash
         continue-on-error: true
         run: |
-          echo "Running CVF domain validation..."
-          # Test domain validation with sample AUVs if they have domain artifacts
-          if [ -d "runs/AUV-DATA-VIDEO-001" ]; then
-            node orchestration/cvf-check.mjs AUV-DATA-VIDEO-001 --strict --domains data,charts,media
+          echo "Running Phase 12 integration tests..."
+          export TEST_MODE=true
+          if [ -f "tests/integration/data-video-demo.test.mjs" ]; then
+            node tests/integration/data-video-demo.test.mjs
           fi
-          if [ -d "runs/AUV-SEO-001" ]; then
-            node orchestration/cvf-check.mjs AUV-SEO-001 --strict --domains seo
+          if [ -f "tests/integration/seo-audit-demo.test.mjs" ]; then
+            node tests/integration/seo-audit-demo.test.mjs
           fi
 
       - name: Verify report exists

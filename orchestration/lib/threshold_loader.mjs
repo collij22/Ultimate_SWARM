@@ -10,10 +10,39 @@ const PROJECT_ROOT = path.resolve(process.cwd());
 /**
  * Load thresholds from policies.yaml and capability YAML
  * @param {string} auvId - The AUV identifier
- * @param {string} domain - Domain type (data, charts, seo, media, db)
+ * @param {string} [domain] - Optional domain type (data, charts, seo, media, db)
  * @returns {Object} Merged threshold configuration
  */
 export function loadThresholds(auvId, domain) {
+  // If no domain specified, return all thresholds for the AUV
+  if (!domain) {
+    const allThresholds = {};
+    
+    // Load AUV-specific thresholds
+    try {
+      const capabilityPath = path.join(PROJECT_ROOT, 'capabilities', `${auvId}.yaml`);
+      if (fs.existsSync(capabilityPath)) {
+        const capability = parseYaml(fs.readFileSync(capabilityPath, 'utf8'));
+        if (capability?.cvf?.thresholds) {
+          Object.assign(allThresholds, capability.cvf.thresholds);
+        }
+      }
+    } catch (e) {
+      // Silently skip if no AUV-specific config
+    }
+    
+    // Merge with defaults for any missing domains
+    const domains = ['data', 'charts', 'seo', 'media', 'db'];
+    for (const d of domains) {
+      if (!allThresholds[d]) {
+        allThresholds[d] = getDefaultThresholds(d);
+      }
+    }
+    
+    return allThresholds;
+  }
+  
+  // Original behavior for specific domain
   const thresholds = {};
 
   // 1. Load global defaults from policies.yaml

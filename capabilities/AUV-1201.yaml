@@ -1,0 +1,78 @@
+auv:
+  id: AUV-1201
+  name: Data-to-Video Analytics Pipeline
+  user_story: 'As a business analyst, I can transform raw data into narrated video presentations with insights and visualizations'
+  priority: high
+  deliverable_level: 3
+  
+capabilities:
+  - data.ingest
+  - data.insights
+  - chart.render
+  - audio.tts
+  - video.compose
+  - doc.generate
+
+acceptance:
+  outcome:
+    - Data successfully ingested from CSV with 100+ rows
+    - Top-3 categories identified and insights generated
+    - Charts rendered at 1280x720 resolution
+    - Audio narration generated with correct duration
+    - Video composed with synchronized audio/visual
+    - Report generated with embedded media
+  
+  proofs:
+    - data_manifest: 'runs/*/data/checksum_manifest.json'
+    - insights_json: 'runs/*/data/insights.json'
+    - chart_png: 'runs/*/charts/bar.png'
+    - audio_file: 'media/narration.wav'
+    - video_file: 'media/final.mp4'
+    - compose_metadata: 'media/compose-metadata.json'
+    - html_report: 'dist/AUV-1201/report.html'
+
+authoring_hints:
+  ui:
+    routes: []  # No UI for this data pipeline
+  api:
+    endpoints: []  # No API endpoints
+  data:
+    input_file: 'tests/fixtures/sample-data.csv'
+    min_rows: 100
+    expected_categories: ['Electronics', 'Furniture', 'Office Supplies']
+
+artifacts:
+  required:
+    - 'runs/*/data/checksum_manifest.json'
+    - 'runs/*/data/insights.json'
+    - 'runs/*/charts/bar.png'
+    - 'media/narration.wav'
+    - 'media/final.mp4'
+    - 'media/compose-metadata.json'
+
+perf_budgets:
+  data_processing_ms: 5000
+  chart_render_ms: 2000
+  tts_generation_ms: 10000
+  video_compose_ms: 15000
+  total_pipeline_ms: 35000
+
+cvf:
+  thresholds:
+    data:
+      min_rows: 100
+      min_metrics: 3
+    charts:
+      min_width: 1280
+      min_height: 720
+      max_width: 1920
+      max_height: 1080
+    media:
+      duration_tolerance_pct: 5
+      min_video_width: 1280
+      min_video_height: 720
+      required_audio_track: true
+
+dependencies: []
+budget_usd: 0.10
+estimated_hours: 0.5

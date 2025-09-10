@@ -37,6 +37,23 @@ set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph
 
 # Hybrid (Windows)
 set SWARM_MODE=hybrid && set SUBAGENTS_INCLUDE=A2.requirements_analyst,B7.rapid_builder && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 3
+
+### Phase 12 — Demo Datasets & TEST_MODE
+
+Deterministic demo graphs are provided to exercise the data/media and SEO/reporting pipelines end‑to‑end. In TEST_MODE, networked steps are replaced with local fixtures and budget checks may be skipped if Lighthouse artifacts are not available.
+
+```bash
+# Data → Insights → Chart → TTS → Video → Package → Report
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
+
+# SEO Search/Fetch → Audit → Doc → Package → Report
+set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+
+# Optional stable RUN_ID for predictable artifact paths
+set RUN_ID=RUN-demo && node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml
+```
+
+CVF strict auto‑detects domains. In TEST_MODE, performance budgets are evaluated when Lighthouse artifacts exist; otherwise, the budget evaluator records a "skipped" summary and CVF does not fail on missing perf data.
 ```
 
 Pass if:
