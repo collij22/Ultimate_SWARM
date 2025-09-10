@@ -36,10 +36,7 @@ describe('PNG Encoder Validation', () => {
 
   after(() => {
     // Clean up test artifacts
-    const testDirs = [
-      `runs/${testRunId}`,
-      `runs/default/${testRunId}`,
-    ];
+    const testDirs = [`runs/${testRunId}`, `runs/default/${testRunId}`];
 
     for (const dir of testDirs) {
       if (fs.existsSync(dir)) {
@@ -58,7 +55,7 @@ describe('PNG Encoder Validation', () => {
     assert.equal(result.status, 'success', 'Chart render should succeed');
 
     // Find the PNG path
-    chartPath = result.artifacts.find(a => a.endsWith('.png'));
+    chartPath = result.artifacts.find((a) => a.endsWith('.png'));
     assert.ok(chartPath, 'Should have generated a PNG file');
     assert.ok(fs.existsSync(chartPath), 'PNG file should exist');
   });
@@ -70,7 +67,7 @@ describe('PNG Encoder Validation', () => {
     await new Promise((resolve, reject) => {
       const png = new PNG();
 
-      png.on('parsed', function() {
+      png.on('parsed', function () {
         try {
           // Verify dimensions
           assert.equal(this.width, 1280, 'PNG width should be 1280');
@@ -96,7 +93,7 @@ describe('PNG Encoder Validation', () => {
     await new Promise((resolve, reject) => {
       const png = new PNG();
 
-      png.on('parsed', function() {
+      png.on('parsed', function () {
         try {
           const pixels = this.data;
           const pixelCount = this.width * this.height;
@@ -125,8 +122,10 @@ describe('PNG Encoder Validation', () => {
           assert.ok(uniqueColors >= 3, `Should have at least 3 colors, got ${uniqueColors}`);
 
           // No single color should dominate more than 95%
-          assert.ok(dominantColorRatio < 0.95,
-            `Image too uniform: ${(dominantColorRatio * 100).toFixed(2)}% is same color`);
+          assert.ok(
+            dominantColorRatio < 0.95,
+            `Image too uniform: ${(dominantColorRatio * 100).toFixed(2)}% is same color`,
+          );
 
           resolve();
         } catch (error) {
@@ -145,7 +144,7 @@ describe('PNG Encoder Validation', () => {
     await new Promise((resolve, reject) => {
       const png = new PNG();
 
-      png.on('parsed', function() {
+      png.on('parsed', function () {
         try {
           const { width, height, data } = this;
 
@@ -157,7 +156,7 @@ describe('PNG Encoder Validation', () => {
 
           for (let x = 0; x < width; x++) {
             const idx = (middleY * width + x) * 4;
-            const color = `${data[idx]},${data[idx+1]},${data[idx+2]}`;
+            const color = `${data[idx]},${data[idx + 1]},${data[idx + 2]}`;
 
             if (lastColor && lastColor !== color) {
               colorChanges++;
@@ -168,13 +167,15 @@ describe('PNG Encoder Validation', () => {
           console.log(`Detected ${colorChanges} color transitions in middle row`);
 
           // Should have at least some color changes (bars + background)
-          assert.ok(colorChanges >= 4,
-            `Should have bar-like structures, found ${colorChanges} transitions`);
+          assert.ok(
+            colorChanges >= 4,
+            `Should have bar-like structures, found ${colorChanges} transitions`,
+          );
 
           // Check for non-white pixels (actual chart content)
           let nonWhitePixels = 0;
           for (let i = 0; i < data.length; i += 4) {
-            if (data[i] !== 255 || data[i+1] !== 255 || data[i+2] !== 255) {
+            if (data[i] !== 255 || data[i + 1] !== 255 || data[i + 2] !== 255) {
               nonWhitePixels++;
             }
           }
@@ -183,8 +184,10 @@ describe('PNG Encoder Validation', () => {
           console.log(`Non-white pixel ratio: ${(nonWhiteRatio * 100).toFixed(2)}%`);
 
           // Should have at least 5% non-white pixels (chart content)
-          assert.ok(nonWhiteRatio > 0.05,
-            `Chart should have visible content, only ${(nonWhiteRatio * 100).toFixed(2)}% non-white`);
+          assert.ok(
+            nonWhiteRatio > 0.05,
+            `Chart should have visible content, only ${(nonWhiteRatio * 100).toFixed(2)}% non-white`,
+          );
 
           resolve();
         } catch (error) {
@@ -202,7 +205,7 @@ describe('PNG Encoder Validation', () => {
 
     // Check PNG signature
     const signature = pngData.slice(0, 8);
-    const expectedSignature = Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+    const expectedSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
     assert.deepEqual(signature, expectedSignature, 'PNG signature should be valid');
 
@@ -222,10 +225,10 @@ describe('PNG Encoder Validation', () => {
       if (type === 'IEND') break;
     }
 
-    console.log('PNG chunks:', chunks.map(c => c.type).join(', '));
+    console.log('PNG chunks:', chunks.map((c) => c.type).join(', '));
 
     // Verify required chunks
-    const chunkTypes = chunks.map(c => c.type);
+    const chunkTypes = chunks.map((c) => c.type);
     assert.ok(chunkTypes.includes('IHDR'), 'Should have IHDR chunk');
     assert.ok(chunkTypes.includes('IDAT'), 'Should have IDAT chunk');
     assert.ok(chunkTypes.includes('IEND'), 'Should have IEND chunk');
@@ -249,11 +252,12 @@ describe('PNG Encoder Validation', () => {
     console.log(`Compression ratio: ${(compressionRatio * 100).toFixed(2)}%`);
 
     // Should have reasonable compression (chart with large uniform areas)
-    assert.ok(compressionRatio < 0.5,
-      `Compression too poor: ${(compressionRatio * 100).toFixed(2)}% of uncompressed`);
+    assert.ok(
+      compressionRatio < 0.5,
+      `Compression too poor: ${(compressionRatio * 100).toFixed(2)}% of uncompressed`,
+    );
 
     // But not suspiciously small (indicates no real content)
-    assert.ok(fileSize > 5000,
-      `File too small (${fileSize} bytes), likely missing content`);
+    assert.ok(fileSize > 5000, `File too small (${fileSize} bytes), likely missing content`);
   });
 });

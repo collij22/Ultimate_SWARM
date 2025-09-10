@@ -17,7 +17,7 @@ export function loadThresholds(auvId, domain) {
   // If no domain specified, return all thresholds for the AUV
   if (!domain) {
     const allThresholds = {};
-    
+
     // Load AUV-specific thresholds
     try {
       const capabilityPath = path.join(PROJECT_ROOT, 'capabilities', `${auvId}.yaml`);
@@ -30,7 +30,7 @@ export function loadThresholds(auvId, domain) {
     } catch (e) {
       // Silently skip if no AUV-specific config
     }
-    
+
     // Merge with defaults for any missing domains
     const domains = ['data', 'charts', 'seo', 'media', 'db'];
     for (const d of domains) {
@@ -38,10 +38,10 @@ export function loadThresholds(auvId, domain) {
         allThresholds[d] = getDefaultThresholds(d);
       }
     }
-    
+
     return allThresholds;
   }
-  
+
   // Original behavior for specific domain
   const thresholds = {};
 

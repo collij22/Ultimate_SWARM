@@ -14,7 +14,9 @@ const PROJECT_ROOT = path.resolve(__dirname, '..', '..');
 
 // Mock AUV artifacts for testing
 const TEST_AUV = 'AUV-9999';
-const TEST_RUN_DIR = path.join(PROJECT_ROOT, 'runs', TEST_AUV);
+const TEST_TENANT = 'default';
+// Use tenant-aware paths for Phase 13+ consistency
+const TEST_RUN_DIR = path.join(PROJECT_ROOT, 'runs', 'tenants', TEST_TENANT, TEST_AUV);
 const TEST_DIST_DIR = path.join(PROJECT_ROOT, 'dist', TEST_AUV);
 
 describe('PackageBuilder', () => {
@@ -140,7 +142,7 @@ describe('PackageBuilder', () => {
     });
 
     assert.ok(manifest, 'Manifest should be created');
-    assert.equal(manifest.version, '1.1', 'Should use version 1.1');
+    assert.equal(manifest.version, '1.2', 'Should use version 1.2 for Phase 14');
     assert.equal(manifest.auv_id, TEST_AUV, 'Should have correct AUV ID');
     assert.ok(manifest.run_id, 'Should have run ID');
     assert.ok(manifest.environment, 'Should have environment');

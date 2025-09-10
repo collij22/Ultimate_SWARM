@@ -75,7 +75,7 @@ function validateReportHTML(htmlContent) {
 
   // Check Phase 11 sections
   const sections = document.querySelectorAll('section');
-  sections.forEach(section => {
+  sections.forEach((section) => {
     const heading = section.querySelector('h2, h3');
     if (heading) {
       const text = heading.textContent.toLowerCase();
@@ -120,13 +120,17 @@ describe('Packaging and Report E2E Tests', () => {
 
   it('should run complete DAG pipeline', { timeout: 60000 }, async () => {
     // Run data-video-demo DAG
-    const dagResult = await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      `"${path.resolve('orchestration/graph/projects/data-video-demo.yaml')}"`,
-    ], {
-      TEST_MODE: 'true',
-      RUN_ID: testRunId,
-    });
+    const dagResult = await runCommand(
+      'node',
+      [
+        'orchestration/graph/runner.mjs',
+        `"${path.resolve('orchestration/graph/projects/data-video-demo.yaml')}"`,
+      ],
+      {
+        TEST_MODE: 'true',
+        RUN_ID: testRunId,
+      },
+    );
 
     // DAG should complete successfully
     assert.equal(dagResult.code, 0, 'DAG should complete successfully');
@@ -175,13 +179,13 @@ describe('Packaging and Report E2E Tests', () => {
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
     // Check for expected artifact types
-    const artifactTypes = new Set(manifest.artifacts.map(a => a.type));
+    const artifactTypes = new Set(manifest.artifacts.map((a) => a.type));
 
     // Should have various artifact types
     assert.ok(artifactTypes.size > 0, 'Should have multiple artifact types');
 
     // Check specific artifacts for AUV-1201
-    const artifactPaths = manifest.artifacts.map(a => a.path);
+    const artifactPaths = manifest.artifacts.map((a) => a.path);
 
     // Should have key artifacts
     const expectedPatterns = [
@@ -193,7 +197,7 @@ describe('Packaging and Report E2E Tests', () => {
     ];
 
     for (const pattern of expectedPatterns) {
-      const found = artifactPaths.some(p => pattern.test(p));
+      const found = artifactPaths.some((p) => pattern.test(p));
       assert.ok(found, `Should have artifact matching ${pattern}`);
     }
   });
@@ -215,26 +219,36 @@ describe('Packaging and Report E2E Tests', () => {
 
     // Check for Phase 11 sections (as recommended in phase_chat.md)
     const phase11Count = validation.phase11Sections.length;
-    console.log(`Found ${phase11Count} Phase 11 sections: ${validation.phase11Sections.join(', ')}`);
+    console.log(
+      `Found ${phase11Count} Phase 11 sections: ${validation.phase11Sections.join(', ')}`,
+    );
 
     // For AUV-1201 (data pipeline), should have multiple Phase 11 sections
-    assert.ok(phase11Count >= 2,
-      `Should have at least 2 Phase 11 sections (found ${phase11Count})`);
+    assert.ok(
+      phase11Count >= 2,
+      `Should have at least 2 Phase 11 sections (found ${phase11Count})`,
+    );
 
     // Specifically check for expected sections
     assert.ok(validation.hasInsights, 'Should have insights section for data pipeline');
-    assert.ok(validation.hasCharts || validation.hasMedia,
-      'Should have charts or media section for visualization');
+    assert.ok(
+      validation.hasCharts || validation.hasMedia,
+      'Should have charts or media section for visualization',
+    );
   });
 
   it('should generate SEO report with Phase 11 sections (AUV-1202)', async () => {
     // Run SEO demo in TEST_MODE to generate artifacts
-    const dagResult = await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`,
-    ], {
-      TEST_MODE: 'true',
-    });
+    const dagResult = await runCommand(
+      'node',
+      [
+        'orchestration/graph/runner.mjs',
+        `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`,
+      ],
+      {
+        TEST_MODE: 'true',
+      },
+    );
     assert.equal(dagResult.code, 0, 'SEO DAG should complete successfully');
 
     const reportPath2 = path.resolve('dist/AUV-1202/report.html');
@@ -244,7 +258,10 @@ describe('Packaging and Report E2E Tests', () => {
     const validation2 = validateReportHTML(htmlContent2);
     assert.ok(validation2.hasTitle, 'SEO report should have title');
     assert.ok(validation2.hasSummary, 'SEO report should have summary');
-    assert.ok(validation2.hasSEO || validation2.hasArtifacts, 'SEO section or artifacts should be present');
+    assert.ok(
+      validation2.hasSEO || validation2.hasArtifacts,
+      'SEO section or artifacts should be present',
+    );
   });
 
   it('should create valid package.zip bundle', async () => {
@@ -267,14 +284,18 @@ describe('Packaging and Report E2E Tests', () => {
 
   it('should handle hybrid mode with subagent narrative', async () => {
     // Run with hybrid mode
-    const hybridResult = await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`,
-    ], {
-      TEST_MODE: 'true',
-      SWARM_MODE: 'hybrid',
-      SUBAGENTS_INCLUDE: 'B7.rapid_builder',
-    });
+    const hybridResult = await runCommand(
+      'node',
+      [
+        'orchestration/graph/runner.mjs',
+        `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`,
+      ],
+      {
+        TEST_MODE: 'true',
+        SWARM_MODE: 'hybrid',
+        SUBAGENTS_INCLUDE: 'B7.rapid_builder',
+      },
+    );
 
     // Check for subagent activity (may be simulated in test mode)
     if (hybridResult.stdout.includes('subagent') || hybridResult.stdout.includes('B7')) {
@@ -293,13 +314,17 @@ describe('Packaging and Report E2E Tests', () => {
 
   it('should generate report.html with Phase 11 sections for AUV-1202', async () => {
     // Run SEO audit demo to generate report
-    await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`,
-    ], {
-      TEST_MODE: 'true',
-      DEMO_MODE: 'true',
-    });
+    await runCommand(
+      'node',
+      [
+        'orchestration/graph/runner.mjs',
+        `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`,
+      ],
+      {
+        TEST_MODE: 'true',
+        DEMO_MODE: 'true',
+      },
+    );
 
     const seoReportPath = path.resolve('dist/AUV-1202/report.html');
 
@@ -312,10 +337,14 @@ describe('Packaging and Report E2E Tests', () => {
 
     // For AUV-1202 (SEO audit), should have SEO section and possibly others
     const phase11Count = validation.phase11Sections.length;
-    console.log(`AUV-1202: Found ${phase11Count} Phase 11 sections: ${validation.phase11Sections.join(', ')}`);
+    console.log(
+      `AUV-1202: Found ${phase11Count} Phase 11 sections: ${validation.phase11Sections.join(', ')}`,
+    );
 
-    assert.ok(phase11Count >= 1,
-      `AUV-1202 should have at least 1 Phase 11 section (found ${phase11Count})`);
+    assert.ok(
+      phase11Count >= 1,
+      `AUV-1202 should have at least 1 Phase 11 section (found ${phase11Count})`,
+    );
     assert.ok(validation.hasSEO, 'Should have SEO section for SEO audit pipeline');
   });
 
@@ -327,8 +356,10 @@ describe('Packaging and Report E2E Tests', () => {
 
     // Check performance metrics if present
     if (manifest.cvf.perf_score !== undefined) {
-      assert.ok(manifest.cvf.perf_score >= 0 && manifest.cvf.perf_score <= 1,
-        'Performance score should be between 0 and 1');
+      assert.ok(
+        manifest.cvf.perf_score >= 0 && manifest.cvf.perf_score <= 1,
+        'Performance score should be between 0 and 1',
+      );
     }
 
     // Check for budget violations

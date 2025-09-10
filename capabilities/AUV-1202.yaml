@@ -4,7 +4,7 @@ auv:
   user_story: 'As a website owner, I can audit my site for SEO issues and receive a comprehensive report with recommendations'
   priority: high
   deliverable_level: 3
-  
+
 capabilities:
   - web.search
   - web.fetch
@@ -19,7 +19,7 @@ acceptance:
     - Zero broken links detected on test page
     - Comprehensive report generated with findings
     - Artifacts stored in correct locations
-  
+
   proofs:
     - search_results: 'runs/websearch_demo/brave_search.json'
     - fetched_html: 'runs/websearch_demo/first_result.html'
@@ -29,9 +29,9 @@ acceptance:
 
 authoring_hints:
   ui:
-    routes: []  # No UI for this pipeline
+    routes: [] # No UI for this pipeline
   api:
-    endpoints: []  # No API endpoints
+    endpoints: [] # No API endpoints
   data:
     test_url: 'http://127.0.0.1:3000'
     fallback_fixture: 'tests/fixtures/mock-seo-page.html'
@@ -54,7 +54,7 @@ cvf:
       page_issue_fail_rate: 0.1
 
 test_mode:
-  enabled_by: 
+  enabled_by:
     - TEST_MODE=true
     - Missing BRAVE_API_KEY
   behavior: Use mock-seo-page.html fixture instead of live search

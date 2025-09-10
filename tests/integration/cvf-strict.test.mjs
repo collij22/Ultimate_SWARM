@@ -16,7 +16,7 @@ async function runCommand(command, args = [], env = {}) {
   return new Promise((resolve, reject) => {
     const proc = spawn(command, args, {
       shell: true,
-      env: { ...process.env, ...env }
+      env: { ...process.env, ...env },
     });
 
     let stdout = '';
@@ -49,14 +49,18 @@ describe('CVF Strict Enforcement Tests', () => {
 
     // Run both demo DAGs to generate artifacts with consistent RUN_ID
     for (const dag of ['data-video-demo.yaml', 'seo-audit-demo.yaml']) {
-      const result = await runCommand('node', [
-        'orchestration/graph/runner.mjs',
-        `"${path.resolve('orchestration/graph/projects', dag)}"`
-      ], {
-        TEST_MODE: 'true',
-        DEMO_MODE: 'true',
-        RUN_ID: testRunId
-      });
+      const result = await runCommand(
+        'node',
+        [
+          'orchestration/graph/runner.mjs',
+          `"${path.resolve('orchestration/graph/projects', dag)}"`,
+        ],
+        {
+          TEST_MODE: 'true',
+          DEMO_MODE: 'true',
+          RUN_ID: testRunId,
+        },
+      );
 
       if (result.code !== 0) {
         console.warn(`Setup DAG ${dag} failed, CVF tests may fail`);
@@ -67,18 +71,22 @@ describe('CVF Strict Enforcement Tests', () => {
 
   it('should pass CVF check for AUV-1201 in strict mode (TEST_MODE with skipped perf budgets)', async () => {
     // Ensure artifacts are present by running the demo DAG first
-    await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      `"${path.resolve('orchestration/graph/projects/data-video-demo.yaml')}"`
-    ], { TEST_MODE: 'true' });
+    await runCommand(
+      'node',
+      [
+        'orchestration/graph/runner.mjs',
+        `"${path.resolve('orchestration/graph/projects/data-video-demo.yaml')}"`,
+      ],
+      { TEST_MODE: 'true' },
+    );
 
-    const result = await runCommand('node', [
-      'orchestration/cvf-check.mjs',
-      'AUV-1201',
-      '--strict'
-    ], {
-      TEST_MODE: 'true'
-    });
+    const result = await runCommand(
+      'node',
+      ['orchestration/cvf-check.mjs', 'AUV-1201', '--strict'],
+      {
+        TEST_MODE: 'true',
+      },
+    );
 
     console.log('AUV-1201 CVF output:', result.stdout);
 
@@ -87,8 +95,10 @@ describe('CVF Strict Enforcement Tests', () => {
       console.error('CVF stderr:', result.stderr);
 
       // Check if it's a missing artifact issue
-      if (result.stdout.includes('Missing required artifacts') ||
-          result.stderr.includes('Missing required artifacts')) {
+      if (
+        result.stdout.includes('Missing required artifacts') ||
+        result.stderr.includes('Missing required artifacts')
+      ) {
         // This is expected if artifacts weren't generated
         console.log('Artifacts missing - ensure DAG ran successfully');
       } else {
@@ -99,24 +109,31 @@ describe('CVF Strict Enforcement Tests', () => {
 
     // Check for expected validations and allow performance to be skipped
     const out = `${result.stdout}\n${result.stderr}`;
-    assert.ok(/Performance: (All budgets met|Skipped)/.test(out), 'Performance check should pass or be skipped in TEST_MODE');
+    assert.ok(
+      /Performance: (All budgets met|Skipped)/.test(out),
+      'Performance check should pass or be skipped in TEST_MODE',
+    );
     assert.ok(/CVF|validation/.test(out), 'Should mention CVF or validation');
   });
 
   it('should pass CVF check for AUV-1202 in strict mode (fixture with canonical)', async () => {
     // Ensure fixture has canonical and artifacts are generated
-    await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`
-    ], { TEST_MODE: 'true' });
+    await runCommand(
+      'node',
+      [
+        'orchestration/graph/runner.mjs',
+        `"${path.resolve('orchestration/graph/projects/seo-audit-demo.yaml')}"`,
+      ],
+      { TEST_MODE: 'true' },
+    );
 
-    const result = await runCommand('node', [
-      'orchestration/cvf-check.mjs',
-      'AUV-1202',
-      '--strict'
-    ], {
-      TEST_MODE: 'true'
-    });
+    const result = await runCommand(
+      'node',
+      ['orchestration/cvf-check.mjs', 'AUV-1202', '--strict'],
+      {
+        TEST_MODE: 'true',
+      },
+    );
 
     console.log('AUV-1202 CVF output:', result.stdout);
 
@@ -124,8 +141,10 @@ describe('CVF Strict Enforcement Tests', () => {
     if (result.code !== 0) {
       console.error('CVF stderr:', result.stderr);
 
-      if (result.stdout.includes('Missing required artifacts') ||
-          result.stderr.includes('Missing required artifacts')) {
+      if (
+        result.stdout.includes('Missing required artifacts') ||
+        result.stderr.includes('Missing required artifacts')
+      ) {
         console.log('Artifacts missing - ensure DAG ran successfully');
       } else {
         assert.equal(result.code, 0, 'CVF should pass for AUV-1202 with valid artifacts');
@@ -165,7 +184,10 @@ describe('CVF Strict Enforcement Tests', () => {
     assert.equal(thresholds.seo.max_broken_links, 0, 'Should allow no broken links');
     assert.equal(thresholds.seo.min_canonical_rate, 0.8, 'Should require 80% canonical rate');
     assert.ok(Array.isArray(thresholds.seo.required_meta_tags), 'Should have required meta tags');
-    assert.ok(thresholds.seo.required_meta_tags.includes('description'), 'Should require description meta');
+    assert.ok(
+      thresholds.seo.required_meta_tags.includes('description'),
+      'Should require description meta',
+    );
   });
 
   it('should fail CVF with missing artifacts', async () => {
@@ -199,14 +221,14 @@ cvf:
       const result = await runCommand('node', [
         'orchestration/cvf-check.mjs',
         testAuvId,
-        '--strict'
+        '--strict',
       ]);
 
       // Should fail due to missing artifacts
       assert.notEqual(result.code, 0, 'CVF should fail with missing artifacts');
       assert.ok(
         result.stdout.includes('missing') || result.stderr.includes('missing'),
-        'Should mention missing artifacts'
+        'Should mention missing artifacts',
       );
     } finally {
       // Clean up test file
@@ -224,25 +246,25 @@ cvf:
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
 
       // Check if artifacts have checksums
-      const hasChecksums = manifest.artifacts.some(a => a.sha256);
+      const hasChecksums = manifest.artifacts.some((a) => a.sha256);
 
       if (hasChecksums) {
         console.log('Manifest includes checksums for validation');
 
         // Run CVF to ensure it validates checksums
-        const result = await runCommand('node', [
-          'orchestration/cvf-check.mjs',
-          'AUV-1201',
-          '--strict'
-        ], {
-          TEST_MODE: 'true'
-        });
+        const result = await runCommand(
+          'node',
+          ['orchestration/cvf-check.mjs', 'AUV-1201', '--strict'],
+          {
+            TEST_MODE: 'true',
+          },
+        );
 
         // Should not have checksum errors
         assert.ok(
           !result.stdout.includes('checksum mismatch') &&
-          !result.stderr.includes('checksum mismatch'),
-          'Should not have checksum mismatches'
+            !result.stderr.includes('checksum mismatch'),
+          'Should not have checksum mismatches',
         );
       }
     }
@@ -250,12 +272,9 @@ cvf:
 
   it('should run as part of CI pipeline', async () => {
     // Simulate CI environment
-    const result = await runCommand('node', [
-      'orchestration/cvf-check.mjs',
-      'AUV-1201'
-    ], {
+    const result = await runCommand('node', ['orchestration/cvf-check.mjs', 'AUV-1201'], {
       CI: 'true',
-      TEST_MODE: 'true'
+      TEST_MODE: 'true',
     });
 
     // In CI mode, should produce machine-readable output

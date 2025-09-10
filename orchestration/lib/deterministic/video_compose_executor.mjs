@@ -28,15 +28,22 @@ function createPlaceholderMP4(outputPath, duration) {
   let offset = 0;
 
   // ftyp box (file type)
-  buffer.writeUInt32BE(32, offset); offset += 4; // Box size
-  buffer.write('ftyp', offset); offset += 4; // Box type
-  buffer.write('isom', offset); offset += 4; // Major brand
-  buffer.writeUInt32BE(0, offset); offset += 4; // Minor version
-  buffer.write('isomiso2mp41', offset); offset += 12; // Compatible brands
+  buffer.writeUInt32BE(32, offset);
+  offset += 4; // Box size
+  buffer.write('ftyp', offset);
+  offset += 4; // Box type
+  buffer.write('isom', offset);
+  offset += 4; // Major brand
+  buffer.writeUInt32BE(0, offset);
+  offset += 4; // Minor version
+  buffer.write('isomiso2mp41', offset);
+  offset += 12; // Compatible brands
 
   // mdat box (media data - empty for placeholder)
-  buffer.writeUInt32BE(8, offset); offset += 4; // Box size
-  buffer.write('mdat', offset); offset += 4; // Box type
+  buffer.writeUInt32BE(8, offset);
+  offset += 4; // Box size
+  buffer.write('mdat', offset);
+  offset += 4; // Box type
 
   fs.writeFileSync(outputPath, buffer.slice(0, offset));
 
@@ -66,14 +73,22 @@ async function runFFmpeg(chartPath, audioPath, outputPath, duration) {
     // -pix_fmt yuv420p: pixel format for compatibility
 
     const args = [
-      '-loop', '1',
-      '-i', chartPath,
-      '-i', audioPath,
-      '-c:v', 'libx264',
-      '-tune', 'stillimage',
-      '-c:a', 'aac',
-      '-b:a', '192k',
-      '-pix_fmt', 'yuv420p',
+      '-loop',
+      '1',
+      '-i',
+      chartPath,
+      '-i',
+      audioPath,
+      '-c:v',
+      'libx264',
+      '-tune',
+      'stillimage',
+      '-c:a',
+      'aac',
+      '-b:a',
+      '192k',
+      '-pix_fmt',
+      'yuv420p',
       '-shortest',
       '-y', // Overwrite output
       outputPath,
@@ -194,7 +209,9 @@ export async function executeVideoCompose(params) {
     has_audio_track: videoMetadata.has_audio,
 
     // Optional fields
-    duration_variance_pct: Math.abs((videoMetadata.duration - audioDuration) / audioDuration * 100),
+    duration_variance_pct: Math.abs(
+      ((videoMetadata.duration - audioDuration) / audioDuration) * 100,
+    ),
     video_codec: videoMetadata.codec,
     audio_codec: videoMetadata.audio_codec,
     fps: videoMetadata.fps,
@@ -213,7 +230,9 @@ export async function executeVideoCompose(params) {
   const metadataPath = path.join(mediaDir, 'compose-metadata.json');
   fs.writeFileSync(metadataPath, JSON.stringify(composeMetadata, null, 2));
 
-  console.log(`[video.compose] Video metadata: ${videoMetadata.width}x${videoMetadata.height}, ${videoMetadata.duration.toFixed(1)}s`);
+  console.log(
+    `[video.compose] Video metadata: ${videoMetadata.width}x${videoMetadata.height}, ${videoMetadata.duration.toFixed(1)}s`,
+  );
   console.log(`[video.compose] Video written to: ${outputPath}`);
 
   return {

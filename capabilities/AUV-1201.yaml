@@ -4,7 +4,7 @@ auv:
   user_story: 'As a business analyst, I can transform raw data into narrated video presentations with insights and visualizations'
   priority: high
   deliverable_level: 3
-  
+
 capabilities:
   - data.ingest
   - data.insights
@@ -21,7 +21,7 @@ acceptance:
     - Audio narration generated with correct duration
     - Video composed with synchronized audio/visual
     - Report generated with embedded media
-  
+
   proofs:
     - data_manifest: 'runs/*/data/checksum_manifest.json'
     - insights_json: 'runs/*/data/insights.json'
@@ -33,9 +33,9 @@ acceptance:
 
 authoring_hints:
   ui:
-    routes: []  # No UI for this data pipeline
+    routes: [] # No UI for this data pipeline
   api:
-    endpoints: []  # No API endpoints
+    endpoints: [] # No API endpoints
   data:
     input_file: 'tests/fixtures/sample-data.csv'
     min_rows: 100

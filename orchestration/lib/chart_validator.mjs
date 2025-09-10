@@ -43,51 +43,52 @@ function extractPNGDimensions(buffer) {
 async function analyzeVisualContent(buffer) {
   return new Promise((resolve) => {
     const png = new PNG();
-    
-    png.on('parsed', function() {
+
+    png.on('parsed', function () {
       const { width, height, data } = this;
-      
+
       // Build color histogram
       const colorMap = new Map();
       let nonWhitePixels = 0;
-      
+
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
         const color = `${r},${g},${b}`;
-        
+
         colorMap.set(color, (colorMap.get(color) || 0) + 1);
-        
+
         // Count non-white pixels
         if (r !== 255 || g !== 255 || b !== 255) {
           nonWhitePixels++;
         }
       }
-      
+
       const pixelCount = width * height;
       const nonWhiteRatio = nonWhitePixels / pixelCount;
-      
+
       // Chart should have at least 3 colors and 5% non-white pixels
       const hasContent = colorMap.size >= 3 && nonWhiteRatio > 0.05;
-      
+
       resolve({
         hasContent,
         colorCount: colorMap.size,
-        nonWhiteRatio
+        nonWhiteRatio,
       });
     });
-    
+
     png.on('error', () => {
-      // Fallback to size heuristic if decoder fails
-      const expectedMinSize = Math.min(20000, buffer.length * 0.01);
+      // Fallback for decoder failures - minimal PNGs are considered blank
+      // A real chart PNG should be at least a few KB
+      const minContentSize = 1000; // 1KB minimum for actual content
       resolve({
-        hasContent: buffer.length > expectedMinSize,
+        hasContent: buffer.length > minContentSize,
         colorCount: 0,
-        nonWhiteRatio: 0
+        nonWhiteRatio: 0,
       });
     });
-    
+
     png.parse(buffer);
   });
 }
@@ -176,7 +177,7 @@ export async function validateChart(chartPath, options = {}) {
 
     if (!contentAnalysis.hasContent) {
       result.warnings.push(
-        `Chart appears to be blank or uniform (${contentAnalysis.colorCount} colors, ${(contentAnalysis.nonWhiteRatio * 100).toFixed(1)}% non-white)`
+        `Chart appears to be blank or uniform (${contentAnalysis.colorCount} colors, ${(contentAnalysis.nonWhiteRatio * 100).toFixed(1)}% non-white)`,
       );
       if (options.requireContent !== false) {
         result.valid = false;

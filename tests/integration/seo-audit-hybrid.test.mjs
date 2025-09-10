@@ -16,7 +16,7 @@ async function runCommand(command, args = [], env = {}) {
   return new Promise((resolve, reject) => {
     const proc = spawn(command, args, {
       shell: true,
-      env: { ...process.env, ...env }
+      env: { ...process.env, ...env },
     });
 
     let stdout = '';
@@ -70,9 +70,7 @@ function getRouterDecisions() {
  * Create test HTML with missing canonical
  */
 function createTestHTML(hasCanonical = true, hasSitemap = true) {
-  const canonical = hasCanonical
-    ? '<link rel="canonical" href="https://example.com/">'
-    : '';
+  const canonical = hasCanonical ? '<link rel="canonical" href="https://example.com/">' : '';
 
   const sitemap = hasSitemap
     ? '<link rel="sitemap" type="application/xml" href="/sitemap.xml">'
@@ -142,15 +140,16 @@ describe('SEO Audit Hybrid Mode Tests', () => {
     fs.writeFileSync(originalFixturePath, testHTML);
 
     // Run SEO audit with hybrid mode
-    const result = await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      'orchestration/graph/projects/seo-audit-demo.yaml'
-    ], {
-      TEST_MODE: 'true',
-      SWARM_MODE: 'hybrid',
-      SUBAGENTS_INCLUDE: 'B7.rapid_builder',
-      HOOKS_MODE: 'warn'
-    });
+    const result = await runCommand(
+      'node',
+      ['orchestration/graph/runner.mjs', 'orchestration/graph/projects/seo-audit-demo.yaml'],
+      {
+        TEST_MODE: 'true',
+        SWARM_MODE: 'hybrid',
+        SUBAGENTS_INCLUDE: 'B7.rapid_builder',
+        HOOKS_MODE: 'warn',
+      },
+    );
 
     // Check execution completed
     assert.ok(result.stdout.includes('[seo.audit]'), 'Should execute SEO audit');
@@ -164,7 +163,10 @@ describe('SEO Audit Hybrid Mode Tests', () => {
 
       // Verify decision structure
       const firstDecision = decisions[0];
-      assert.ok(firstDecision.capabilities || firstDecision.tools, 'Decision should have capabilities or tools');
+      assert.ok(
+        firstDecision.capabilities || firstDecision.tools,
+        'Decision should have capabilities or tools',
+      );
     }
   });
 
@@ -174,21 +176,22 @@ describe('SEO Audit Hybrid Mode Tests', () => {
     fs.writeFileSync(originalFixturePath, testHTML);
 
     // Run SEO audit
-    await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      'orchestration/graph/projects/seo-audit-demo.yaml'
-    ], {
-      TEST_MODE: 'true'
-    });
+    await runCommand(
+      'node',
+      ['orchestration/graph/runner.mjs', 'orchestration/graph/projects/seo-audit-demo.yaml'],
+      {
+        TEST_MODE: 'true',
+      },
+    );
 
     // Run CVF check with strict mode
-    const cvfResult = await runCommand('node', [
-      'orchestration/cvf-check.mjs',
-      'AUV-1202',
-      '--strict'
-    ], {
-      TEST_MODE: 'true'
-    });
+    const cvfResult = await runCommand(
+      'node',
+      ['orchestration/cvf-check.mjs', 'AUV-1202', '--strict'],
+      {
+        TEST_MODE: 'true',
+      },
+    );
 
     // Should fail due to missing canonical
     if (cvfResult.code === 0) {
@@ -197,7 +200,7 @@ describe('SEO Audit Hybrid Mode Tests', () => {
       assert.notEqual(cvfResult.code, 0, 'CVF should fail without canonical');
       assert.ok(
         cvfResult.stdout.includes('canonical') || cvfResult.stderr.includes('canonical'),
-        'Should mention canonical issue'
+        'Should mention canonical issue',
       );
     }
   });
@@ -208,12 +211,13 @@ describe('SEO Audit Hybrid Mode Tests', () => {
     fs.writeFileSync(originalFixturePath, testHTML);
 
     // Run SEO audit
-    await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      'orchestration/graph/projects/seo-audit-demo.yaml'
-    ], {
-      TEST_MODE: 'true'
-    });
+    await runCommand(
+      'node',
+      ['orchestration/graph/runner.mjs', 'orchestration/graph/projects/seo-audit-demo.yaml'],
+      {
+        TEST_MODE: 'true',
+      },
+    );
 
     // Validate with seo_validator
     // Validate against schema instead of internal function signature
@@ -225,7 +229,7 @@ describe('SEO Audit Hybrid Mode Tests', () => {
     const Ajv = (await import('ajv')).default;
     const addFormats = (await import('ajv-formats')).default;
     const schema = JSON.parse(
-      fs.readFileSync(path.resolve('schemas/seo-audit.schema.json'), 'utf-8')
+      fs.readFileSync(path.resolve('schemas/seo-audit.schema.json'), 'utf-8'),
     );
     const ajv = new Ajv({ allErrors: true });
     addFormats(ajv);
@@ -239,12 +243,13 @@ describe('SEO Audit Hybrid Mode Tests', () => {
 
   it('should validate against SEO audit schema', async () => {
     // Run SEO audit to generate output
-    await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      'orchestration/graph/projects/seo-audit-demo.yaml'
-    ], {
-      TEST_MODE: 'true'
-    });
+    await runCommand(
+      'node',
+      ['orchestration/graph/runner.mjs', 'orchestration/graph/projects/seo-audit-demo.yaml'],
+      {
+        TEST_MODE: 'true',
+      },
+    );
 
     const auditPath = path.resolve('reports/seo/audit.json');
     assert.ok(fs.existsSync(auditPath), 'Audit file should exist');
@@ -256,11 +261,11 @@ describe('SEO Audit Hybrid Mode Tests', () => {
     const Ajv = (await import('ajv')).default;
     const addFormats = (await import('ajv-formats')).default;
     const schema = JSON.parse(
-      fs.readFileSync(path.resolve('schemas/seo-audit.schema.json'), 'utf-8')
+      fs.readFileSync(path.resolve('schemas/seo-audit.schema.json'), 'utf-8'),
     );
 
     const ajv = new Ajv({ allErrors: true });
-    addFormats(ajv);  // Add support for date-time and other formats
+    addFormats(ajv); // Add support for date-time and other formats
     const validate = ajv.compile(schema);
     const valid = validate(audit);
 
@@ -292,12 +297,13 @@ describe('SEO Audit Hybrid Mode Tests', () => {
     fs.writeFileSync(originalFixturePath, testHTML);
 
     // Run SEO audit
-    await runCommand('node', [
-      'orchestration/graph/runner.mjs',
-      'orchestration/graph/projects/seo-audit-demo.yaml'
-    ], {
-      TEST_MODE: 'true'
-    });
+    await runCommand(
+      'node',
+      ['orchestration/graph/runner.mjs', 'orchestration/graph/projects/seo-audit-demo.yaml'],
+      {
+        TEST_MODE: 'true',
+      },
+    );
 
     const auditPath = path.resolve('reports/seo/audit.json');
     if (fs.existsSync(auditPath)) {

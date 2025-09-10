@@ -126,9 +126,15 @@ function analyzeSEO(seoData) {
   if (!seoData.title) {
     issues.push({ type: 'title', message: 'Missing page title' });
   } else if (seoData.title.length < 30) {
-    warnings.push({ type: 'title', message: `Title too short (${seoData.title.length} chars, recommended 30-60)` });
+    warnings.push({
+      type: 'title',
+      message: `Title too short (${seoData.title.length} chars, recommended 30-60)`,
+    });
   } else if (seoData.title.length > 60) {
-    warnings.push({ type: 'title', message: `Title too long (${seoData.title.length} chars, recommended 30-60)` });
+    warnings.push({
+      type: 'title',
+      message: `Title too long (${seoData.title.length} chars, recommended 30-60)`,
+    });
   } else {
     passed.push({ type: 'title', message: 'Title length optimal' });
   }
@@ -137,9 +143,15 @@ function analyzeSEO(seoData) {
   if (!seoData.meta.description) {
     issues.push({ type: 'meta', message: 'Missing meta description' });
   } else if (seoData.meta.description.length < 120) {
-    warnings.push({ type: 'meta', message: `Meta description too short (${seoData.meta.description.length} chars, recommended 120-160)` });
+    warnings.push({
+      type: 'meta',
+      message: `Meta description too short (${seoData.meta.description.length} chars, recommended 120-160)`,
+    });
   } else if (seoData.meta.description.length > 160) {
-    warnings.push({ type: 'meta', message: `Meta description too long (${seoData.meta.description.length} chars, recommended 120-160)` });
+    warnings.push({
+      type: 'meta',
+      message: `Meta description too long (${seoData.meta.description.length} chars, recommended 120-160)`,
+    });
   } else {
     passed.push({ type: 'meta', message: 'Meta description length optimal' });
   }
@@ -169,7 +181,10 @@ function analyzeSEO(seoData) {
   if (seoData.headings.h1.length === 0) {
     issues.push({ type: 'heading', message: 'No H1 heading found' });
   } else if (seoData.headings.h1.length > 1) {
-    warnings.push({ type: 'heading', message: `Multiple H1 headings (${seoData.headings.h1.length} found)` });
+    warnings.push({
+      type: 'heading',
+      message: `Multiple H1 headings (${seoData.headings.h1.length} found)`,
+    });
   } else {
     passed.push({ type: 'heading', message: 'Single H1 heading present' });
   }
@@ -182,9 +197,12 @@ function analyzeSEO(seoData) {
   }
 
   // Images without alt text
-  const imagesWithoutAlt = seoData.images.filter(img => !img.alt);
+  const imagesWithoutAlt = seoData.images.filter((img) => !img.alt);
   if (imagesWithoutAlt.length > 0) {
-    warnings.push({ type: 'images', message: `${imagesWithoutAlt.length} images missing alt text` });
+    warnings.push({
+      type: 'images',
+      message: `${imagesWithoutAlt.length} images missing alt text`,
+    });
   } else if (seoData.images.length > 0) {
     passed.push({ type: 'images', message: 'All images have alt text' });
   }
@@ -193,7 +211,10 @@ function analyzeSEO(seoData) {
   if (seoData.structuredData.length === 0) {
     warnings.push({ type: 'structured_data', message: 'No structured data found' });
   } else {
-    passed.push({ type: 'structured_data', message: `${seoData.structuredData.length} structured data blocks found` });
+    passed.push({
+      type: 'structured_data',
+      message: `${seoData.structuredData.length} structured data blocks found`,
+    });
   }
 
   // Calculate scores
@@ -267,7 +288,9 @@ export async function executeSEOAudit(params) {
       source = 'fixture';
       auditUrl = 'https://example.com/';
     } else {
-      throw new Error('No HTML content available for SEO audit. Run web_search_fetch first or provide fixture.');
+      throw new Error(
+        'No HTML content available for SEO audit. Run web_search_fetch first or provide fixture.',
+      );
     }
   }
 
@@ -275,11 +298,15 @@ export async function executeSEOAudit(params) {
 
   // Parse HTML
   const seoData = parseHTML(htmlContent);
-  console.log(`[seo.audit] Extracted: ${Object.keys(seoData.meta).length} meta tags, ${seoData.headings.h1.length} H1s, ${seoData.links.internal.length + seoData.links.external.length} links`);
+  console.log(
+    `[seo.audit] Extracted: ${Object.keys(seoData.meta).length} meta tags, ${seoData.headings.h1.length} H1s, ${seoData.links.internal.length + seoData.links.external.length} links`,
+  );
 
   // Analyze SEO
   const analysis = analyzeSEO(seoData, auditUrl);
-  console.log(`[seo.audit] SEO Score: ${analysis.score}% (${analysis.passed.length} passed, ${analysis.warnings.length} warnings, ${analysis.issues.length} issues)`);
+  console.log(
+    `[seo.audit] SEO Score: ${analysis.score}% (${analysis.passed.length} passed, ${analysis.warnings.length} warnings, ${analysis.issues.length} issues)`,
+  );
 
   // Calculate broken links (for demo, no actual broken links in fixture)
   const brokenLinksCount = 0;
@@ -290,7 +317,7 @@ export async function executeSEOAudit(params) {
 
   // High priority recommendations
   if (analysis.issues.length > 0) {
-    analysis.issues.forEach(issue => {
+    analysis.issues.forEach((issue) => {
       recommendations.push({
         priority: 'high',
         category: issue.type === 'title' || issue.type === 'meta' ? 'content' : 'technical',
@@ -301,7 +328,7 @@ export async function executeSEOAudit(params) {
 
   // Medium priority recommendations
   if (analysis.warnings.length > 0) {
-    analysis.warnings.slice(0, 5).forEach(warning => {
+    analysis.warnings.slice(0, 5).forEach((warning) => {
       recommendations.push({
         priority: 'medium',
         category: warning.type === 'images' ? 'accessibility' : 'technical',
@@ -321,8 +348,8 @@ export async function executeSEOAudit(params) {
 
   // Convert issues/warnings to string array for pages
   const pageIssues = [];
-  analysis.issues.forEach(i => pageIssues.push(i.message));
-  analysis.warnings.forEach(w => pageIssues.push(w.message));
+  analysis.issues.forEach((i) => pageIssues.push(i.message));
+  analysis.warnings.forEach((w) => pageIssues.push(w.message));
 
   // Create schema-compliant audit report
   const audit = {
@@ -330,22 +357,24 @@ export async function executeSEOAudit(params) {
     generated_at: new Date().toISOString(),
     audit_url: auditUrl,
     summary: `SEO audit completed with score ${analysis.score}%. Found ${analysis.issues.length} issues and ${analysis.warnings.length} warnings.`,
-    pages: [{
-      url: auditUrl,
-      title: seoData.title || 'Untitled',
-      title_length: seoData.title?.length || 0,
-      meta_description: seoData.meta.description || '',
-      meta_description_length: seoData.meta.description?.length || 0,
-      canonical_url: seoData.canonical || auditUrl,
-      canonical_ok: !!seoData.canonical,
-      h1_count: seoData.headings.h1.length,
-      h2_count: seoData.headings.h2.length,
-      h3_count: seoData.headings.h3.length,
-      status_code: 200, // Assume success since we have content
-      load_time_ms: 1000, // Placeholder
-      issues: pageIssues,
-      warnings: analysis.warnings.length,
-    }],
+    pages: [
+      {
+        url: auditUrl,
+        title: seoData.title || 'Untitled',
+        title_length: seoData.title?.length || 0,
+        meta_description: seoData.meta.description || '',
+        meta_description_length: seoData.meta.description?.length || 0,
+        canonical_url: seoData.canonical || auditUrl,
+        canonical_ok: !!seoData.canonical,
+        h1_count: seoData.headings.h1.length,
+        h2_count: seoData.headings.h2.length,
+        h3_count: seoData.headings.h3.length,
+        status_code: 200, // Assume success since we have content
+        load_time_ms: 1000, // Placeholder
+        issues: pageIssues,
+        warnings: analysis.warnings.length,
+      },
+    ],
     broken_links_count: brokenLinksCount,
     canonical_present_rate: seoData.canonical ? 1.0 : 0.0,
     has_sitemap: !!seoData.sitemap,
@@ -379,4 +408,3 @@ export async function executeSEOAudit(params) {
     },
   };
 }
-

@@ -117,16 +117,14 @@ export function expectedArtifacts(auvId, tenant = process.env.TENANT_ID || 'defa
       // Note: These artifacts are created under runs/<runId>/ by the executors
       // The runId is dynamic, so we return wildcard patterns that CVF will resolve
       return [
-        'runs/*/data/checksum_manifest.json',  // Created by data_ingest_executor
-        'runs/*/data/insights.json',           // Created by data_insights_executor
-        'runs/*/charts/bar.png',               // Created by chart_render_executor
+        'runs/*/data/checksum_manifest.json', // Created by data_ingest_executor
+        'runs/*/data/insights.json', // Created by data_insights_executor
+        'runs/*/charts/bar.png', // Created by chart_render_executor
       ];
 
     case 'AUV-1202':
       // SEO audit demo
-      return [
-        'reports/seo/audit.json',
-      ];
+      return ['reports/seo/audit.json'];
 
     default: {
       // No dynamic definition available
@@ -151,23 +149,16 @@ export function expectedArtifactsByDomain(
   if (auvId === 'AUV-1201') {
     switch (domain) {
       case 'data':
-        return [
-          'runs/*/data/checksum_manifest.json',
-          'runs/*/data/insights.json'
-        ];
+        return ['runs/*/data/checksum_manifest.json', 'runs/*/data/insights.json'];
       case 'charts':
         return ['runs/*/charts/bar.png'];
       case 'media':
-        return [
-          'media/narration.wav',
-          'media/final.mp4',
-          'media/compose-metadata.json'
-        ];
+        return ['media/narration.wav', 'media/final.mp4', 'media/compose-metadata.json'];
       default:
         return [];
     }
   }
-  
+
   if (auvId === 'AUV-1202') {
     switch (domain) {
       case 'seo':
@@ -176,7 +167,7 @@ export function expectedArtifactsByDomain(
         return [];
     }
   }
-  
+
   const allArtifacts = expectedArtifacts(auvId, tenant);
 
   // Filter artifacts by domain patterns

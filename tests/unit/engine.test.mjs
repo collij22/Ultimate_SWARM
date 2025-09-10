@@ -68,9 +68,9 @@ describe('Phase 8 - Engine Components', () => {
         pathToFileURL(path.join(projectRoot, 'orchestration/lib/tenant.mjs')).href
       );
 
-      // Default tenant uses original structure
+      // Default tenant also uses namespaced path for Phase 13+ consistency
       const defaultPath = tenantPath('default', 'AUV-0001/ui');
-      assert.strictEqual(defaultPath, path.join('runs', 'AUV-0001/ui'));
+      assert.strictEqual(defaultPath, path.join('runs', 'tenants', 'default', 'AUV-0001/ui'));
 
       // Named tenant uses namespaced path
       const tenantSpecificPath = tenantPath('acme-corp', 'AUV-0001/ui');

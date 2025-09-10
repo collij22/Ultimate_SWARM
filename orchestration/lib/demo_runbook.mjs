@@ -19,28 +19,30 @@ import { tenantPath } from './tenant.mjs';
  */
 export async function generateDemoRunbook(params) {
   const { auvId, tenant = 'default', runId, steps = [] } = params;
-  
+
   // Only generate for demo AUVs in test/demo mode
   const isDemoMode = process.env.DEMO_MODE === 'true' || process.env.TEST_MODE === 'true';
   const isDemoAuv = ['AUV-1201', 'AUV-1202'].includes(auvId);
-  
+
   if (!isDemoMode || !isDemoAuv) {
-    console.log(`[demo_runbook] Skipping for ${auvId} (demo_mode=${isDemoMode}, demo_auv=${isDemoAuv})`);
+    console.log(
+      `[demo_runbook] Skipping for ${auvId} (demo_mode=${isDemoMode}, demo_auv=${isDemoAuv})`,
+    );
     return {
       status: 'skipped',
-      message: 'Not a demo AUV or not in demo mode'
+      message: 'Not a demo AUV or not in demo mode',
     };
   }
-  
+
   console.log(`[demo_runbook] Generating runbook summary for ${auvId}`);
-  
+
   // Create result-cards directory
   const summaryDir = tenantPath(tenant, `${auvId}/result-cards`);
   fs.mkdirSync(summaryDir, { recursive: true });
-  
+
   // Build steps array from provided list or use defaults
   const runbookSteps = steps.length > 0 ? steps : getDefaultSteps(auvId);
-  
+
   // Create runbook summary
   const runbookSummary = {
     auv_id: auvId,
@@ -48,24 +50,28 @@ export async function generateDemoRunbook(params) {
     ok: true,
     duration_ms: 1000,
     timestamp: new Date().toISOString(),
-    steps: runbookSteps.map(step => ({
+    description:
+      auvId === 'AUV-1201'
+        ? 'Data-to-Video Analytics Pipeline Demo'
+        : 'SEO Audit and Reporting Pipeline Demo',
+    steps: runbookSteps.map((step) => ({
       name: step,
       ok: true,
-      duration_ms: Math.floor(Math.random() * 500) + 100
+      duration_ms: Math.floor(Math.random() * 500) + 100,
     })),
     perf: {
       perf_score: 0.95,
       lcp_ms: 1500,
       cls: 0.05,
-      fid_ms: 50
+      fid_ms: 50,
     },
     environment: {
       mode: isDemoMode ? 'demo' : 'test',
       node: process.version,
-      platform: process.platform
-    }
+      platform: process.platform,
+    },
   };
-  
+
   // Add AUV-specific metadata
   if (auvId === 'AUV-1201') {
     runbookSummary.metadata = {
@@ -73,32 +79,32 @@ export async function generateDemoRunbook(params) {
       data_rows: 150,
       categories: 3,
       chart_dimensions: '1280x720',
-      video_duration: 6.5
+      video_duration: 6.5,
     };
   } else if (auvId === 'AUV-1202') {
     runbookSummary.metadata = {
       pipeline: 'seo-audit',
       pages_audited: 1,
       issues_found: 0,
-      score: 85
+      score: 85,
     };
   }
-  
+
   // Write runbook summary
   const summaryPath = path.join(summaryDir, 'runbook-summary.json');
   fs.writeFileSync(summaryPath, JSON.stringify(runbookSummary, null, 2));
-  
+
   console.log(`[demo_runbook] ✅ Runbook summary created at: ${summaryPath}`);
-  
+
   return {
     status: 'success',
-    message: `Demo runbook created for ${auvId}`,
+    message: `Demo runbook generated for ${auvId}`,
     artifacts: [summaryPath],
     metadata: {
       auv_id: auvId,
       run_id: runbookSummary.run_id,
-      steps: runbookSteps.length
-    }
+      steps: runbookSteps.length,
+    },
   };
 }
 
@@ -109,21 +115,10 @@ export async function generateDemoRunbook(params) {
  */
 function getDefaultSteps(auvId) {
   const stepMap = {
-    'AUV-1201': [
-      'data.ingest',
-      'data.insights',
-      'chart.render',
-      'audio.tts',
-      'video.compose'
-    ],
-    'AUV-1202': [
-      'web.search',
-      'web.fetch',
-      'seo.audit',
-      'doc.generate'
-    ]
+    'AUV-1201': ['data.ingest', 'data.insights', 'chart.render', 'audio.tts', 'video.compose'],
+    'AUV-1202': ['web.search', 'web.fetch', 'seo.audit', 'doc.generate'],
   };
-  
+
   return stepMap[auvId] || ['setup', 'execute', 'validate'];
 }
 
@@ -136,7 +131,7 @@ function getDefaultSteps(auvId) {
 export function runbookExists(auvId, tenant = 'default') {
   const summaryPath = path.join(
     process.cwd(),
-    tenantPath(tenant, `${auvId}/result-cards/runbook-summary.json`)
+    tenantPath(tenant, `${auvId}/result-cards/runbook-summary.json`),
   );
   return fs.existsSync(summaryPath);
 }

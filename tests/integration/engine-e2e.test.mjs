@@ -46,8 +46,8 @@ async function checkRedis() {
       connection: {
         host: '127.0.0.1',
         port: 6379,
-        retryStrategy: () => null  // Don't retry
-      }
+        retryStrategy: () => null, // Don't retry
+      },
     });
     await testQueue.close();
     return true;
@@ -58,14 +58,14 @@ async function checkRedis() {
 
 describe('Phase 8 E2E Engine Tests', async () => {
   const redisAvailable = await checkRedis();
-  
+
   if (!redisAvailable) {
     it.skip('should process job and create tenant-scoped artifacts', () => {
       console.log('[e2e-test] Skipped: Redis not available');
     });
     return;
   }
-  
+
   let workerProcess;
   const testTenant = 'test-tenant-' + randomBytes(4).toString('hex');
 

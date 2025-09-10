@@ -118,7 +118,8 @@ export async function executeAudioTTS(params) {
       scriptText = generateScript(insights);
     } else {
       // Fallback script
-      scriptText = 'Welcome to the data analysis presentation. This is a demonstration of text to speech capabilities.';
+      scriptText =
+        'Welcome to the data analysis presentation. This is a demonstration of text to speech capabilities.';
     }
   }
 
@@ -153,16 +154,23 @@ export async function executeAudioTTS(params) {
 
   // Write metadata
   const metadataPath = path.join(mediaDir, 'audio_metadata.json');
-  fs.writeFileSync(metadataPath, JSON.stringify({
-    script_length: scriptText.length,
-    duration_seconds: audioMetadata.duration,
-    sample_rate: audioMetadata.sampleRate,
-    channels: audioMetadata.channels,
-    bit_depth: audioMetadata.bitDepth,
-    file_size: audioMetadata.size,
-    generator: piperAvailable ? 'piper_placeholder' : 'placeholder',
-    generated_at: new Date().toISOString(),
-  }, null, 2));
+  fs.writeFileSync(
+    metadataPath,
+    JSON.stringify(
+      {
+        script_length: scriptText.length,
+        duration_seconds: audioMetadata.duration,
+        sample_rate: audioMetadata.sampleRate,
+        channels: audioMetadata.channels,
+        bit_depth: audioMetadata.bitDepth,
+        file_size: audioMetadata.size,
+        generator: piperAvailable ? 'piper_placeholder' : 'placeholder',
+        generated_at: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+  );
 
   console.log(`[audio.tts] Audio generated: ${audioMetadata.duration.toFixed(1)}s duration`);
   console.log(`[audio.tts] Artifacts written to: ${mediaDir}`);
