@@ -11,7 +11,7 @@
 - **Artifact Consistency**: Automated verification of CVF expectations
 - **ENV Propagation**: Fixed CVF step to receive proper environment variables
 
-## Near-term (P0) — Phase 2: Brief Intake & AUV Compiler
+## Near-term (P0) — Phase 2: Brief Intake & AUV Compiler (Completed)
 
 - **Brief Schema**: Create `contracts/brief.schema.json` for structured intake
 - **AUV Compiler**: Build `orchestration/lib/auv_compiler.mjs` to convert briefs to capabilities
@@ -23,7 +23,7 @@
 
 - **Security Gate in CI**: Semgrep + Gitleaks (fail on P0/P1 or any secret); upload findings to `runs/security/*`
 - **QA Gate**: add lint + typecheck + unit to CI; publish `reports/qa/*`
-- **Autopilot v0.6**: basic DAG runner scaffold for multi-step AUVs (`orchestration/graph/*`)
+- **Autopilot v0.6**: basic DAG runner scaffold for multi-step AUVs (`orchestration/graph/*`) — completed
 - **Tool Router dry-run**: fixtures in `/mcp/adapters/router-fixtures` with budget telemetry
 
 - **Blue/Green & canary toggles** in DevOps lane; rollback rehearsal docs
@@ -32,7 +32,7 @@
 
 ## Mid-term (P2)
 
-- **Performance Optimizer lane** with budgets and per-AUV perf dashboards
+- **Performance Optimizer lane** with budgets and per-AUV perf dashboards (partially via Phase 6 budgets)
 - **Code Migrator workflows** (codemods + serialize_globs)
 - **Swap mock** for a feature-flagged real app target
 

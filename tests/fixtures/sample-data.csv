@@ -1,0 +1,151 @@
+id,customer_name,product,category,quantity,unit_price,total_amount,order_date,region,payment_method,status
+1,John Smith,Laptop Pro X1,Electronics,1,1299.99,1299.99,2024-01-01,North America,Credit Card,Completed
+2,Emma Johnson,Wireless Mouse,Electronics,2,29.99,59.98,2024-01-01,Europe,PayPal,Completed
+3,Michael Brown,Office Chair Elite,Furniture,1,599.99,599.99,2024-01-02,North America,Credit Card,Completed
+4,Sarah Davis,USB-C Hub,Electronics,3,49.99,149.97,2024-01-02,Asia,Debit Card,Completed
+5,James Wilson,Standing Desk,Furniture,1,899.99,899.99,2024-01-03,North America,Credit Card,Completed
+6,Maria Garcia,Mechanical Keyboard,Electronics,1,159.99,159.99,2024-01-03,Europe,PayPal,Completed
+7,Robert Martinez,Monitor 4K,Electronics,2,399.99,799.98,2024-01-04,North America,Credit Card,Completed
+8,Linda Anderson,Desk Lamp LED,Furniture,2,79.99,159.98,2024-01-04,Europe,Credit Card,Completed
+9,David Taylor,Smartphone Max,Electronics,1,999.99,999.99,2024-01-05,Asia,PayPal,Completed
+10,Patricia Thomas,Tablet Pro,Electronics,1,699.99,699.99,2024-01-05,North America,Credit Card,Completed
+11,Christopher Jackson,Webcam HD,Electronics,2,89.99,179.98,2024-01-06,Europe,Debit Card,Completed
+12,Barbara White,Ergonomic Mouse,Electronics,1,79.99,79.99,2024-01-06,North America,Credit Card,Pending
+13,Daniel Harris,Printer Multifunction,Electronics,1,299.99,299.99,2024-01-07,Asia,PayPal,Completed
+14,Jessica Martin,Office Supplies Bundle,Office Supplies,5,19.99,99.95,2024-01-07,Europe,Credit Card,Completed
+15,Thomas Thompson,External SSD 1TB,Electronics,1,149.99,149.99,2024-01-08,North America,Debit Card,Completed
+16,Nancy Lee,Conference Phone,Electronics,1,249.99,249.99,2024-01-08,Asia,Credit Card,Completed
+17,Paul Walker,Adjustable Monitor Arm,Furniture,2,129.99,259.98,2024-01-09,Europe,PayPal,Completed
+18,Jennifer Hall,Wireless Headphones,Electronics,1,199.99,199.99,2024-01-09,North America,Credit Card,Completed
+19,Mark Allen,Smart Watch Pro,Electronics,1,399.99,399.99,2024-01-10,Asia,Debit Card,Completed
+20,Karen Young,Cable Management Kit,Office Supplies,3,29.99,89.97,2024-01-10,Europe,Credit Card,Completed
+21,Kevin King,Gaming Chair,Furniture,1,499.99,499.99,2024-01-11,North America,PayPal,Completed
+22,Betty Wright,Bluetooth Speaker,Electronics,2,79.99,159.98,2024-01-11,Asia,Credit Card,Completed
+23,Jason Lopez,Document Scanner,Electronics,1,399.99,399.99,2024-01-12,Europe,Debit Card,Completed
+24,Dorothy Hill,Desk Organizer Set,Office Supplies,2,39.99,79.98,2024-01-12,North America,Credit Card,Completed
+25,Ryan Scott,Noise Cancelling Headset,Electronics,1,299.99,299.99,2024-01-13,Asia,PayPal,Completed
+26,Amanda Green,Laptop Stand,Electronics,1,59.99,59.99,2024-01-13,Europe,Credit Card,Completed
+27,Kenneth Adams,Wireless Charger,Electronics,3,39.99,119.97,2024-01-14,North America,Debit Card,Completed
+28,Melissa Nelson,Filing Cabinet,Furniture,1,299.99,299.99,2024-01-14,Asia,Credit Card,Completed
+29,Joshua Baker,Power Strip Smart,Electronics,2,49.99,99.98,2024-01-15,Europe,PayPal,Completed
+30,Donna Carter,Desk Mat Large,Office Supplies,1,34.99,34.99,2024-01-15,North America,Credit Card,Completed
+31,Brian Mitchell,External Monitor 27",Electronics,1,349.99,349.99,2024-01-16,Asia,Debit Card,Completed
+32,Carol Roberts,Wireless Keyboard,Electronics,1,89.99,89.99,2024-01-16,Europe,Credit Card,Completed
+33,George Turner,Bookshelf Modular,Furniture,1,199.99,199.99,2024-01-17,North America,PayPal,Completed
+34,Helen Phillips,USB Flash Drive Set,Electronics,5,24.99,124.95,2024-01-17,Asia,Credit Card,Completed
+35,Edward Campbell,Whiteboard Magnetic,Office Supplies,1,149.99,149.99,2024-01-18,Europe,Debit Card,Completed
+36,Sharon Parker,Desk Phone VoIP,Electronics,1,179.99,179.99,2024-01-18,North America,Credit Card,Completed
+37,Steven Evans,Cable Tester Kit,Electronics,1,69.99,69.99,2024-01-19,Asia,PayPal,Completed
+38,Deborah Edwards,Paper Shredder,Office Supplies,1,199.99,199.99,2024-01-19,Europe,Credit Card,Completed
+39,Larry Collins,Network Switch 8-Port,Electronics,1,89.99,89.99,2024-01-20,North America,Debit Card,Completed
+40,Ruth Stewart,Desk Drawer Unit,Furniture,1,149.99,149.99,2024-01-20,Asia,Credit Card,Completed
+41,Frank Morris,Surge Protector,Electronics,3,34.99,104.97,2024-01-21,Europe,PayPal,Completed
+42,Angela Rogers,Label Printer,Office Supplies,1,129.99,129.99,2024-01-21,North America,Credit Card,Completed
+43,Scott Reed,Router WiFi 6,Electronics,1,199.99,199.99,2024-01-22,Asia,Debit Card,Completed
+44,Virginia Cook,Storage Boxes Set,Office Supplies,4,19.99,79.96,2024-01-22,Europe,Credit Card,Completed
+45,Eric Bailey,Monitor Light Bar,Electronics,1,89.99,89.99,2024-01-23,North America,PayPal,Completed
+46,Pamela Rivera,Footrest Adjustable,Furniture,1,79.99,79.99,2024-01-23,Asia,Credit Card,Completed
+47,Raymond Cooper,HDMI Cable Set,Electronics,3,29.99,89.97,2024-01-24,Europe,Debit Card,Completed
+48,Catherine Richardson,Bulletin Board,Office Supplies,1,59.99,59.99,2024-01-24,North America,Credit Card,Completed
+49,Jeffrey Cox,Laptop Bag Premium,Electronics,1,119.99,119.99,2024-01-25,Asia,PayPal,Completed
+50,Amy Howard,Desk Accessories Kit,Office Supplies,1,89.99,89.99,2024-01-25,Europe,Credit Card,Completed
+51,Gregory Ward,Backup Battery UPS,Electronics,1,299.99,299.99,2024-01-26,North America,Debit Card,Completed
+52,Brenda Torres,Meeting Room Table,Furniture,1,1299.99,1299.99,2024-01-26,Asia,Credit Card,Completed
+53,Jose Peterson,Video Camera 4K,Electronics,1,899.99,899.99,2024-01-27,Europe,PayPal,Completed
+54,Virginia Gray,Office Plants Set,Office Supplies,3,39.99,119.97,2024-01-27,North America,Credit Card,Completed
+55,Alexander Ramirez,Server Rack Small,Electronics,1,499.99,499.99,2024-01-28,Asia,Debit Card,Completed
+56,Judith James,Acoustic Panels,Furniture,6,49.99,299.94,2024-01-28,Europe,Credit Card,Completed
+57,Jerry Watson,Graphics Tablet,Electronics,1,399.99,399.99,2024-01-29,North America,PayPal,Completed
+58,Teresa Brooks,Planner System,Office Supplies,1,69.99,69.99,2024-01-29,Asia,Credit Card,Completed
+59,Harry Kelly,Security Camera Set,Electronics,4,149.99,599.96,2024-01-30,Europe,Debit Card,Completed
+60,Christina Sanders,Reception Desk,Furniture,1,1999.99,1999.99,2024-01-30,North America,Credit Card,Completed
+61,Arthur Price,Microphone Professional,Electronics,1,249.99,249.99,2024-01-31,Asia,PayPal,Completed
+62,Frances Bennett,Wall Organizer,Office Supplies,2,44.99,89.98,2024-01-31,Europe,Credit Card,Completed
+63,Carl Wood,Switch KVM 4-Port,Electronics,1,179.99,179.99,2024-02-01,North America,Debit Card,Completed
+64,Marie Barnes,Guest Chairs Set,Furniture,4,199.99,799.96,2024-02-01,Asia,Credit Card,Completed
+65,Harold Ross,Barcode Scanner,Electronics,1,159.99,159.99,2024-02-02,Europe,PayPal,Completed
+66,Evelyn Henderson,Dry Erase Markers,Office Supplies,10,9.99,99.90,2024-02-02,North America,Credit Card,Completed
+67,Russell Coleman,Access Point WiFi,Electronics,2,129.99,259.98,2024-02-03,Asia,Debit Card,Completed
+68,Ruby Jenkins,Coffee Table,Furniture,1,399.99,399.99,2024-02-03,Europe,Credit Card,Completed
+69,Louis Perry,Thermal Printer,Electronics,1,219.99,219.99,2024-02-04,North America,PayPal,Completed
+70,Annie Powell,Desk Calendar Set,Office Supplies,5,14.99,74.95,2024-02-04,Asia,Credit Card,Completed
+71,Willie Long,Projector 1080p,Electronics,1,599.99,599.99,2024-02-05,Europe,Debit Card,Completed
+72,Lillian Patterson,Storage Cabinet,Furniture,1,699.99,699.99,2024-02-05,North America,Credit Card,Completed
+73,Howard Hughes,Network Cable Box,Electronics,1,89.99,89.99,2024-02-06,Asia,PayPal,Completed
+74,Edith Flores,Staplers Heavy Duty,Office Supplies,3,29.99,89.97,2024-02-06,Europe,Credit Card,Completed
+75,Albert Washington,Touch Screen Monitor,Electronics,1,799.99,799.99,2024-02-07,North America,Debit Card,Completed
+76,Mildred Butler,Coat Stand,Furniture,1,149.99,149.99,2024-02-07,Asia,Credit Card,Completed
+77,Ernest Simmons,Ethernet Tester,Electronics,1,119.99,119.99,2024-02-08,Europe,PayPal,Completed
+78,Gladys Foster,Binder Set Premium,Office Supplies,6,19.99,119.94,2024-02-08,North America,Credit Card,Completed
+79,Ralph Gonzales,Smart Display 10",Electronics,1,299.99,299.99,2024-02-09,Asia,Debit Card,Completed
+80,Rose Bryant,Side Table,Furniture,2,179.99,359.98,2024-02-09,Europe,Credit Card,Completed
+81,Jesse Alexander,Hard Drive 4TB,Electronics,1,129.99,129.99,2024-02-10,North America,PayPal,Completed
+82,Louise Russell,Tape Dispenser Set,Office Supplies,4,12.99,51.96,2024-02-10,Asia,Credit Card,Completed
+83,Jack Griffin,Conference Camera,Electronics,1,999.99,999.99,2024-02-11,Europe,Debit Card,Completed
+84,Katherine Diaz,Lounge Chair,Furniture,1,899.99,899.99,2024-02-11,North America,Credit Card,Completed
+85,Roy Hayes,Cooling Pad Laptop,Electronics,1,49.99,49.99,2024-02-12,Asia,PayPal,Completed
+86,Doris Myers,Calculator Scientific,Office Supplies,2,34.99,69.98,2024-02-12,Europe,Credit Card,Completed
+87,Eugene Ford,NAS Storage 8TB,Electronics,1,599.99,599.99,2024-02-13,North America,Debit Card,Completed
+88,Martha Hamilton,Partition Screen,Furniture,3,299.99,899.97,2024-02-13,Asia,Credit Card,Completed
+89,Walter Graham,Audio Interface,Electronics,1,249.99,249.99,2024-02-14,Europe,PayPal,Completed
+90,Diane Sullivan,Pen Holder Set,Office Supplies,5,16.99,84.95,2024-02-14,North America,Credit Card,Completed
+91,Henry Wallace,Smart Lock Office,Electronics,1,199.99,199.99,2024-02-15,Asia,Debit Card,Completed
+92,Alice Woods,Console Table,Furniture,1,449.99,449.99,2024-02-15,Europe,Credit Card,Completed
+93,Joe Cole,Cable Organizer Box,Electronics,2,39.99,79.98,2024-02-16,North America,PayPal,Completed
+94,Ann West,Scissors Set,Office Supplies,3,24.99,74.97,2024-02-16,Asia,Credit Card,Completed
+95,Philip Jordan,Mesh Router System,Electronics,1,399.99,399.99,2024-02-17,Europe,Debit Card,Completed
+96,Phyllis Owens,Bar Stool Set,Furniture,4,149.99,599.96,2024-02-17,North America,Credit Card,Completed
+97,Fred Reynolds,Digital Scale,Electronics,1,89.99,89.99,2024-02-18,Asia,PayPal,Completed
+98,Gloria Fisher,Index Cards Box,Office Supplies,10,7.99,79.90,2024-02-18,Europe,Credit Card,Completed
+99,Billy Ellis,Smart Thermostat,Electronics,1,249.99,249.99,2024-02-19,North America,Debit Card,Completed
+100,Jean Harrison,TV Stand Modern,Furniture,1,599.99,599.99,2024-02-19,Asia,Credit Card,Completed
+101,Bruce Gibson,Action Camera 4K,Electronics,1,349.99,349.99,2024-02-20,Europe,PayPal,Completed
+102,Judy Wells,Magazine Holder,Office Supplies,2,29.99,59.98,2024-02-20,North America,Credit Card,Completed
+103,Wayne Webb,Soundbar Premium,Electronics,1,499.99,499.99,2024-02-21,Asia,Debit Card,Completed
+104,Joan Simpson,Plant Stand Indoor,Furniture,1,129.99,129.99,2024-02-21,Europe,Credit Card,Completed
+105,Roger Stevens,Power Bank 20000mAh,Electronics,2,59.99,119.98,2024-02-22,North America,PayPal,Completed
+106,Joyce Tucker,Clipboard Set,Office Supplies,5,11.99,59.95,2024-02-22,Asia,Credit Card,Completed
+107,Lawrence Porter,Smart Doorbell,Electronics,1,179.99,179.99,2024-02-23,Europe,Debit Card,Completed
+108,Denise Hunter,Ottoman Storage,Furniture,1,249.99,249.99,2024-02-23,North America,Credit Card,Completed
+109,Willie Hicks,Gimbal Stabilizer,Electronics,1,299.99,299.99,2024-02-24,Asia,PayPal,Completed
+110,Theresa Crawford,Push Pins Box,Office Supplies,8,5.99,47.92,2024-02-24,Europe,Credit Card,Completed
+111,Gerald Henry,Drone Camera,Electronics,1,799.99,799.99,2024-02-25,North America,Debit Card,Completed
+112,Norma Boyd,Room Divider,Furniture,1,399.99,399.99,2024-02-25,Asia,Credit Card,Completed
+113,Sean Mason,SD Card 256GB,Electronics,3,79.99,239.97,2024-02-26,Europe,PayPal,Completed
+114,Paula Shaw,Rubber Bands Box,Office Supplies,6,8.99,53.94,2024-02-26,North America,Credit Card,Completed
+115,Antonio Holmes,VR Headset Pro,Electronics,1,599.99,599.99,2024-02-27,Asia,Debit Card,Completed
+116,Jane Rice,Bench Storage,Furniture,1,349.99,349.99,2024-02-27,Europe,Credit Card,Completed
+117,Albert Robertson,Lightning Cable Set,Electronics,4,34.99,139.96,2024-02-28,North America,PayPal,Completed
+118,Andrea Hunt,Correction Tape,Office Supplies,12,6.99,83.88,2024-02-28,Asia,Credit Card,Completed
+119,Terry Black,Smart Ring Doorbell,Electronics,1,249.99,249.99,2024-02-29,Europe,Debit Card,Completed
+120,Sara Daniels,Mirror Wall Office,Furniture,1,199.99,199.99,2024-02-29,North America,Credit Card,Completed
+121,Willie Palmer,Portable SSD 2TB,Electronics,1,299.99,299.99,2024-03-01,Asia,PayPal,Completed
+122,Grace Mills,Glue Stick Set,Office Supplies,10,4.99,49.90,2024-03-01,Europe,Credit Card,Completed
+123,Ralph Nichols,Bluetooth Tracker,Electronics,4,29.99,119.96,2024-03-02,North America,Debit Card,Completed
+124,Tina Grant,Shelf Unit Tall,Furniture,1,449.99,449.99,2024-03-02,Asia,Credit Card,Completed
+125,Juan Knight,Car Charger Fast,Electronics,2,39.99,79.98,2024-03-03,Europe,PayPal,Completed
+126,Lori Ferguson,Paper Clips Jumbo,Office Supplies,15,3.99,59.85,2024-03-03,North America,Credit Card,Completed
+127,Aaron Rose,Smart Scale Body,Electronics,1,99.99,99.99,2024-03-04,Asia,Debit Card,Completed
+128,Rachel Stone,Rug Office Large,Furniture,1,299.99,299.99,2024-03-04,Europe,Credit Card,Completed
+129,Craig Hawkins,Adapter Multi-Port,Electronics,3,49.99,149.97,2024-03-05,North America,PayPal,Completed
+130,Nicole Dunn,Folders Manila,Office Supplies,20,2.99,59.80,2024-03-05,Asia,Credit Card,Completed
+131,Eugene Perkins,Smart Plug Set,Electronics,6,24.99,149.94,2024-03-06,Europe,Debit Card,Completed
+132,Kathy Hudson,Cushion Chair,Furniture,4,39.99,159.96,2024-03-06,North America,Credit Card,Completed
+133,Samuel Spencer,Cable Extension,Electronics,5,19.99,99.95,2024-03-07,Asia,PayPal,Completed
+134,Anna Gardner,Envelopes Box,Office Supplies,25,1.99,49.75,2024-03-07,Europe,Credit Card,Completed
+135,Victor Stephens,Smart Bulb Color,Electronics,8,29.99,239.92,2024-03-08,North America,Debit Card,Completed
+136,Rita Payne,Lamp Floor LED,Furniture,1,179.99,179.99,2024-03-08,Asia,Credit Card,Completed
+137,Brandon Pierce,Screen Protector,Electronics,5,14.99,74.95,2024-03-09,Europe,PayPal,Completed
+138,Debra Berry,Note Pads Set,Office Supplies,10,9.99,99.90,2024-03-09,North America,Credit Card,Completed
+139,Benjamin Matthews,Smart Home Hub,Electronics,1,149.99,149.99,2024-03-10,Asia,Debit Card,Completed
+140,Lois Arnold,Trash Can Office,Furniture,2,59.99,119.98,2024-03-10,Europe,Credit Card,Completed
+141,Russell Wagner,Lens Cleaning Kit,Electronics,3,19.99,59.97,2024-03-11,North America,PayPal,Completed
+142,Sylvia Willis,Highlighter Set,Office Supplies,8,12.99,103.92,2024-03-11,Asia,Credit Card,Completed
+143,Adam Ray,Smart Sensor Kit,Electronics,1,199.99,199.99,2024-03-12,Europe,Debit Card,Completed
+144,Emily Lawson,Clock Wall Digital,Furniture,1,89.99,89.99,2024-03-12,North America,Credit Card,Completed
+145,Nathan Watkins,Memory Card Reader,Electronics,2,24.99,49.98,2024-03-13,Asia,PayPal,Completed
+146,Janice Olson,Sticky Notes Cube,Office Supplies,12,7.99,95.88,2024-03-13,Europe,Credit Card,Completed
+147,Dylan Carroll,Smart Strip LED,Electronics,3,69.99,209.97,2024-03-14,North America,Debit Card,Completed
+148,Emma Duncan,Curtains Office,Furniture,2,149.99,299.98,2024-03-14,Asia,Credit Card,Completed
+149,Kyle Snyder,Phone Holder Car,Electronics,4,29.99,119.96,2024-03-15,Europe,PayPal,Completed
+150,Janet Hart,Markers Permanent,Office Supplies,15,8.99,134.85,2024-03-15,North America,Credit Card,Completed

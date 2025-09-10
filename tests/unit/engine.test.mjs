@@ -11,6 +11,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { promises as fs } from 'fs';
 import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
 import { pathToFileURL } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -26,6 +27,7 @@ describe('Phase 8 - Engine Components', () => {
       const schema = JSON.parse(await fs.readFile(schemaPath, 'utf8'));
 
       const ajv = new Ajv({ allErrors: true });
+      addFormats(ajv);
       const validate = ajv.compile(schema);
 
       const validJob = {
@@ -47,6 +49,7 @@ describe('Phase 8 - Engine Components', () => {
       const schema = JSON.parse(await fs.readFile(schemaPath, 'utf8'));
 
       const ajv = new Ajv({ allErrors: true });
+      addFormats(ajv);
       const validate = ajv.compile(schema);
 
       const invalidJob = {
@@ -150,6 +153,7 @@ describe('Phase 8 - Engine Components', () => {
       const schema = JSON.parse(await fs.readFile(schemaPath, 'utf8'));
 
       const ajv = new Ajv({ allErrors: true });
+      addFormats(ajv);
       const validate = ajv.compile(schema);
 
       const validStatus = {

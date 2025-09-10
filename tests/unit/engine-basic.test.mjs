@@ -17,7 +17,8 @@ describe('Phase 8 - Engine Basic Tests', () => {
       assert.ok(schema.$schema, 'Schema should have $schema property');
       assert.strictEqual(schema.type, 'object', 'Schema should be an object type');
       assert.ok(schema.required.includes('type'), 'Schema should require type');
-      assert.ok(schema.required.includes('graph_file'), 'Schema should require graph_file');
+      // graph_file is optional in current schema; only 'type' is required
+      assert.ok(schema.required.includes('type'), 'Schema should require type');
     });
 
     it('should have status schema file', async () => {

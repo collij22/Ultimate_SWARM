@@ -26,6 +26,7 @@ function lookupFromCapabilityYaml(auvId) {
  * Get expected artifacts for a given AUV
  * @param {string} auvId - The AUV identifier (e.g., 'AUV-0002')
  * @param {string} [tenant] - Optional tenant ID (defaults to process.env.TENANT_ID or 'default')
+ * @param {Object} [options] - Additional options for artifact selection
  * @returns {string[]} Array of expected artifact paths
  */
 export function expectedArtifacts(auvId, tenant = process.env.TENANT_ID || 'default') {
@@ -72,11 +73,79 @@ export function expectedArtifacts(auvId, tenant = process.env.TENANT_ID || 'defa
     case 'AUV-9998':
       // Test AUV - minimal artifacts for unit tests
       return [tenantPath(tenant, 'AUV-9998/result-cards/runbook-summary.json')];
+
+    // Phase 11 demo AUVs with comprehensive artifacts
+    case 'AUV-DATA-001':
+      // Data pipeline demo
+      return [
+        tenantPath(tenant, 'AUV-DATA-001/data/raw/input.csv'),
+        tenantPath(tenant, 'AUV-DATA-001/data/processed/cleaned.csv'),
+        tenantPath(tenant, 'AUV-DATA-001/insights.json'),
+        tenantPath(tenant, 'AUV-DATA-001/charts/revenue.png'),
+        tenantPath(tenant, 'AUV-DATA-001/charts/trends.png'),
+        tenantPath(tenant, 'AUV-DATA-001/charts/categories.png'),
+      ];
+
+    case 'AUV-SEO-001':
+      // SEO audit demo
+      return [
+        tenantPath(tenant, 'AUV-SEO-001/reports/seo/audit.json'),
+        tenantPath(tenant, 'AUV-SEO-001/reports/seo/sitemap-check.json'),
+        tenantPath(tenant, 'AUV-SEO-001/reports/seo/summary.md'),
+        tenantPath(tenant, 'AUV-SEO-001/reports/seo/report.html'),
+      ];
+
+    case 'AUV-MEDIA-001':
+      // Media composition demo
+      return [
+        tenantPath(tenant, 'AUV-MEDIA-001/media/script.txt'),
+        tenantPath(tenant, 'AUV-MEDIA-001/media/narration.wav'),
+        tenantPath(tenant, 'AUV-MEDIA-001/media/final.mp4'),
+        tenantPath(tenant, 'AUV-MEDIA-001/media/compose-metadata.json'),
+      ];
+
+    case 'AUV-DB-001':
+      // Database migration demo
+      return [
+        tenantPath(tenant, 'AUV-DB-001/db/schema.sql'),
+        tenantPath(tenant, 'AUV-DB-001/db/migration-result.json'),
+        tenantPath(tenant, 'AUV-DB-001/db/validation-queries.sql'),
+      ];
+
     default: {
       // No dynamic definition available
       return [];
     }
   }
+}
+
+/**
+ * Get expected artifacts for specific domains
+ * @param {string} auvId - The AUV identifier
+ * @param {string} domain - Domain type (data, charts, seo, media, db)
+ * @param {string} [tenant] - Optional tenant ID
+ * @returns {string[]} Array of expected artifact paths for the domain
+ */
+export function expectedArtifactsByDomain(
+  auvId,
+  domain,
+  tenant = process.env.TENANT_ID || 'default',
+) {
+  const allArtifacts = expectedArtifacts(auvId, tenant);
+
+  // Filter artifacts by domain patterns
+  const domainPatterns = {
+    data: [/\/data\//, /insights\.json$/],
+    charts: [/\/charts\/.*\.png$/],
+    seo: [/\/reports\/seo\//, /seo.*\.(json|md|html)$/],
+    media: [/\/media\//, /\.(wav|mp3|mp4)$/, /compose-metadata\.json$/],
+    db: [/\/db\//, /migration-result\.json$/, /\.sql$/],
+  };
+
+  const patterns = domainPatterns[domain];
+  if (!patterns) return [];
+
+  return allArtifacts.filter((artifact) => patterns.some((pattern) => pattern.test(artifact)));
 }
 
 /**
@@ -97,4 +166,27 @@ export function getAuvsWithArtifacts() {
     }
   } catch {}
   return base;
+}
+
+/**
+ * Auto-detect which domains have artifacts for this AUV
+ * @param {string} auvId - The AUV identifier
+ * @param {string} [tenant] - Optional tenant ID
+ * @returns {string[]} Array of domain names that have artifacts
+ */
+export function detectDomainsWithArtifacts(auvId, tenant = process.env.TENANT_ID || 'default') {
+  const allArtifacts = expectedArtifacts(auvId, tenant);
+  if (!allArtifacts || allArtifacts.length === 0) return [];
+
+  const domains = ['data', 'charts', 'seo', 'media', 'db'];
+  const detectedDomains = [];
+
+  for (const domain of domains) {
+    const domainArtifacts = expectedArtifactsByDomain(auvId, domain, tenant);
+    if (domainArtifacts.length > 0) {
+      detectedDomains.push(domain);
+    }
+  }
+
+  return detectedDomains;
 }

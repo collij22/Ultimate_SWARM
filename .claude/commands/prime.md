@@ -5,22 +5,28 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 ## Load these references (skim, don't paraphrase them back)
 
 - `@CLAUDE.md`
-- `@docs/deep_technical_plan_06sep2025.md` (proposed technical moving forward, including current state and recent implementation)
-- `@docs/plan.md` (a high level plan to supplement the technical plan)
+- `@docs/deep_technical_plan_06sep2025.md` (phase 1-9 implementation)
+- `@docs/phases10-14.md` (phase 10-14 implementation - still in progress)
+- `@docs/plan.md` (a high level plan to supplement the phased plan)
   IMPORTANT: other core documents
 - `@docs/ARCHITECTURE.md`
 - `@docs/ORCHESTRATION.md`
 - `@docs/QUALITY-GATES.md`
 - `@docs/verify.md`
-- `@docs/Hooks.md`
+- `@docs/hooks.md`
 - `@mcp/registry.yaml`
 - `@mcp/policies.yaml`
+- `@mcp/router-report.mjs`
 - `@orchestration/cli.mjs`
 - `@orchestration/runbooks/auv_delivery.mjs`
 - `@orchestration/lib/test_authoring.mjs`
 - `@orchestration/cvf-check.mjs`
 - `@orchestration/lib/auv_compiler.mjs`
 - `@orchestration/graph/runner.mjs`
+- `@orchestration/graph/projects/seo-audit-demo.yaml`
+- `@orchestration/lib/engine_selector.mjs`
+- `@orchestration/lib/subagent_gateway.mjs`
+- `@orchestration/lib/tool_executor.mjs`
 - `@orchestration/lib/build_lane.mjs`
 - `@orchestration/security/semgrep.mjs`
 - `@orchestration/visual/capture.mjs`
@@ -34,15 +40,15 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 ## Project TL;DR (internalize)
 
 - **Swarm1 delivers AUV units** with contract-first specs and CVF (functional, perf, security, visual) gates
-- **Proven locally**: AUV-0001..0005; CI/CD fully integrated; Brief compiler generates AUVs from requirements
-- **Runbook autopilot** (`orchestration/cli.mjs AUV-<ID>`) starts mock server → Playwright → Lighthouse → CVF → result card
-- **Auto-authoring** creates baseline tests from `capabilities/<AUV>.yaml` with FORCE_REGEN protection for manual files
-- **MCP**: agents request capabilities, not tool names. Router enforces Primary first, Secondary by consent+budget per policies
-- **DAG Runner**: Parallel execution with dependencies, work_simulation nodes for testing (20-45% speedup verified)
+- **Phases 1–10b complete**: Autopilot, Compiler, DAG, MCP Router, Build Lane, Security/Visual, Packaging, Durable Engine, Agent Excellence, vNext MCPs + tri‑mode
+- **Runbook autopilot** (`orchestration/cli.mjs AUV-<ID>`) → mock server → Playwright → Lighthouse → CVF → result cards
+- **Tri‑mode orchestration**: `SWARM_MODE=deterministic|claude|hybrid`; subagent gateway + tool executor; router enforces allowlists & budgets; coverage at `runs/router/coverage-report.json`
+- **New Primary MCPs**: `ref` (docs.search/read), `brave-search` (web.search; TEST_MODE), `fetch` (web.fetch); node `web_search_fetch` + CLI `search-fetch`
+- **DAG Runner**: Parallel execution with dependencies; work_simulation nodes (20–45% speedup verified)
 - **Build Lane**: Autonomous pipeline with QA gates and PR creation
 - **Security/Visual Gates**: Semgrep, Gitleaks, visual regression with baselines (Phase 6 complete)
-- **Packaging & Delivery**: Client-ready bundles with manifests, HTML reports, and semantic versioning (Phase 7 complete)
-- **Hooks/Observability**: JSONL logs + result cards under `runs/`; artifacts are the source of truth for "done"
+- **Packaging & Delivery**: Client-ready bundles with manifests, HTML reports, semantic versioning (Phase 7 complete)
+- **Durable engine & agents**: BullMQ/Redis multi‑tenant runs (Phase 8); output schemas, knowledge, scorecards (Phase 9)
 
 ## House rules
 
@@ -55,7 +61,7 @@ You're starting with a blank context. Prime yourself on the Swarm1 codebase and 
 
 1. **Confirm understanding** of AUV model & gates (see `@docs/verify.md`, `@orchestration/cvf-check.mjs`) and where artifacts land (`runs/<AUV-ID>/...`)
 2. **Verify local run facts** (don't leak tokens): `STAGING_URL`, `API_BASE`; mock server at `@mock/server.js`; Playwright config at `@tests/robot/playwright/playwright.config.ts`
-3. **Offer a 3–5 line status snapshot** and a next-steps menu tailored to this repo (e.g., runbook for AUV-0003/0004/0005, add a new AUV, extend gates, wire CI)
+3. **Offer a 3–5 line status snapshot** and a next-steps menu tailored to this repo (e.g., runbook for AUV-0003/0004/0005, tri‑mode seo‑audit demo, router coverage, extend gates)
 
 ## Output format
 
@@ -73,7 +79,9 @@ Reply with exactly this structure:
     npx playwright test -c tests/robot/playwright/playwright.config.ts
     node orchestration/cli.mjs AUV-0003
     node orchestration/cvf-check.mjs AUV-0003 --strict
-    node orchestration/graph/runner.mjs orchestration/graph/projects/demo-validation.yaml
+    node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+    node orchestration/cli.mjs search-fetch "ref tools MCP server"
+    node mcp/router-report.mjs
     node orchestration/security/semgrep.mjs --auv AUV-0003
     node orchestration/visual/capture.mjs --auv AUV-0003
     tail -n 50 runs/observability/hooks.jsonl
@@ -89,12 +97,12 @@ Reply with exactly this structure:
   </menus>
 
   <notes>
-    - Phases 1-7 complete: Foundation, Brief Compiler, DAG Runner, MCP Router, Build Lane, Security/Visual Gates, Packaging & Delivery
-    - CI/CD fully integrated with GitHub Actions; all AUVs passing consistently
-    - Auto-authoring protects manual test files; use FORCE_REGEN_OVERRIDE_MANUAL=1 only when necessary
-    - Use the MCP router by **capability**, not tool name; policies/registry are the source of truth
-    - Security waivers expire after 30 days; visual baselines in tests/robot/visual/baselines/
-    - Keep output diffs/patches minimal and reproducible; attach artifacts in runs/
+    - Phases 1–10b complete: tri‑mode orchestration with Claude subagents; new Primary MCPs wired; router coverage emitted
+    - CI/CD fully integrated; AUV-0002..0005 green; artifacts under runs/**; reports in dist/**
+    - Auto-authoring protects manual tests; use FORCE_REGEN_OVERRIDE_MANUAL=1 only when necessary
+    - Use the MCP router by **capability** (Primary‑first; Secondary budget/consent; TEST_MODE for web.search/external crawl)
+    - Security waivers expire after 30 days; visual baselines at tests/robot/visual/baselines/
+    - Set SWARM_MODE=claude|hybrid to exercise subagents; decisions/ledgers in runs/observability/
   </notes>
 </ready>
 ``` ::contentReference[oaicite:0]{index=0}

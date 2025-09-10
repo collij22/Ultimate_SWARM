@@ -1,0 +1,209 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarm1.io/schemas/migration-result.schema.json",
+  "title": "DB Migration Result",
+  "description": "Schema for validating database migration results",
+  "type": "object",
+  "required": ["engine", "applied", "migrations", "validation_ok"],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of migration execution"
+    },
+    "engine": {
+      "type": "string",
+      "enum": ["duckdb", "sqlite", "postgres-local", "mysql-local"],
+      "description": "Database engine used"
+    },
+    "engine_version": {
+      "type": "string",
+      "description": "Database engine version"
+    },
+    "applied": {
+      "type": "boolean",
+      "description": "Whether migrations were successfully applied"
+    },
+    "database_name": {
+      "type": "string",
+      "description": "Name of the target database"
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "Final schema version after migrations"
+    },
+    "migrations": {
+      "type": "array",
+      "description": "List of migrations processed",
+      "items": {
+        "type": "object",
+        "required": ["id", "status"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Migration identifier"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Migration file name"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["applied", "skipped", "failed", "rolled_back"],
+            "description": "Migration execution status"
+          },
+          "execution_time_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Execution time in milliseconds"
+          },
+          "error_message": {
+            "type": "string",
+            "description": "Error message if migration failed"
+          },
+          "affected_rows": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of rows affected"
+          },
+          "checksum": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "SHA-256 checksum of migration file"
+          }
+        }
+      }
+    },
+    "validation_ok": {
+      "type": "boolean",
+      "description": "Whether post-migration validation passed"
+    },
+    "validation_results": {
+      "type": "array",
+      "description": "Results of validation queries",
+      "items": {
+        "type": "object",
+        "required": ["name", "rows"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Validation check name"
+          },
+          "query": {
+            "type": "string",
+            "description": "SQL query executed"
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of rows returned"
+          },
+          "expected_rows": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Expected number of rows"
+          },
+          "passed": {
+            "type": "boolean",
+            "description": "Whether this validation check passed"
+          },
+          "message": {
+            "type": "string",
+            "description": "Validation message or error"
+          }
+        }
+      }
+    },
+    "rollback_available": {
+      "type": "boolean",
+      "description": "Whether rollback scripts are available"
+    },
+    "rollback_performed": {
+      "type": "boolean",
+      "description": "Whether a rollback was performed"
+    },
+    "schema_snapshot": {
+      "type": "object",
+      "description": "Snapshot of final schema state",
+      "properties": {
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "columns"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "type"],
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "nullable": {
+                      "type": "boolean"
+                    },
+                    "primary_key": {
+                      "type": "boolean"
+                    },
+                    "foreign_key": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "row_count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "table", "columns"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "table": {
+                "type": "string"
+              },
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "unique": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "total_execution_time_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total execution time for all migrations"
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Non-fatal warnings during migration",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

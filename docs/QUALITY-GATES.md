@@ -68,6 +68,55 @@
 - **Validation**: Manual verification or robot journey completion
 - **Documentation**: Runbook with clear "How to verify" steps
 
+### 9. Domain-Specific Gates (Phase 11)
+
+#### Data Domain (Exit Code 305)
+
+- **Validates**: `insights.json` against schema
+- **Thresholds**: `min_rows` (default: 10), `min_metrics` (default: 1)
+- **Script**: `node orchestration/lib/data_validator.mjs <path>`
+- **Checksum**: Validates source file integrity if manifest present
+
+#### Charts Domain (Exit Code 306)
+
+- **Validates**: PNG chart files (format, dimensions, content)
+- **Thresholds**: `min_width/height` (400x300); optional `max_width/height` when configured via policy/AUV
+- **Script**: `node orchestration/lib/chart_validator.mjs <path>`
+- **Content Check**: Ensures charts aren't blank/uniform
+
+#### SEO Domain (Exit Code 307)
+
+- **Validates**: SEO audit results JSON
+- **Thresholds**: `max_broken_links` (5), `min_canonical_rate` (0.8), `max_load_time_ms` (3000), `pageIssueFailRate` (default 0.9)
+- **Script**: `node orchestration/lib/seo_validator.mjs <path>`
+- **Checks**: Broken links, canonical tags, sitemap presence, page load times; page-level issues fail only when the share of affected pages exceeds `pageIssueFailRate`
+
+#### Media Domain (Exit Code 308)
+
+- **Validates**: Media composition metadata
+- **Thresholds**: `duration_tolerance_pct` (10%), `min_width/height` (640x480), `required_audio_track` (true)
+- **Script**: `node orchestration/lib/media_validator.mjs <path>`
+- **Checks**: Duration variance, video dimensions, audio track presence
+
+#### Database Domain (Exit Code 309)
+
+- **Validates**: Migration execution results
+- **Thresholds**: `max_failed_migrations` (default 0), `validation_required` (default false; enable in CI as required)
+- **Script**: `node orchestration/lib/db_migration_validator.mjs <path>`
+- **Checks**: Migration status, validation queries, schema snapshot; JSON parsing errors reported explicitly
+
+#### Auto-detection in Strict Mode
+
+When `--strict` is used without `--domains`, CVF automatically detects and validates all domains with artifacts present.
+
+#### Threshold Configuration
+
+Domain thresholds can be configured at multiple levels:
+
+1. **Global defaults**: `mcp/policies.yaml` under `cvf.thresholds.<domain>`
+2. **Per-AUV overrides**: `capabilities/<AUV>.yaml` under `cvf.thresholds.<domain>`
+3. **Hardcoded fallbacks**: In each validator module as constants
+
 ### Error Handling & Observability
 
 - **Result Cards**: All runs produce structured JSON summary in `runs/<AUV>/result-cards/`
@@ -106,6 +155,13 @@
 302 - Gitleaks secrets detected
 303 - Visual regression exceeded threshold
 304 - Performance budget violation (reserved)
+
+# Phase 11 Domain Validation Exit Codes
+305 - Data validation failed (insights.json)
+306 - Charts validation failed (PNG integrity/dimensions)
+307 - SEO audit failed (broken links/canonical rate)
+308 - Media composition failed (duration/tracks)
+309 - Database migration failed (schema/validation)
 ```
 
 ### Quality Standards (Additional Gates)

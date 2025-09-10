@@ -96,6 +96,173 @@ SELECT qty FROM cart_items WHERE product_id='demo-1' LIMIT 1;
 
 ---
 
+## Phase 11 Domain Verification
+
+### Data Domain — Insights Generation
+
+**Goal:** Verify data ingestion and insights generation capabilities.
+
+#### Verify Data Insights
+
+```bash
+# Run data ingest synthetic test
+node tests/agents/synthetic/data.ingest.test.mjs
+
+# Validate insights.json
+node orchestration/lib/data_validator.mjs test-synthetic-data/insights.json
+
+# Or with custom thresholds
+node orchestration/lib/data_validator.mjs runs/<AUV>/data/insights.json --min-rows 100
+```
+
+**Pass if:**
+
+- `insights.json` passes schema validation
+- Row count meets minimum threshold (default: 10)
+- At least 1 metric is generated
+- Source file checksums match (if manifest present)
+
+**Artifacts:**
+
+- `runs/<AUV>/data/insights.json`
+- `runs/<AUV>/data/raw/*.csv` (source files)
+
+### Charts Domain — Visualization Validation
+
+**Goal:** Verify chart generation and PNG integrity.
+
+#### Verify Charts
+
+```bash
+# Validate all charts in a directory
+node orchestration/lib/chart_validator.mjs runs/<AUV>/charts/
+
+# Or validate specific chart
+node orchestration/lib/chart_validator.mjs runs/<AUV>/charts/revenue_chart.png
+```
+
+**Pass if:**
+
+- PNG files are valid format
+- Dimensions within min/max bounds (400x300 to 2000x2000)
+- Charts contain visual content (not blank)
+
+**Artifacts:**
+
+- `runs/<AUV>/charts/*.png`
+
+### SEO Domain — Audit Validation
+
+**Goal:** Verify SEO audit completeness and quality.
+
+#### Verify SEO Audit
+
+```bash
+# Run SEO synthetic test
+node tests/agents/synthetic/seo.audit.test.mjs
+
+# Validate audit results
+node orchestration/lib/seo_validator.mjs reports/seo/audit.json
+
+# Or with custom thresholds
+node orchestration/lib/seo_validator.mjs reports/seo/audit.json --max-broken-links 10
+```
+
+**Pass if:**
+
+- `audit.json` passes schema validation
+- Broken links ≤ threshold (default: 5)
+- Canonical coverage ≥ 80%
+- Has sitemap (if required)
+- Page issues do not exceed configured `pageIssueFailRate` (default 0.9). To be stricter, set a lower rate per AUV or via `mcp/policies.yaml`.
+
+**Artifacts:**
+
+- `reports/seo/audit.json`
+- `reports/seo/summary.md`
+
+### Media Domain — Composition Validation
+
+**Goal:** Verify audio/video composition pipeline.
+
+#### Verify Media Composition
+
+```bash
+# Run video compose synthetic test
+node tests/agents/synthetic/video.compose.test.mjs
+
+# Validate composition metadata
+node orchestration/lib/media_validator.mjs media/compose-metadata.json
+
+# Or with custom tolerance
+node orchestration/lib/media_validator.mjs media/compose-metadata.json --duration-tolerance 15
+```
+
+**Pass if:**
+
+- Duration variance within tolerance (default: 10%)
+- Video dimensions meet minimum (640x480)
+- Audio track present (if required)
+- All referenced files exist
+
+**Artifacts:**
+
+- `media/compose-metadata.json`
+- `media/final.mp4`
+- `media/narration.mp3`
+- `media/script.txt`
+
+### Database Domain — Migration Validation
+
+**Goal:** Verify database migration execution and validation.
+
+#### Verify DB Migration
+
+```bash
+# Run migration synthetic test
+node tests/agents/synthetic/db.migration.test.mjs
+
+# Validate migration result
+node orchestration/lib/db_migration_validator.mjs db/migration-result.json
+
+# Or with failure tolerance
+node orchestration/lib/db_migration_validator.mjs db/migration-result.json --max-failed 1
+```
+
+**Pass if:**
+
+- Migrations applied successfully
+- Failed migrations ≤ threshold (default: 0)
+- Validation queries pass (set `validation_required` to true in CI to enforce)
+- Schema snapshot captured
+
+**Artifacts:**
+
+- `db/migration-result.json`
+- `db/migrations/*.sql`
+
+### Automated Domain Validation
+
+Run CVF with automatic domain detection:
+
+```bash
+# Auto-detect and validate all domains for an AUV
+node orchestration/cvf-check.mjs <AUV-ID> --strict
+
+# Or specify domains explicitly
+node orchestration/cvf-check.mjs <AUV-ID> --strict --domains data,charts,seo
+```
+
+**Exit Codes:**
+
+- 305: Data validation failed
+- 306: Charts validation failed
+- 307: SEO audit failed
+- 308: Media composition failed
+- 309: Database migration failed
+
+---
+
 ## Adding new AUV sections
 
 1. Create the AUV spec in `capabilities/` (id, acceptance, proofs).

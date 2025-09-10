@@ -245,6 +245,52 @@ jobs:
           echo "✅ Package bundle verified"
           ls -lh dist/AUV-0005/
 
+      # ---- Phase 11: Domain Validators ----
+      - name: Run Phase 11 unit tests
+        shell: bash
+        run: |
+          echo "Running Phase 11 validator unit tests..."
+          node tests/unit/data_validator.test.mjs
+          node tests/unit/chart_validator.test.mjs
+          node tests/unit/seo_validator.test.mjs
+          node tests/unit/media_validator.test.mjs
+          node tests/unit/db_migration_validator.test.mjs
+
+      - name: Run Phase 11 synthetic tests
+        shell: bash
+        run: |
+          echo "Running Phase 11 synthetic tests..."
+          node tests/agents/synthetic/data.ingest.test.mjs
+          node tests/agents/synthetic/seo.audit.test.mjs
+          node tests/agents/synthetic/video.compose.test.mjs
+          node tests/agents/synthetic/db.migration.test.mjs
+
+      - name: Run demo graphs for Phase 11
+        shell: bash
+        continue-on-error: true
+        run: |
+          echo "Running Phase 11 demo graphs..."
+          export SWARM_MODE=deterministic
+          if [ -f "orchestration/graph/projects/data-video-demo.yaml" ]; then
+            node orchestration/graph/runner.mjs orchestration/graph/projects/data-video-demo.yaml --concurrency 2
+          fi
+          if [ -f "orchestration/graph/projects/seo-audit-demo.yaml" ]; then
+            node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 2
+          fi
+
+      - name: CVF domain validation (Phase 11)
+        shell: bash
+        continue-on-error: true
+        run: |
+          echo "Running CVF domain validation..."
+          # Test domain validation with sample AUVs if they have domain artifacts
+          if [ -d "runs/AUV-DATA-VIDEO-001" ]; then
+            node orchestration/cvf-check.mjs AUV-DATA-VIDEO-001 --strict --domains data,charts,media
+          fi
+          if [ -d "runs/AUV-SEO-001" ]; then
+            node orchestration/cvf-check.mjs AUV-SEO-001 --strict --domains seo
+          fi
+
       - name: Verify report exists
         shell: bash
         run: |

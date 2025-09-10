@@ -45,6 +45,30 @@ safety:
     - access_tokens
     - passwords
 
+# CVF thresholds for domain validation
+cvf:
+  thresholds:
+    data:
+      min_rows: 10
+      min_metrics: 1
+    charts:
+      min_width: 400
+      min_height: 300
+      max_width: 2000
+      max_height: 2000
+    seo:
+      max_broken_links: 5
+      min_canonical_rate: 0.8
+      max_load_time_ms: 3000
+    media:
+      duration_tolerance_pct: 10
+      min_width: 640
+      min_height: 480
+      required_audio_track: true
+    db:
+      max_failed_migrations: 0
+      validation_required: true
+
 # Capability → tool mappings used by the Tool Router
 capability_map:
   browser.automation: [playwright]

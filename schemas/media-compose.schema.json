@@ -1,0 +1,170 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarm1.io/schemas/media-compose.schema.json",
+  "title": "Media Compose",
+  "description": "Schema for validating media composition pipeline metadata",
+  "type": "object",
+  "required": [
+    "script_path",
+    "audio_path",
+    "video_path",
+    "expected_duration_s",
+    "actual_duration_s",
+    "video_width",
+    "video_height",
+    "has_audio_track"
+  ],
+  "properties": {
+    "generated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of composition"
+    },
+    "script_path": {
+      "type": "string",
+      "description": "Path to the source script file"
+    },
+    "audio_path": {
+      "type": "string",
+      "description": "Path to the generated audio file"
+    },
+    "video_path": {
+      "type": "string",
+      "description": "Path to the final video file"
+    },
+    "expected_duration_s": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Expected duration in seconds"
+    },
+    "actual_duration_s": {
+      "type": "number",
+      "minimum": 1,
+      "description": "Actual duration in seconds"
+    },
+    "duration_variance_pct": {
+      "type": "number",
+      "description": "Percentage variance from expected duration"
+    },
+    "video_width": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Video width in pixels"
+    },
+    "video_height": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Video height in pixels"
+    },
+    "video_format": {
+      "type": "string",
+      "description": "Video format/codec (e.g., H.264, VP9)"
+    },
+    "has_audio_track": {
+      "type": "boolean",
+      "description": "Whether video contains an audio track"
+    },
+    "audio_format": {
+      "type": "string",
+      "description": "Audio format/codec (e.g., AAC, MP3)"
+    },
+    "audio_bitrate": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Audio bitrate in kbps"
+    },
+    "video_bitrate": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Video bitrate in kbps"
+    },
+    "framerate": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Video framerate (fps)"
+    },
+    "file_size_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Final video file size in bytes"
+    },
+    "slides": {
+      "type": "array",
+      "description": "List of slides/scenes in the video",
+      "items": {
+        "type": "object",
+        "required": ["index", "duration_s"],
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Slide index"
+          },
+          "duration_s": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Slide duration in seconds"
+          },
+          "image_path": {
+            "type": "string",
+            "description": "Path to slide image"
+          },
+          "transition": {
+            "type": "string",
+            "description": "Transition type"
+          },
+          "narration_text": {
+            "type": "string",
+            "description": "Narration text for this slide"
+          }
+        }
+      }
+    },
+    "tts_metadata": {
+      "type": "object",
+      "description": "Text-to-speech metadata",
+      "properties": {
+        "engine": {
+          "type": "string",
+          "description": "TTS engine used (e.g., piper, espeak)"
+        },
+        "voice": {
+          "type": "string",
+          "description": "Voice model/name used"
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code (e.g., en-US)"
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 3.0,
+          "description": "Speech speed multiplier"
+        },
+        "word_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total word count in script"
+        }
+      }
+    },
+    "processing_time_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total processing time in milliseconds"
+    },
+    "validation_passed": {
+      "type": "boolean",
+      "description": "Whether all validation checks passed"
+    },
+    "validation_messages": {
+      "type": "array",
+      "description": "Validation messages or warnings",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -175,6 +175,13 @@ class ReportGenerator {
       // Tool versions
       tool_versions: this.formatToolVersions(manifest.tool_versions),
 
+      // Phase 11 Domain Sections
+      insights_summary: await this.buildInsightsSummary(manifest),
+      charts_gallery: await this.buildChartsGallery(manifest),
+      seo_summary: await this.buildSEOSummary(manifest),
+      media_section: await this.buildMediaSection(manifest),
+      db_migration_summary: await this.buildDBMigrationSummary(manifest),
+
       // Manifest link
       manifest_json: this.escapeHtml(JSON.stringify(manifest, null, 2)),
 
@@ -494,6 +501,288 @@ class ReportGenerator {
   }
 
   /**
+   * Build Insights Summary section for data domain
+   */
+  async buildInsightsSummary(manifest) {
+    try {
+      // Look for insights.json artifact in various locations
+      const insightsPath = this.findArtifactPath(manifest, ['insights.json', 'data/insights.json']);
+      if (!insightsPath) return '';
+
+      const fullPath = join(PROJECT_ROOT, insightsPath);
+      if (!existsSync(fullPath)) return '';
+
+      const insights = JSON.parse(await readFile(fullPath, 'utf8'));
+
+      const rows = insights.data_row_count || 0;
+      const metricCount = insights.metrics?.length || 0;
+      const topMetrics = (insights.metrics || [])
+        .slice(0, 3)
+        .map(
+          (m) =>
+            `<li>${this.escapeHtml(m.label ?? m.id)}: ${this.escapeHtml(String(m.value))}</li>`,
+        )
+        .join('');
+
+      return `
+        <section class="insights">
+          <h2>Data Insights</h2>
+          <div class="insights-content">
+            <p><strong>Total Rows:</strong> ${rows}</p>
+            <p><strong>Metrics Generated:</strong> ${metricCount}</p>
+            ${topMetrics ? `<h3>Top Metrics</h3><ul>${topMetrics}</ul>` : ''}
+          </div>
+        </section>
+      `;
+    } catch (e) {
+      console.warn('Could not build insights summary:', e.message);
+      return '';
+    }
+  }
+
+  /**
+   * Build Charts Gallery section
+   */
+  async buildChartsGallery(manifest) {
+    try {
+      // Look for chart PNG artifacts
+      const chartArtifacts = (manifest.artifacts || []).filter(
+        (a) => a.path.includes('charts/') && a.path.endsWith('.png'),
+      );
+
+      if (chartArtifacts.length === 0) return '';
+
+      const assetsDir = join(dirname(this.outputPath), 'assets');
+      const chartImages = [];
+
+      for (const artifact of chartArtifacts) {
+        const imagePath = join(PROJECT_ROOT, artifact.path);
+        const imageName = basename(artifact.path);
+
+        if (existsSync(imagePath)) {
+          // Copy to assets directory
+          const assetRelativePath = artifact.path.replace(/\\/g, '/');
+          const assetPath = join(assetsDir, assetRelativePath);
+          await mkdir(dirname(assetPath), { recursive: true });
+          await copyFile(imagePath, assetPath);
+
+          chartImages.push({
+            name: imageName,
+            src: `./assets/${assetRelativePath}`,
+          });
+        }
+      }
+
+      if (chartImages.length === 0) return '';
+
+      const gallery = chartImages
+        .map(
+          (img) => `
+        <div class="chart-item">
+          <img src="${img.src}" alt="${img.name}" />
+          <div class="chart-caption">${img.name}</div>
+        </div>
+      `,
+        )
+        .join('');
+
+      return `
+        <section class="charts">
+          <h2>Charts Gallery</h2>
+          <div class="charts-gallery">
+            ${gallery}
+          </div>
+        </section>
+      `;
+    } catch (e) {
+      console.warn('Could not build charts gallery:', e.message);
+      return '';
+    }
+  }
+
+  /**
+   * Build SEO Summary section
+   */
+  async buildSEOSummary(manifest) {
+    try {
+      // Look for SEO audit artifact
+      const seoPath = this.findArtifactPath(manifest, ['reports/seo/audit.json', 'seo/audit.json']);
+      if (!seoPath) return '';
+
+      const fullPath = join(PROJECT_ROOT, seoPath);
+      if (!existsSync(fullPath)) return '';
+
+      const audit = JSON.parse(await readFile(fullPath, 'utf8'));
+
+      const brokenLinks = audit.broken_links_count || 0;
+      const canonicalRate = Math.round((audit.canonical_present_rate || 0) * 100);
+      const hasSitemap = audit.has_sitemap ? 'Yes' : 'No';
+      const pageCount = audit.pages?.length || 0;
+
+      return `
+        <section class="seo">
+          <h2>SEO Audit Summary</h2>
+          <div class="seo-content">
+            <p><strong>Pages Audited:</strong> ${pageCount}</p>
+            <p><strong>Broken Links:</strong> ${brokenLinks}</p>
+            <p><strong>Canonical Coverage:</strong> ${canonicalRate}%</p>
+            <p><strong>Sitemap Present:</strong> ${hasSitemap}</p>
+            ${audit.summary ? `<p class="seo-summary">${this.escapeHtml(audit.summary)}</p>` : ''}
+          </div>
+        </section>
+      `;
+    } catch (e) {
+      console.warn('Could not build SEO summary:', e.message);
+      return '';
+    }
+  }
+
+  /**
+   * Build Media Section
+   */
+  async buildMediaSection(manifest) {
+    try {
+      // Look for media compose metadata
+      const mediaPath = this.findArtifactPath(manifest, [
+        'media/compose-metadata.json',
+        'compose-metadata.json',
+      ]);
+      if (!mediaPath) return '';
+
+      const fullPath = join(PROJECT_ROOT, mediaPath);
+      if (!existsSync(fullPath)) return '';
+
+      const compose = JSON.parse(await readFile(fullPath, 'utf8'));
+
+      const duration = compose.actual_duration_s || 0;
+      const expectedDuration = compose.expected_duration_s || 0;
+      const variance = compose.duration_variance_pct || 0;
+      const hasAudio = compose.has_audio_track ? 'Yes' : 'No';
+      const resolution = `${compose.video_width}x${compose.video_height}`;
+
+      // Copy media assets and create links (tenant-aware)
+      const assetsDir = join(dirname(this.outputPath), 'assets');
+      const runsRoot =
+        this.tenant === 'default'
+          ? join(PROJECT_ROOT, 'runs')
+          : join(PROJECT_ROOT, 'runs', 'tenants', this.tenant);
+
+      // Helper to resolve a source path for a relative artifact path.
+      // Prefers tenant-aware runs path; falls back to manifest artifact entries.
+      const resolveSourcePath = (relPath) => {
+        if (!relPath) return null;
+        const candidate = join(runsRoot, this.auvId, relPath);
+        if (existsSync(candidate)) return candidate;
+        // Fallback: look up by suffix in manifest artifacts
+        const match = (manifest.artifacts || []).find((a) => a.path.endsWith(relPath));
+        if (match) {
+          const abs = join(PROJECT_ROOT, match.path);
+          if (existsSync(abs)) return abs;
+        }
+        return null;
+      };
+
+      // Generic copy-and-link creator
+      const copyToAssets = async (relPath, label, defaultText) => {
+        if (!relPath) return '';
+        const src = resolveSourcePath(relPath);
+        if (src) {
+          const dst = join(assetsDir, relPath);
+          await mkdir(dirname(dst), { recursive: true });
+          await copyFile(src, dst);
+          return `<p><a href="./assets/${relPath}" target="_blank">${label}</a></p>`;
+        }
+        // Fallback to original relative path
+        return `<p><a href="${relPath}" target="_blank">${defaultText}</a></p>`;
+      };
+
+      const videoLink = await copyToAssets(compose.video_path, 'View Video', 'View Video');
+      const audioLink = await copyToAssets(
+        compose.audio_path,
+        'Listen to Audio',
+        'Listen to Audio',
+      );
+      const scriptLink = await copyToAssets(compose.script_path, 'View Script', 'View Script');
+
+      return `
+        <section class="media">
+          <h2>Media Composition</h2>
+          <div class="media-content">
+            <p><strong>Duration:</strong> ${duration}s (expected: ${expectedDuration}s, variance: ${variance.toFixed(1)}%)</p>
+            <p><strong>Resolution:</strong> ${resolution}</p>
+            <p><strong>Audio Track:</strong> ${hasAudio}</p>
+            ${videoLink}
+            ${audioLink}
+            ${scriptLink}
+          </div>
+        </section>
+      `;
+    } catch (e) {
+      console.warn('Could not build media section:', e.message);
+      return '';
+    }
+  }
+
+  /**
+   * Build DB Migration Summary section
+   */
+  async buildDBMigrationSummary(manifest) {
+    try {
+      // Look for migration result artifact
+      const migrationPath = this.findArtifactPath(manifest, [
+        'db/migration-result.json',
+        'migration-result.json',
+      ]);
+      if (!migrationPath) return '';
+
+      const fullPath = join(PROJECT_ROOT, migrationPath);
+      if (!existsSync(fullPath)) return '';
+
+      const migration = JSON.parse(await readFile(fullPath, 'utf8'));
+
+      const engine = migration.engine || 'unknown';
+      const applied = migration.applied ? 'Success' : 'Failed';
+      const migrationCount = migration.migrations?.length || 0;
+      const validationOk = migration.validation_ok ? 'Passed' : 'Failed';
+
+      const migrationList = (migration.migrations || [])
+        .slice(0, 5)
+        .map((m) => `<li>${this.escapeHtml(m.id)}: ${m.status}</li>`)
+        .join('');
+
+      return `
+        <section class="database">
+          <h2>Database Migration</h2>
+          <div class="db-content">
+            <p><strong>Engine:</strong> ${engine}</p>
+            <p><strong>Status:</strong> ${applied}</p>
+            <p><strong>Migrations:</strong> ${migrationCount}</p>
+            <p><strong>Validation:</strong> ${validationOk}</p>
+            ${migrationList ? `<h3>Recent Migrations</h3><ul>${migrationList}</ul>` : ''}
+          </div>
+        </section>
+      `;
+    } catch (e) {
+      console.warn('Could not build DB migration summary:', e.message);
+      return '';
+    }
+  }
+
+  /**
+   * Helper: Find artifact path by possible names
+   */
+  findArtifactPath(manifest, possibleNames) {
+    for (const artifact of manifest.artifacts || []) {
+      for (const name of possibleNames) {
+        if (artifact.path.endsWith(name)) {
+          return artifact.path;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Get embedded template (fallback)
    */
   getEmbeddedTemplate() {
@@ -589,6 +878,12 @@ class ReportGenerator {
         </ul>
       </div>
     </section>
+
+    {{insights_summary}}
+    {{charts_gallery}}
+    {{seo_summary}}
+    {{media_section}}
+    {{db_migration_summary}}
 
     <section class="artifacts">
       <h2>Artifacts ({{artifacts_count}})</h2>

@@ -12,6 +12,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - (planned) AUV-0006: Order confirmation (GET `/api/orders/{id}` + `/order.html`).
 - Phase 10a: New Primary MCPs `ref` (docs.search/docs.read), `brave-search` (web.search), and extended `fetch` (web.fetch); CLI `search-fetch`; DAG node `web_search_fetch`; router coverage report path.
 - Phase 10b: Tri‑mode orchestration (deterministic/claude/hybrid) with:
+
+### Phase 11: Cross‑Domain CVF (2025-09-10)
+
+#### Added
+
+- Data/Charts/SEO/Media/DB validators wired into CVF strict mode with domain auto‑detection
+- Schemas: `schemas/insights.schema.json`, `schemas/seo-audit.schema.json`, `schemas/media-compose.schema.json`, `schemas/migration-result.schema.json`
+- Thresholds configurable in `mcp/policies.yaml` with per‑AUV overrides
+- Report enhancements: insights summary fix, tenant‑aware media/script asset copying
+- Test runner script: `scripts/run_phase11_tests.mjs` aggregates unit + synthetic results
+
+#### Changed
+
+- `docs/QUALITY-GATES.md` updated with Phase 11 domains, thresholds, and exit codes
+- `docs/verify.md` expanded pass criteria for SEO and DB domains
+- `docs/ORCHESTRATION.md` notes strict mode auto‑detection and threshold cascading
+
+#### Fixed
+
+- Robust JSON parsing in media/db validators; optional chart max bounds; data checksum handling
+- Unit tests hardened (temp dirs, Ajv formats) and synthetic DB fixture corrected
   - Engine selector (`orchestration/lib/engine_selector.mjs`)
   - Subagent gateway (`orchestration/lib/subagent_gateway.mjs`) with Plan Mode, stop conditions, schemas, transcripts
   - Router handshake + executor (`mcp/router.mjs` + `orchestration/lib/tool_executor.mjs`) with per‑RUN_ID checksum caching

@@ -5,7 +5,7 @@
  * Usage:
  *   node orchestration/cvf-check.mjs AUV-0002
  *   node orchestration/cvf-check.mjs AUV-0002 --strict   # enforce security/visual/budgets
- *   node orchestration/cvf-check.mjs AUV-0003
+ *   node orchestration/cvf-check.mjs AUV-0003 --domains data,charts  # check specific domains
  *
  * Behavior:
  * - Looks up the expected artifact list for the provided AUV-ID.
@@ -14,15 +14,26 @@
  * - Evaluates performance budgets if defined (Phase 6).
  * - Checks security results if required (Phase 6).
  * - Validates visual regression if configured (Phase 6).
+ * - Validates domain-specific artifacts (Phase 11).
  * - Prints a friendly PASS/FAIL summary and returns exit code 0/1.
  */
 
 import fs from 'fs';
 import path from 'path';
 import { parse as parseYaml } from 'yaml';
-import { expectedArtifacts } from './lib/expected_artifacts.mjs';
+import {
+  expectedArtifacts,
+  expectedArtifactsByDomain,
+  detectDomainsWithArtifacts,
+} from './lib/expected_artifacts.mjs';
 import { evaluateBudget } from './lib/budget_evaluator.mjs';
 import { tenantPath } from './lib/tenant.mjs';
+import { validateInsights } from './lib/data_validator.mjs';
+import { validateCharts } from './lib/chart_validator.mjs';
+import { validateSEOAudit } from './lib/seo_validator.mjs';
+import { validateMediaCompose } from './lib/media_validator.mjs';
+import { validateMigrationResult } from './lib/db_migration_validator.mjs';
+import { loadThresholds } from './lib/threshold_loader.mjs';
 
 function statNonEmpty(p) {
   try {
@@ -153,15 +164,136 @@ async function checkPerformanceBudgets(auvId) {
   return results;
 }
 
+// Phase 11: Domain-specific validation
+async function checkDomainArtifacts(auvId, domains, tenant) {
+  const results = {
+    passed: true,
+    messages: [],
+    exitCode: 0,
+  };
+
+  for (const domain of domains) {
+    const domainArtifacts = expectedArtifactsByDomain(auvId, domain, tenant);
+    const thresholds = loadThresholds(auvId, domain);
+
+    switch (domain) {
+      case 'data': {
+        // Find and validate insights.json
+        const insightsPath = domainArtifacts.find((p) => p.endsWith('insights.json'));
+        if (insightsPath && fs.existsSync(insightsPath)) {
+          const validation = await validateInsights(insightsPath, thresholds);
+          if (!validation.valid) {
+            results.passed = false;
+            results.exitCode = 305;
+            results.messages.push(`Data: Validation failed - ${validation.errors[0]}`);
+          } else {
+            results.messages.push(`Data: Valid (${validation.data?.data_row_count || 0} rows)`);
+          }
+        }
+        break;
+      }
+
+      case 'charts': {
+        // Find and validate all chart PNGs
+        const chartPaths = domainArtifacts.filter((p) => p.endsWith('.png'));
+        if (chartPaths.length > 0) {
+          const existing = chartPaths.filter((p) => fs.existsSync(p));
+          if (existing.length > 0) {
+            const validation = await validateCharts(existing, thresholds);
+            if (!validation.valid) {
+              results.passed = false;
+              results.exitCode = 306;
+              results.messages.push(
+                `Charts: ${validation.failed}/${validation.total} failed validation`,
+              );
+            } else {
+              results.messages.push(`Charts: All ${validation.total} charts valid`);
+            }
+          }
+        }
+        break;
+      }
+
+      case 'seo': {
+        // Find and validate SEO audit
+        const auditPath = domainArtifacts.find((p) => p.includes('audit.json'));
+        if (auditPath && fs.existsSync(auditPath)) {
+          const validation = await validateSEOAudit(auditPath, thresholds);
+          if (!validation.valid) {
+            results.passed = false;
+            results.exitCode = 307;
+            results.messages.push(`SEO: Validation failed - ${validation.errors[0]}`);
+          } else {
+            const stats = validation.stats;
+            results.messages.push(
+              `SEO: Valid (${stats.totalPages} pages, ${stats.brokenLinks} broken links)`,
+            );
+          }
+        }
+        break;
+      }
+
+      case 'media': {
+        // Find and validate media composition metadata
+        const metadataPath = domainArtifacts.find((p) => p.includes('compose-metadata.json'));
+        if (metadataPath && fs.existsSync(metadataPath)) {
+          const validation = await validateMediaCompose(metadataPath, thresholds);
+          if (!validation.valid) {
+            results.passed = false;
+            results.exitCode = 308;
+            results.messages.push(`Media: Validation failed - ${validation.errors[0]}`);
+          } else {
+            const variance = (validation.metadata.durationVariance * 100).toFixed(1);
+            results.messages.push(`Media: Valid (duration variance ${variance}%)`);
+          }
+        }
+        break;
+      }
+
+      case 'db': {
+        // Find and validate migration result
+        const migrationPath = domainArtifacts.find((p) => p.includes('migration-result.json'));
+        if (migrationPath && fs.existsSync(migrationPath)) {
+          const validation = await validateMigrationResult(migrationPath, thresholds);
+          if (!validation.valid) {
+            results.passed = false;
+            results.exitCode = 309;
+            results.messages.push(`DB: Migration failed - ${validation.errors[0]}`);
+          } else {
+            const stats = validation.stats;
+            results.messages.push(`DB: Valid (${stats.applied} applied, ${stats.failed} failed)`);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  return results;
+}
+
 async function main() {
   const auvId = process.argv[2];
   if (!auvId) {
-    console.error('Usage: node orchestration/cvf-check.mjs <AUV-ID> [--strict]');
+    console.error('Usage: node orchestration/cvf-check.mjs <AUV-ID> [--strict] [--domains <list>]');
     process.exit(2);
   }
 
   const strict = process.argv.includes('--strict');
   const tenant = process.env.TENANT_ID || 'default';
+
+  // Parse domain list if provided
+  let domains = [];
+  const domainsIndex = process.argv.indexOf('--domains');
+  if (domainsIndex > -1 && process.argv[domainsIndex + 1]) {
+    domains = process.argv[domainsIndex + 1].split(',').map((d) => d.trim());
+  } else if (strict) {
+    // Auto-detect domains when --strict is passed without --domains
+    domains = detectDomainsWithArtifacts(auvId, tenant);
+    if (domains.length > 0) {
+      console.log(`[CVF] Auto-detected domains for validation: ${domains.join(', ')}`);
+    }
+  }
 
   const required = expectedArtifacts(auvId, tenant);
   if (!required) {
@@ -216,6 +348,17 @@ async function main() {
   if (!budgetResults.passed) allPassed = false;
   messages.push(...budgetResults.messages);
 
+  // Phase 11: Check domain-specific artifacts if requested
+  let domainExitCode = 0;
+  if (domains.length > 0) {
+    const domainResults = await checkDomainArtifacts(auvId, domains, tenant);
+    if (!domainResults.passed) {
+      allPassed = false;
+      domainExitCode = domainResults.exitCode;
+    }
+    messages.push(...domainResults.messages);
+  }
+
   // Print results
   if (allPassed) {
     console.log('[CVF] PASS — all quality gates passed:');
@@ -233,7 +376,7 @@ async function main() {
         console.log(`  ✓ ${m}`);
       }
     });
-    process.exit(1);
+    process.exit(domainExitCode || 1);
   }
 }
 

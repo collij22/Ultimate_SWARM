@@ -267,6 +267,7 @@ See `orchestration/lib/test_authoring.mjs` for supported hints (cart summary, li
 
 - **Functional (UI/API):** Playwright must pass; artifacts under `runs/<AUV>/ui/*`, `runs/<AUV>/api/*`
 - **Performance:** Lighthouse JSON under `runs/<AUV>/perf/lighthouse.json`; `cvf-check.mjs` verifies presence & parses score (target ≥ 0.9 where applicable)
+- **Domain Validation (Phase 11):** `cvf-check.mjs --strict` auto-detects present domains (data, charts, seo, media, db) and validates artifacts using schemas and thresholds. Thresholds cascade from `mcp/policies.yaml` (global), capability overrides, then validator defaults.
 - **Security:** Semgrep planned; will write to `runs/security/semgrep.json` and fail on High severity
 
 ### CVF: AUV Examples

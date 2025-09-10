@@ -67,7 +67,7 @@ We optimize for **reliability**, **repeatability**, and **low-risk promotion**.
 
 - Strategy (this doc) → **docs/SWARM1-GUIDE.md**
 - Architecture & lifecycle → **docs/ARCHITECTURE.md**, **docs/ORCHESTRATION.md**
-- Gates and thresholds → **docs/QUALITY-GATES.md**
+- Gates and thresholds → **docs/QUALITY-GATES.md** (includes Phase 11 domain gates and strict mode behavior)
 - Contracts → **contracts/openapi.yaml**, **contracts/events.yaml**
 - MCP routing → **mcp/README.md**, **mcp/registry.yaml**, **mcp/policies.yaml**
 - AUV specs & verification → **capabilities/**, **docs/verify.md**
