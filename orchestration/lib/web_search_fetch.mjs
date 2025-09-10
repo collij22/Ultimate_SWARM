@@ -25,6 +25,7 @@ export async function runWebSearchFetch({ query, tenant = 'default', outDir = 'w
     const text = await res.text();
     throw new Error(`Brave Search failed: ${res.status} ${res.statusText} -> ${text}`);
   }
+  /** @type {any} */
   const data = await res.json();
   const first = data?.web?.results?.[0];
   if (!first?.url) {

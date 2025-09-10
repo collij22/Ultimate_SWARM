@@ -50,8 +50,10 @@ export async function verifyToken(token) {
       typeof payload === 'object' && payload !== null ? payload.realm_access : undefined;
     // @ts-ignore - realm_access.roles access
     const realmRoles =
-      typeof realmAccess === 'object' && realmAccess !== null && Array.isArray(realmAccess?.roles)
-        ? realmAccess.roles
+      typeof realmAccess === 'object' &&
+      realmAccess !== null &&
+      Array.isArray(/** @type {any} */ (realmAccess)?.roles)
+        ? /** @type {any} */ (realmAccess).roles
         : [];
     return {
       subject: payload.sub || null,

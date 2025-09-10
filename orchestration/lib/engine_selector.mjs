@@ -12,7 +12,7 @@
 /**
  * Determine role id for a node.
  * Falls back to A2.requirements_analyst for agent_task without explicit role/agent.
- * @param {import('../graph/runner.mjs').GraphNodeLike} node
+ * @param {any} node
  */
 export function deriveRoleForNode(node) {
   const params = node?.params || {};
@@ -34,7 +34,7 @@ export function isDeterministicOnlyNode(type) {
 
 /**
  * Select engine for a node.
- * @param {import('../graph/runner.mjs').GraphNodeLike} node
+ * @param {any} node
  * @param {{ mode: 'deterministic'|'claude'|'hybrid', include?: string[], exclude?: string[] }} cfg
  * @returns {'deterministic'|'claude'}
  */

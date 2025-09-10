@@ -118,7 +118,7 @@ function appendTranscript(transcriptPath, obj) {
 /**
  * Minimal default adapter that simulates subagent output in dry mode.
  * Replace by providing options.adapter to runSubagent.
- * @param {{system:string, messages:Array<{role:string, content:string}>}} input
+ * @param {{system:string, messages:Array<{role:string, content:string}>}} _input
  * @returns {Promise<{role:'assistant', content:string}>}
  */
 async function defaultAdapter(_input) {
@@ -236,6 +236,7 @@ export async function runSubagent(request, opts = {}) {
     });
 
     // Attempt to parse JSON content produced by subagent
+    /** @type {any} */
     let parsed;
     try {
       parsed = JSON.parse(assistant.content);

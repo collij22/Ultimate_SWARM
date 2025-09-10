@@ -46,6 +46,7 @@ async function main() {
     process.exit(1);
   }
 
+  /** @type {any} */
   const data = await res.json();
   const searchPath = join(outDir, 'brave_search.json');
   writeFileSync(searchPath, JSON.stringify(data, null, 2));
