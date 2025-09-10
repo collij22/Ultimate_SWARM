@@ -41,7 +41,7 @@
     "test:unit": "node --test --test-reporter=tap --test-timeout=30000 tests/unit",
     "test:unit:sequential": "node tests/unit/run-all.mjs",
     "test:unit:native": "node --test tests/unit",
-    "test:integration": "node --test tests/integration/build-dry-run.test.mjs tests/integration/phase-integration.test.mjs",
+    "test:integration": "node --test tests/integration/build_lane_dry_run.test.mjs tests/integration/graph-parallelization.test.mjs tests/integration/graph-resume.test.mjs tests/integration/engine.test.mjs",
     "test:integration:all": "node --test tests/integration",
     "test:router": "node tests/router.test.mjs",
     "router:dry": "node mcp/router.mjs --dry --input mcp/router-fixtures/primary-only.json",
