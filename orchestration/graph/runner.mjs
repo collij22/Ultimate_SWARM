@@ -14,6 +14,7 @@ import Ajv from 'ajv';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'url';
 import { tenantPath } from '../lib/tenant.mjs';
+import { deriveRoleForNode, selectEngine } from '../lib/engine_selector.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -392,19 +393,145 @@ class NodeExecutors {
   }
 
   async agent_task(node) {
-    // Placeholder for future agent task execution
+    // Phase 10b-2: engine selection
+    const modeEnv = String(process.env.SWARM_MODE || 'deterministic').toLowerCase();
+    /** @type {'deterministic'|'claude'|'hybrid'} */
+    const mode = modeEnv === 'claude' || modeEnv === 'hybrid' ? modeEnv : 'deterministic';
+    const cfg = {
+      mode,
+      include: (process.env.SUBAGENTS_INCLUDE || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      exclude: (process.env.SUBAGENTS_EXCLUDE || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    };
+    const engine = selectEngine(node, cfg);
+
+    if (engine === 'claude') {
+      // Route to subagent gateway (Plan Mode only)
+      try {
+        const { runSubagent } = await import('../lib/subagent_gateway.mjs');
+        const roleId = deriveRoleForNode(node);
+        const goal = node.params?.goal || node.params?.task || `Execute ${node.id}`;
+        const context = {
+          acceptance: node.params?.acceptance || [],
+          allowed_capabilities: node.params?.allowed_capabilities || [],
+          budgets: node.params?.budgets || {},
+          artifact_conventions: 'runs/**',
+          node_context: {
+            id: node.id,
+            requires: node.requires || [],
+            params: node.params || {},
+          },
+        };
+
+        const res = await runSubagent({ role_id: roleId, goal, context });
+
+        // Phase 10b-3: execute tool_requests via router + tool executor
+        if (res?.result?.response?.tool_requests?.length) {
+          const { loadConfig, planTools, appendToHooks, updateLedger } = await import(
+            '../../mcp/router.mjs'
+          );
+          const { executeToolRequest } = await import('../lib/tool_executor.mjs');
+          const { registry, policies } = loadConfig();
+
+          const sessionId = process.env.SESSION_ID || this.runId;
+          const toolResults = [];
+          for (const tr of res.result.response.tool_requests) {
+            const cap = tr.capability;
+            const budgetUsd = tr.constraints?.max_cost_usd ?? 0.05;
+            const secondaryConsent = process.env.SECONDARY_CONSENT === 'true';
+
+            const router = planTools({
+              agentId: roleId,
+              requestedCapabilities: [cap],
+              budgetUsd,
+              secondaryConsent,
+              env: process.env,
+              registry,
+              policies,
+            });
+
+            appendToHooks({
+              event: 'ToolDecision',
+              node_id: node.id,
+              role_id: roleId,
+              ok: router.ok,
+              plan: router.toolPlan,
+              warnings: router.warnings,
+            });
+
+            updateLedger(sessionId, router.toolPlan);
+
+            if (!router.ok || router.toolPlan.length === 0) {
+              toolResults.push({ capability: cap, ok: false, error: 'policy_denied' });
+              continue;
+            }
+
+            const selectedTools = router.toolPlan.map((p) => ({
+              tool_id: p.tool_id,
+              capabilities: p.capabilities,
+            }));
+
+            const execOut = await executeToolRequest({
+              tenant: this.tenant,
+              runId: this.runId,
+              toolRequest: tr,
+              selectedTools,
+            });
+
+            appendToHooks({
+              event: 'ToolResult',
+              node_id: node.id,
+              role_id: roleId,
+              capability: cap,
+              artifacts: execOut.artifacts,
+              cached: execOut.cached === true,
+            });
+
+            toolResults.push({
+              capability: cap,
+              ok: true,
+              artifacts: execOut.artifacts,
+              outputs: execOut.outputs,
+            });
+          }
+
+          const toolResultsPath = tenantPath(this.tenant, `agents/${node.id}/tool_results.json`);
+          const toolDir = path.dirname(toolResultsPath);
+          if (!fs.existsSync(toolDir)) fs.mkdirSync(toolDir, { recursive: true });
+          fs.writeFileSync(toolResultsPath, JSON.stringify({ tool_results: toolResults }, null, 2));
+        }
+
+        const gwPath = tenantPath(this.tenant, `agents/${node.id}/result-gateway.json`);
+        const gwDir = path.dirname(gwPath);
+        if (!fs.existsSync(gwDir)) fs.mkdirSync(gwDir, { recursive: true });
+        fs.writeFileSync(gwPath, JSON.stringify(res, null, 2));
+
+        return { status: res.ok ? 'success' : 'failed', message: 'Subagent gateway completed' };
+      } catch (err) {
+        const error = new GraphRunnerError(
+          `Subagent gateway failed: ${err.message}`,
+          'SUBAGENT_GATEWAY_FAILED',
+        );
+        error.exitCode = 1;
+        throw error;
+      }
+    }
+
+    // Deterministic fallback (placeholder until 10b-3 executes tools)
     const agent = node.params?.agent;
     const task = node.params?.task;
-
     console.log(`[agent_task] ${node.id}: Agent=${agent}, Task=${task}`);
 
-    // Write placeholder result card
     const resultPath = tenantPath(this.tenant, `agents/${node.id}/result.json`);
     const resultDir = path.dirname(resultPath);
     if (!fs.existsSync(resultDir)) {
       fs.mkdirSync(resultDir, { recursive: true });
     }
-
     fs.writeFileSync(
       resultPath,
       JSON.stringify(
@@ -419,7 +546,6 @@ class NodeExecutors {
         2,
       ),
     );
-
     return { status: 'success', message: 'Agent task placeholder executed' };
   }
 

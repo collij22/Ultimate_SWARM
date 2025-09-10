@@ -26,6 +26,7 @@ flowchart LR
 - **Sub‑agents**: focused roles (A1…C16) that each emit a **Result Card** (machine-readable).
 - **Tool Router (MCP)**: resolves _capabilities_ → _tools_ using `/mcp/policies.yaml` and `/mcp/registry.yaml`.
   - Phase 10a: added Primary `ref` (docs.search/docs.read), `brave-search` (web.search), and extended `fetch` (web.fetch). Router coverage is generated to `runs/router/coverage-report.json`.
+  - Phase 10b: runtime routing for subagent `tool_requests`; decisions and spend ledgers recorded; executor performs selected tools with caching.
 - **User Robot**: deterministic UI/API journeys that produce artifacts (videos, traces, HTTP dumps).
 - **Gates**:
   - **CVF** (Capability Validator): checks acceptance proofs for the current AUV.
@@ -63,6 +64,8 @@ flowchart LR
 - Structured **logs** (include `request_id`, `auv_id`), **metrics** (HTTP, latency), **traces** (OpenTelemetry).
 - Artifacts: `reports/**`, `coverage/**`, `runs/**` are the source of truth for decisions.
   - Router coverage report: `runs/router/coverage-report.json` (use `node mcp/router-report.mjs`).
+  - Subagent transcripts & decisions: `runs/agents/<role>/<session>/thread.jsonl`, per-node gateway results under `runs/tenants/<tenant>/agents/<node>/`.
+  - Tool decisions/results: `ToolDecision` and `ToolResult` events; ledgers at `runs/observability/ledgers/<session>.jsonl`.
 
 ## Security posture
 

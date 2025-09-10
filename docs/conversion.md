@@ -83,17 +83,26 @@ Note: Even in “subagents only”, tool execution is performed by Swarm1 (not t
 
 ### Tool Handshake (Subagent ↔ Orchestrator)
 
-1. Subagent emits a `tool_requests` array:
-   - Each item: `{ capability, purpose, params, constraints, expected_artifacts }`
-2. Orchestrator validates against `mcp/policies.yaml`:
-   - Allowlist, budgets, safety gates (e.g., TEST_MODE requirements)
-3. Orchestrator executes via MCP router:
-   - Produces artifacts in `runs/**` and a `tool_results` array
-4. Orchestrator returns `tool_results` to the subagent:
-   - Includes artifact paths, summaries, and any normalized outputs
-5. Subagent updates the plan or returns final `agent-output.json`
+1. Subagent emits a `tool_requests` array, Plan Mode only:
+   - Each item MUST include:
+     - `capability`: string (e.g., `web.search`)
+     - `purpose`: reason for the tool request
+     - `input_spec`: normalized inputs (e.g., query/url/paths)
+     - `expected_artifacts`: stable paths under `runs/**`
+     - `constraints`: `{ test_mode?: boolean, max_cost_usd?: number, side_effects?: string[] }`
+     - `acceptance`: explicit pass criteria (e.g., schema checks, counts)
+     - `cost_estimate_usd`: estimated spend for this request
+   - Subagents MUST NOT directly execute tools or mutate files; they only propose requests and diffs/changesets.
+2. Orchestrator validates against `mcp/policies.yaml` (allowlists, budgets, TEST_MODE, safety gates) and evaluates spend envelope.
+3. Orchestrator executes via MCP router and returns a normalized decision:
+   - `{ decision, approved_budget_usd, selected_tools[], rejections[], artifacts[], normalized_outputs[] }`
+4. Orchestrator delivers `tool_results` back to the subagent and updates spend ledgers; subagent updates the plan accordingly.
+5. If any request is denied, orchestrator returns a structured policy denial; the subagent MUST propose policy-compliant alternatives or escalate.
+6. On completion, subagent returns a validated `agent-output.json`.
 
-If a request violates policy/budget, the orchestrator responds with a normalized rejection message and the subagent must propose alternatives.
+Notes:
+
+- All execution happens within the orchestrator to preserve safety, evidence, and budget control.
 
 ---
 
@@ -109,6 +118,15 @@ If a request violates policy/budget, the orchestrator responds with a normalized
   - `SUBAGENTS_EXCLUDE=C13.quality_guardian`
 - Graph-level override (optional):
   - Node param: `execution: claude|deterministic` (wins over global for that node)
+
+---
+
+### Plan Mode & Safety Defaults
+
+- Subagents operate in Plan Mode by default: propose plans, `tool_requests`, and diffs/changesets only; no direct file writes or exec.
+- Gated capabilities require TEST_MODE and/or explicit consent: `web.search`, `external_crawl`, `cloud_db`, `tts.cloud`, `payments`.
+- Secondary tools require consent and budget; budgets are enforced per-agent and per-capability.
+- Deterministic gates (CVF, security, packaging) remain authoritative in all modes.
 
 ---
 
@@ -145,12 +163,43 @@ Append role-specific goals/constraints from `.claude/agents/<role>.md` (e.g., `r
 
 ---
 
+### Role Subagents (Prompts & Tool Access)
+
+- A2.requirements_analyst
+  - Tools: minimal (Read, Grep); no Edit/Bash.
+  - Focus: clarify briefs, propose AUV plans, produce `tool_requests` for discovery (e.g., `docs.search`, `web.search` in TEST_MODE).
+  - Stop conditions: max steps, time, or budget; escalate if blocked using `agent-escalation` schema.
+- B7.rapid_builder
+  - Tools: minimal (Read, Grep); diffs/changesets only (applied by build lane/orchestrator).
+  - Focus: small, reversible edits aligned to CVF; prefer Primary MCPs; justify Secondary with impact and budget.
+- C13.quality_guardian
+  - Tools: Read, Grep; may request additional proofs via safe capabilities (e.g., `fetch`, `seo.audit`).
+  - Focus: adjudication and verification; deterministic CVF/security remain authoritative.
+
+Each subagent file SHOULD include precise descriptions to enable automatic delegation and limit tool scope.
+
+---
+
 ### Observability & Evidence
 
 - Store subagent transcripts and decisions under `runs/agents/<role>/**`.
 - Link tool results and artifacts to each subagent step.
 - Maintain router decisions under `runs/router/**` for auditability.
 - Preserve CVF/gate outputs unchanged.
+- Emit structured events: `SubagentStart`, `ToolRequest`, `ToolDecision`, `ToolResult`, `PlanUpdated`, `PolicyDenied`, `SubagentStop`.
+- Spend ledgers updated per session to reflect planned vs actual tool usage.
+
+---
+
+### Execution Controls & Stop Conditions
+
+- CLI/env knobs:
+  - `--mode deterministic|claude|hybrid`
+  - `--subagents <ROLE_IDs>` / `--no-subagents <ROLE_IDs>`
+  - `SWARM_MODE`, `SUBAGENTS_INCLUDE`, `SUBAGENTS_EXCLUDE`
+  - `SUBAGENT_MAX_STEPS`, `SUBAGENT_MAX_SECONDS`, `SUBAGENT_MAX_COST_USD`
+  - `SECONDARY_CONSENT=true|false`, `TEST_MODE=true|false`
+- Node-level `execution` override: deterministic wins for CVF/security/packaging nodes.
 
 ---
 
@@ -175,11 +224,12 @@ Append role-specific goals/constraints from `.claude/agents/<role>.md` (e.g., `r
 ### Acceptance Criteria
 
 - Mode selection works via CLI/env and graph override; recorded in `runs/graph/<RUN_ID>/state.json`.
-- For the same brief, all three modes produce:
-  - Valid `agent-output.json` per role with consistent top-level conclusions
-  - Artifacts in expected locations; CVF/gates pass in deterministic and hybrid; in claude mode, gates pass with tool-handshake execution via router
-- Safety: attempts to use gated capabilities without TEST_MODE/consent are denied and surfaced to the subagent with alternatives requested.
-- Coverage: Router coverage report shows no orphaned capabilities newly introduced by subagents.
+- Same brief, three modes produce consistent conclusions and passing gates:
+  - Valid `agent-output.json` per role with consistent top-level conclusions across modes.
+  - Artifacts in expected locations; deterministic and hybrid pass CVF/security; claude mode passes gates via router-executed tools.
+- Safety: gated capabilities require TEST_MODE/consent; denials are structured; subagents replan policy-compliantly.
+- Coverage: router coverage report shows no orphaned capabilities for newly introduced subagent flows.
+- Reproducibility: reruns with same inputs produce identical artifacts unless plan inputs change.
 
 ---
 
@@ -215,12 +265,38 @@ node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.
 
 ---
 
-### Next Steps (Implementation Order)
+### Phase 10b — Sub‑Phases (Plan → Implement → Verify)
 
-1. Add `subagent_gateway.mjs`, request/response schemas, and engine selector.
-2. Update `agent_task` to route through engine selector and persist transcripts.
-3. Implement handshake round-trip with router execution and artifact linking.
-4. Enable hybrid for `A2.requirements_analyst`; add smoke tests and acceptance run.
-5. Document prompts per-role referencing `.claude/agents/**` and preferred MCPs.
-6. Expand to `B7.rapid_builder`, then limited `C13.quality_guardian` narrative tasks.
-7. Add CLI/env/graph selection knobs and docs.
+1. 10b‑1: Subagent Gateway & Schemas
+   - Deliverables: `orchestration/lib/subagent_gateway.mjs` (Plan Mode, stop conditions), `schemas/subagent-request.schema.json`, `schemas/subagent-response.schema.json`, transcript persistence under `runs/agents/**`.
+   - Tests: Unit validation for request/response; timeout/step/budget cutoffs; transcript write/read.
+   - Acceptance: Gateway enforces Plan Mode; emits events; writes transcripts.
+
+2. 10b‑2: Engine Selector & Graph Integration
+   - Deliverables: `orchestration/lib/engine_selector.mjs`; `agent_task` path in `graph/runner.mjs` routes to gateway when engine=claude; CLI/env/graph knobs wired.
+   - Tests: Engine selection matrix (deterministic/claude/hybrid + node override); state.json records mode; resume works.
+   - Acceptance: Graph runs in all modes with correct routing; deterministic nodes remain deterministic.
+
+3. 10b‑3: Router Handshake Execution & Caching
+   - Deliverables: Orchestrator executes `tool_requests` via router; normalized decisions and denials; per‑RUN_ID+checksum caching of tool results.
+   - Tests: Policy denial and replan flow; artifact linking; spend ledger deltas; cache hit/miss behavior.
+   - Acceptance: Requests execute with artifacts; denials are structured; router coverage shows no orphans.
+
+4. 10b‑4: Role Subagents & Policies
+   - Deliverables: `.claude/agents/{requirements-analyst.md, rapid-builder.md, quality-guardian.md}` (minimal tools); `mcp/policies.yaml` adds `agents.claude.allowed_capabilities` and per‑role budgets.
+   - Tests: Auto‑delegation sanity (descriptions precise), budget ceilings enforced, TEST_MODE gates for `web.search`/crawl/cloud.
+   - Acceptance: Subagents operate within scopes; budgets enforced; TEST_MODE respected.
+
+5. 10b‑5: Observability, Reports, and Mode Acceptance
+   - Deliverables: New events (`Subagent*`), spend ledger integration, report narrative section linking transcripts/artifacts; golden brief run across three modes.
+   - Tests: Events emitted and correlated to artifacts; report renders narrative; golden brief yields consistent conclusions and passing gates.
+   - Acceptance: All criteria in “Acceptance Criteria” satisfied; hybrid mode approved for broader use.
+
+---
+
+### References
+
+- Claude Code Subagents — concepts, file format, tool scoping, best practices: [docs](https://docs.anthropic.com/en/docs/claude-code/sub-agents)
+- Claude Code Common Workflows — plan/apply, safe operations: [docs](https://docs.anthropic.com/en/docs/claude-code/common-workflows)
+- Building Effective Agents — plan→act→observe loops, verifiable outcomes: [article](https://www.anthropic.com/engineering/building-effective-agents)
+- Multi‑Agent Research System — adjudication/verification patterns: [article](https://www.anthropic.com/engineering/multi-agent-research-system)

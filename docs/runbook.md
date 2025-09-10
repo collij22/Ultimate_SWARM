@@ -21,6 +21,19 @@ node orchestration/cli.mjs AUV-0004
 node orchestration/cli.mjs AUV-0005
 ```
 
+### Phase 10b — Execution Modes (DAG)
+
+```bash
+# Deterministic
+node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --mode deterministic
+
+# Claude subagents (Plan Mode; TEST_MODE recommended for web.search)
+set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+
+# Hybrid (include specific roles)
+set SWARM_MODE=hybrid && set SUBAGENTS_INCLUDE=A2.requirements_analyst,B7.rapid_builder && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml
+```
+
 ### Phase 10a — Search & Fetch Proof
 
 ```bash

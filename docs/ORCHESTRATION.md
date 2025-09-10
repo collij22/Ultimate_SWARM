@@ -117,11 +117,29 @@ Node types:
 - `playwright`: Execute UI tests
 - `lighthouse`: Run performance audit
 - `cvf`: Validate capability artifacts
-- `agent_task`: Placeholder for agent execution
+- `agent_task`: Agent execution node (Phase 10b tri‑mode)
+  - Deterministic: placeholder or deterministic path
+  - Claude: routes through subagent gateway → router plan → tool executor (caching) → artifacts
 - `web_search_fetch`: Brave search + fetch first result; writes `runs/websearch_*` artifacts
 - `package`/`report`: Future packaging/reporting
 
 #### Phase 10a Node Example
+
+### Phase 10b — Execution Modes
+
+- Global selection:
+  - `SWARM_MODE=deterministic|claude|hybrid`
+  - `SUBAGENTS_INCLUDE` / `SUBAGENTS_EXCLUDE` (hybrid role lists)
+- Node override:
+  - `params.execution: claude|deterministic`
+- Windows examples:
+  - `set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml`
+
+Engine components:
+
+- `orchestration/lib/engine_selector.mjs` — route engine per node
+- `orchestration/lib/subagent_gateway.mjs` — Plan Mode only, schemas, transcripts, stop conditions
+- `orchestration/lib/tool_executor.mjs` — execute router-selected tools with caching
 
 ```yaml
 # orchestration/graph/projects/seo-audit-demo.yaml (excerpt)

@@ -105,6 +105,12 @@ Engine Examples:
 Environment Variables:
   STAGING_URL    Staging server URL (default: http://127.0.0.1:3000)
   API_BASE       API base URL (default: http://127.0.0.1:3000/api)
+  SWARM_MODE     deterministic|claude|hybrid (Phase 10b)
+  SUBAGENTS_INCLUDE Comma-separated roles for hybrid inclusion
+  SUBAGENTS_EXCLUDE Comma-separated roles for hybrid exclusion
+  SUBAGENT_MAX_STEPS   Max subagent steps (default 6)
+  SUBAGENT_MAX_SECONDS Max subagent seconds (default 120)
+  SUBAGENT_MAX_COST_USD Max planned tool spend (default 0.5)
 `);
 }
 

@@ -25,14 +25,20 @@ node orchestration/cli.mjs AUV-0003
 
 ### Environment Variables
 
-| Variable               | Purpose                      | Default | Example                |
-| ---------------------- | ---------------------------- | ------- | ---------------------- |
-| `AUV_ID`               | Activates hooks for this AUV | none    | `AUV-0003`             |
-| `HOOKS_MODE`           | Control enforcement          | `off`   | `off`, `warn`, `block` |
-| `SECONDARY_CONSENT`    | Allow paid/external tools    | false   | `true`                 |
-| `HOOKS_MAX_LOG_MB`     | Max log size to scan         | 10      | `20`                   |
-| `HOOKS_ERROR_TRIP`     | Errors before circuit break  | 3       | `5`                    |
-| `CLAUDE_DISABLE_HOOKS` | Emergency disable            | false   | `true`                 |
+| Variable                | Purpose                      | Default | Example                                    |
+| ----------------------- | ---------------------------- | ------- | ------------------------------------------ |
+| `AUV_ID`                | Activates hooks for this AUV | none    | `AUV-0003`                                 |
+| `HOOKS_MODE`            | Control enforcement          | `off`   | `off`, `warn`, `block`                     |
+| `SECONDARY_CONSENT`     | Allow paid/external tools    | false   | `true`                                     |
+| `SWARM_MODE`            | Execution mode               | none    | `claude`, `hybrid`                         |
+| `SUBAGENTS_INCLUDE`     | Hybrid include roles         | none    | `A2.requirements_analyst,B7.rapid_builder` |
+| `SUBAGENTS_EXCLUDE`     | Hybrid exclude roles         | none    | `C13.quality_guardian`                     |
+| `SUBAGENT_MAX_STEPS`    | Subagent max steps           | 6       | `3`                                        |
+| `SUBAGENT_MAX_SECONDS`  | Subagent max seconds         | 120     | `60`                                       |
+| `SUBAGENT_MAX_COST_USD` | Subagent planned spend cap   | 0.5     | `0.2`                                      |
+| `HOOKS_MAX_LOG_MB`      | Max log size to scan         | 10      | `20`                                       |
+| `HOOKS_ERROR_TRIP`      | Errors before circuit break  | 3       | `5`                                        |
+| `CLAUDE_DISABLE_HOOKS`  | Emergency disable            | false   | `true`                                     |
 
 ### Monitoring Hooks Activity
 

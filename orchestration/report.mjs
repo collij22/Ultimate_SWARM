@@ -185,9 +185,74 @@ class ReportGenerator {
       // CI link
       ci_link: manifest.provenance?.ci_run_url || '#',
       ci_run_id: manifest.provenance?.ci_run_id || 'N/A',
+
+      // Subagent narrative (Phase 10b-5)
+      subagent_narrative: await this.buildSubagentNarrative(),
     };
 
     return data;
+  }
+
+  /**
+   * Build a concise subagent narrative by reading gateway and tool_result files.
+   */
+  async buildSubagentNarrative() {
+    try {
+      const runsDir = join(PROJECT_ROOT, 'runs');
+      const agentsDirDefault = join(runsDir, 'agents');
+      // For simplicity, scan a small set of agent result files under runs/agents/**/result-gateway.json
+      const entries = [];
+      const walk = (dir) => {
+        try {
+          const names = require('fs').readdirSync(dir, { withFileTypes: true });
+          for (const d of names) {
+            const p = join(dir, d.name);
+            if (d.isDirectory()) walk(p);
+            else if (d.isFile() && d.name === 'result-gateway.json') entries.push(p);
+          }
+        } catch {
+          /* ignore */
+        }
+      };
+      if (existsSync(agentsDirDefault)) walk(agentsDirDefault);
+
+      const blocks = [];
+      for (const p of entries.slice(0, 8)) {
+        try {
+          const raw = await readFile(p, 'utf8');
+          const gw = JSON.parse(raw);
+          const toolPath = p.replace('result-gateway.json', 'tool_results.json');
+          let tool = null;
+          if (existsSync(toolPath)) {
+            try {
+              tool = JSON.parse(await readFile(toolPath, 'utf8'));
+            } catch {
+              /* ignore */
+            }
+          }
+          blocks.push({ path: p, gateway: gw, tools: tool });
+        } catch {
+          /* ignore */
+        }
+      }
+
+      if (blocks.length === 0) return '<p>No subagent activity recorded.</p>';
+
+      const lines = blocks.map((b) => {
+        const stepCount = b.gateway?.steps ?? 0;
+        const trCount = b.gateway?.result?.response?.tool_requests?.length ?? 0;
+        const ok = b.gateway?.ok ? 'OK' : 'ERR';
+        const toolsOk = Array.isArray(b.tools?.tool_results)
+          ? b.tools.tool_results.filter((t) => t.ok).length
+          : 0;
+        const toolsTotal = Array.isArray(b.tools?.tool_results) ? b.tools.tool_results.length : 0;
+        return `- ${b.path}: gateway=${ok} steps=${stepCount} tool_requests=${trCount} tool_results_ok=${toolsOk}/${toolsTotal}`;
+      });
+
+      return `<pre>${lines.join('\n')}</pre>`;
+    } catch (e) {
+      return `<p>Subagent narrative unavailable: ${this.escapeHtml(e.message)}</p>`;
+    }
   }
 
   /**
@@ -542,6 +607,11 @@ class ReportGenerator {
       </table>
     </section>
 
+    <section class="subagents">
+      <h2>Subagent Narrative</h2>
+      {{subagent_narrative}}
+    </section>
+
     <section class="provenance">
       <h2>Provenance</h2>
       <div class="provenance-details">
@@ -740,6 +810,15 @@ class ReportGenerator {
 
     .violation-low {
       color: #28a745;
+    }
+
+    .subagents pre {
+      background: #f8f9fa;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 12px;
+      overflow-x: auto;
     }
 
     footer {

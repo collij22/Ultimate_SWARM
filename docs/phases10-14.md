@@ -387,31 +387,70 @@ nodes:
     - Produced router dry-run decisions for all new Primary capabilities.
   - Acceptance: router validation green; coverage report shows no orphaned capabilities; dry runs write decisions.
 
-- Phase 10b — Tri‑mode orchestration (Deterministic, Claude Subagents, Hybrid)
-  - Goal: allow selecting execution mode per run (and per role in hybrid), while keeping safety, budgets, and artifacts intact.
-  - Scope (high/medium level):
-    - Mode selection via CLI/env and optional graph overrides.
-    - Subagent handshake where subagents propose tool_requests and the orchestrator executes via our MCP router.
-    - Persist transcripts and link tool artifacts for evidence.
-  - Details and roadmap: see `docs/conversion.md`.
-  - Acceptance (high-level): three modes produce valid artifacts and pass gates; safety policies enforced for gated capabilities; reproducibility preserved.
+- Phase 10b — Tri‑mode orchestration (Deterministic, Claude Subagents, Hybrid) — Complete
+  - Implemented:
+    - Engine selector `orchestration/lib/engine_selector.mjs` (global + node override, hybrid include/exclude)
+    - Subagent gateway `orchestration/lib/subagent_gateway.mjs` (Plan Mode, stop conditions, schema validation, transcripts, synthesized tool_requests when absent)
+    - Router handshake + executor: `mcp/router.mjs` + `orchestration/lib/tool_executor.mjs` with per‑RUN_ID checksum caching
+    - DAG integration: `agent_task` routes through gateway when engine=claude
+    - Observability: `SubagentStart/PlanUpdated/SubagentStop`, `ToolDecision/ToolResult`; spend ledgers updated
+    - Reporting: `orchestration/report.mjs` now renders a Subagent Narrative from gateway/tool_results artifacts
+    - Role subagents: `.claude/agents/{requirements-analyst.md, rapid-builder.md, quality-guardian.md}` (Plan Mode, minimal tools)
+    - Policies: `mcp/policies.yaml` per‑role budgets for A2 and C13; added claude capability hints
+    - Golden runs: `orchestration/graph/projects/seo-audit-demo.yaml` passes in deterministic/claude/hybrid modes
+  - Usage:
+    - Global: `SWARM_MODE=deterministic|claude|hybrid`, `SUBAGENTS_INCLUDE`, `SUBAGENTS_EXCLUDE`
+    - Node override: `params.execution: claude|deterministic`
+    - Windows example: `set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml`
+  - Acceptance: three modes produce consistent, policy‑compliant artifacts; deterministic gates authoritative; reports include subagent narrative; router caching reduces duplicate calls
 
 - Phase 11 — Evidence & Evaluation
-  - Extend CVF to validate new artifacts; add JSON schemas and media checks.
-  - Seed `.claude/knowledge/**` and add synthetic tasks per capability.
-  - Acceptance: all synthetic tasks pass; agent scorecards reflect new domains.
+  - CVF extensions (aligned with broader job themes):
+    - Data/Insights: JSON Schema for `insights.json`; checksum manifests for inputs; min‑row counts
+    - Charts: PNG readability check; expected dimensions per chart type
+    - SEO: JSON Schema for `reports/seo/audit.json`; required fields (titles/meta/canonicals) present
+    - Media: duration tolerance (±5%) for `media/narration.wav`; MP4 playback + audio track present for `media/final.mp4`
+    - DB Migration (advisory): migration applies on blank DB; post‑migration validation queries pass
+  - Knowledge assets (deterministic templates):
+    - `.claude/knowledge/capabilities/` recipes for `data.ingest`, `data.insights`, `chart.render`, `doc.generate`, `seo.audit`
+    - Graph patterns: “Data → Insights → Report”, “DB schema → Migration → Validate”, “Script → TTS → Video”
+  - Synthetic tasks (fast‑tier) and scorecards:
+    - data.ingest: CSV → ≥100 rows
+    - data.insights: top‑3 categories → `insights.json` schema match
+    - chart.render: bar chart → PNG dims + checksum tolerance
+    - seo.audit: tiny page → required fields present
+    - audio.tts: 10s narration → duration tolerance (±5%)
+    - video.compose: slide+audio → MP4 with audio stream present
+    - (optional) db.migration: apply + validate
+  - Score dimensions & thresholds: correctness, determinism, efficiency, budget; target avg ≥ 0.85 across ≥ 5 tasks/capability
+  - Acceptance: synthetic tasks pass; scorecards improved; CVF validates extended artifacts strictly.
 
 - Phase 12 — End-to-End Demos
-  - Add `data-video-demo.yaml` and `seo-audit-demo.yaml`; run via DAG with concurrency.
-  - Acceptance: artifacts present; CVF green; package/report include data, charts, and media.
+  - Demos:
+    - `data-video-demo.yaml`: data → insights → chart → tts → video → report (artifacts: `insights.json`, `charts/*.png`, `media/narration.wav`, `media/final.mp4`)
+    - `seo-audit-demo.yaml`: search/crawl → seo.audit → doc.generate (artifacts: `reports/seo/audit.json`, report HTML)
+    - (optional) db‑migration demo: schema → migration → validate (artifacts: `db/schema.sql`, `db/migrations/*.sql`, `migration-result.json`)
+  - Usage:
+    - Deterministic: `node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml`
+    - Claude: `SWARM_MODE=claude` to exercise subagent planning/execution (Plan Mode)
+  - Acceptance: artifacts deterministic; CVF green; report includes Subagent Narrative and embeds.
 
 - Phase 13 — Optional Secondary Integrations (budget-gated)
-  - Add `firecrawl`, `stripe`, `supabase` mappings; wire `require_test_mode_for` and per-tool budget overrides.
-  - Acceptance: router proposes Secondary only when Primary absent or by explicit `--secondary-consent`; ledgers reflect spend.
+  - Tools/capabilities:
+    - `firecrawl` (web.crawl) for larger sites; `require_test_mode_for: external_crawl`; per‑tool budget override
+    - `stripe` (payments.test) in strict test mode; never prod keys
+    - `supabase` (cloud.db) for hosted DB/storage; keys gated; TEST_MODE required
+    - (optional) `tts.cloud` for voices; consent + budget required
+  - Policies & safety: Primary‑first; Secondary only when absent or consented; TEST_MODE enforced; per‑cap ceilings
+  - Observability: ledgers reflect Secondary spend; ToolDecision events record alternatives
+  - Acceptance: Secondary proposed only under policy; spend recorded; artifacts remain deterministic and auditable.
 
 - Phase 14 — Reporting/UX Polish
-  - Embed brief references and soft visual “fit” comparisons; enhance HTML report sections for data/media/SEO.
-  - Acceptance: reports render offline; assets resolved; no perf regressions.
+  - Reference visuals (advisory): brief schema `references[]` (image/video/url, label); ingest to `runs/<AUV>/references/`; link in report
+  - Side‑by‑side: where screenshots match reference labels/routes, show side‑by‑side; soft “intent fit” via existing visual module (non‑blocking)
+  - Data/Media in report: embed `insights.json`, chart galleries, and media thumbnails; large assets preserved under `dist/<AUV>/assets/`
+  - Offline/UX: preserved asset paths, escaped JSON, deterministic ordering
+  - Acceptance: reports render offline with references and Subagent Narrative; assets resolved; no regressions.
 
 ---
 

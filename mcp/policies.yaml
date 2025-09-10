@@ -142,6 +142,13 @@ agents:
       per_capability_usd:
         browser.automation: 0.25
         web.perf_audit: 0.25
+    A2.requirements_analyst:
+      total_usd: 0.50
+      per_capability_usd:
+        docs.search: 0.05
+        docs.read: 0.05
+        web.search: 0.05
+        web.fetch: 0.02
     B7.rapid_builder:
       total_usd: 1.50
       per_capability_usd:
@@ -156,6 +163,14 @@ agents:
         web.crawl: 0.05
         audio.tts: 0.05
         video.compose: 0.05
+    C13.quality_guardian:
+      total_usd: 0.75
+      per_capability_usd:
+        seo.audit: 0.05
+        web.crawl: 0.05
+        visual.regression: 0.05
+        header.csp: 0.02
+        doc.generate: 0.05
     C16.devops_engineer:
       total_usd: 1.00
       per_capability_usd:
@@ -176,6 +191,20 @@ agents:
       secondary: []
     serialized_files: ['package.json', 'pnpm-lock.yaml', 'yarn.lock', 'migrations/**']
     notes: 'Use codemods with reports; phase changes; respect serialize_globs.'
+
+  # Subagent capability guidance (Phase 10b-4; informational)
+  claude:
+    capabilities:
+      [
+        docs.search,
+        docs.read,
+        web.search,
+        web.fetch,
+        seo.audit,
+        web.crawl,
+        doc.generate,
+        chart.render,
+      ]
 
 # Header/CSP check defaults
 headers_csp:

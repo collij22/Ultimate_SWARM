@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarm1/schemas/subagent-request.schema.json",
+  "title": "Subagent Request",
+  "type": "object",
+  "required": ["role_id", "goal", "context"],
+  "properties": {
+    "role_id": { "type": "string", "minLength": 1 },
+    "goal": { "type": "string", "minLength": 1 },
+    "context": { "type": "object" },
+    "options": {
+      "type": "object",
+      "properties": {
+        "maxSteps": { "type": "integer", "minimum": 1 },
+        "maxSeconds": { "type": "integer", "minimum": 1 },
+        "maxCostUsd": { "type": "number", "minimum": 0 },
+        "testMode": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "session_id": { "type": "string" }
+  },
+  "additionalProperties": false
+}

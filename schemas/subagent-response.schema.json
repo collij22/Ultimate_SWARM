@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://swarm1/schemas/subagent-response.schema.json",
+  "title": "Subagent Response",
+  "type": "object",
+  "required": ["plan", "tool_requests"],
+  "properties": {
+    "plan": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "tool_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "capability",
+          "purpose",
+          "input_spec",
+          "expected_artifacts",
+          "constraints",
+          "acceptance",
+          "cost_estimate_usd"
+        ],
+        "properties": {
+          "capability": { "type": "string", "minLength": 1 },
+          "purpose": { "type": "string", "minLength": 1 },
+          "input_spec": { "type": "object" },
+          "expected_artifacts": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^runs/" }
+          },
+          "constraints": {
+            "type": "object",
+            "properties": {
+              "test_mode": { "type": "boolean" },
+              "max_cost_usd": { "type": "number", "minimum": 0 },
+              "side_effects": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": false
+          },
+          "acceptance": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "cost_estimate_usd": { "type": "number", "minimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": true
+}

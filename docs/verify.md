@@ -9,6 +9,7 @@ Every section is anchored by **AUV-ID** so robots and reviewers can deep-link.
 
 - **Artifacts** are written under `runs/<AUV-ID>/...` by the runbook and tests.
   - For multi-tenant execution (Phase 8), non-default tenants use `runs/tenants/{tenant}/<AUV-ID>/...`
+- **Subagent artifacts** (Phase 10b): transcripts and tool_results under `runs/agents/<role>/<session>/` and `runs/tenants/{tenant}/agents/<node>/`.
 - **Env vars**: set `STAGING_URL` and `API_BASE` (see `docs/runbook.md`).
 - **Pass criteria** are stated explicitly (HTTP code, DOM selector values, file presence).
 - You can either run **manual curl/UI checks** or use the **one-button runbook**:
@@ -22,6 +23,30 @@ Every section is anchored by **AUV-ID** so robots and reviewers can deep-link.
     --graph orchestration/graph/projects/demo-01.yaml \
     --tenant default
   ```
+
+### Phase 10b — Mode Verification (Golden Graph)
+
+To verify tri‑mode orchestration using the seo-audit demo:
+
+```bash
+# Deterministic
+node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 3
+
+# Claude (Windows)
+set SWARM_MODE=claude && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 3
+
+# Hybrid (Windows)
+set SWARM_MODE=hybrid && set SUBAGENTS_INCLUDE=A2.requirements_analyst,B7.rapid_builder && node orchestration/graph/runner.mjs orchestration/graph/projects/seo-audit-demo.yaml --concurrency 3
+```
+
+Pass if:
+
+- Graph completes with 0 failed nodes in each mode
+- `runs/websearch_demo/{summary.json,first_result.html}` exist
+- Subagent gateway and tool results present when SWARM_MODE=claude/hybrid:
+  - `runs/agents/<role>/<session>/thread.jsonl`
+  - `runs/tenants/default/agents/<node>/result-gateway.json`
+  - `runs/tenants/default/agents/<node>/tool_results.json`
 
 ---
 
