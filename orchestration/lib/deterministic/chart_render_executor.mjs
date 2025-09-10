@@ -276,7 +276,7 @@ function createBarChartSVG(chartData) {
  * @param {string} params.tenant - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
  * @param {Array} params.charts - Direct chart definitions (optional)
- * @returns {Object} Result with status and artifacts
+ * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function executeChartRender(params) {
   const { tenant = 'default', runId, charts } = params;

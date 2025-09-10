@@ -100,7 +100,7 @@ async function checkPiperAvailable() {
  * @param {string} params.text - Optional text to speak (will use insights if not provided)
  * @param {string} params.tenant - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
- * @returns {Object} Result with status and artifacts
+ * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function executeAudioTTS(params) {
   const { text, tenant = 'default', runId } = params;

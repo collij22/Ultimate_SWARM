@@ -475,7 +475,10 @@ async function main() {
 
       const results = await ingestReferences(references, {
         auvId,
+        runId: process.env.RUN_ID || 'latest',
+        tenant: process.env.TENANT || 'default',
         testMode: process.env.TEST_MODE === 'true',
+        maxSize: 10 * 1024 * 1024, // 10MB
       });
 
       console.log('\n✅ References ingested successfully:');
@@ -545,7 +548,10 @@ async function main() {
 
           const results = await ingestReferences(references, {
             auvId,
+            runId: process.env.RUN_ID || 'latest',
+            tenant: process.env.TENANT || 'default',
             testMode: process.env.TEST_MODE === 'true',
+            maxSize: 10 * 1024 * 1024, // 10MB
           });
           console.log('  ✅ References ingested');
           if (strictReferences && (!results || results.count === 0)) {

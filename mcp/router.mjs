@@ -20,7 +20,22 @@ import Ajv from 'ajv';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROUTER_VERSION = '1.0.0';
 
-// Pure routing core - no IO, deterministic
+/**
+ * Pure routing core - no IO, deterministic
+ * @param {Object} params - Parameters for planning tools
+ * @param {string} params.agentId - Agent identifier
+ * @param {Array<string>} params.requestedCapabilities - Requested capabilities
+ * @param {number} params.budgetUsd - Budget in USD
+ * @param {boolean} params.secondaryConsent - Secondary consent flag
+ * @param {Object.<string, string>} params.env - Environment variables
+ * @param {Object} params.registry - Tool registry
+ * @param {Object} params.policies - Policy configuration
+ * @param {Object} params.hints - Hints for scale/constraint indication
+ * @param {Object} params.hints.crawl - Crawl hints
+ * @param {number} params.hints.crawl.max_pages - Maximum pages to crawl
+ * @param {number} params.hints.crawl.depth - Crawl depth
+ * @returns {Object} Tool planning decision
+ */
 export function planTools({
   agentId,
   requestedCapabilities = [],

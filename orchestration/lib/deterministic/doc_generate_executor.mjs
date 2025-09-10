@@ -575,7 +575,12 @@ function generateDatabaseReport(data, format) {
  * @param {string} params.scriptPath - Path to script file
  * @param {string} params.composePath - Path to compose metadata
  * @param {string} params.videoPath - Path to video file
- * @returns {Object} Result with status and artifacts
+ * @param {string} params.connectivityPath - Path to connectivity test results
+ * @param {string} params.roundtripPath - Path to roundtrip test results
+ * @param {string} params.schemaPath - Path to schema validation results
+ * @param {Object} params.input - Input configuration object
+ * @param {string} params.content - Direct content to process
+ * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function executeDocGenerate(params) {
   const {

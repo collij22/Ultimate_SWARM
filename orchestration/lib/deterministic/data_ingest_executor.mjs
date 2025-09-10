@@ -39,7 +39,7 @@ function parseCSV(csvPath) {
     headers.forEach((header, index) => {
       const value = values[index] || '';
       // Parse numbers if possible
-      if (!isNaN(value) && value !== '') {
+      if (!isNaN(Number(value)) && value !== '') {
         row[header] = parseFloat(value);
       } else {
         row[header] = value;
@@ -58,7 +58,7 @@ function parseCSV(csvPath) {
  * @param {string} params.input - Path to input CSV file
  * @param {string} params.tenant - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
- * @returns {Object} Result with status and artifacts
+ * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function executeDataIngest(params) {
   const { input, tenant = 'default', runId } = params;

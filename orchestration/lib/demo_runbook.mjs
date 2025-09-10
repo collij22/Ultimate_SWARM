@@ -15,7 +15,7 @@ import { tenantPath } from './tenant.mjs';
  * @param {string} params.tenant - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
  * @param {Array} params.steps - List of steps executed
- * @returns {Object} Result with status and artifacts
+ * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function generateDemoRunbook(params) {
   const { auvId, tenant = 'default', runId, steps = [] } = params;
