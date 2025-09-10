@@ -20,6 +20,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import { glob } from 'glob';
 import { parse as parseYaml } from 'yaml';
 import {
   expectedArtifacts,
@@ -37,8 +38,25 @@ import { loadThresholds } from './lib/threshold_loader.mjs';
 
 function statNonEmpty(p) {
   try {
-    const s = fs.statSync(p);
-    return s.isFile() && s.size > 0;
+    // Check if path contains wildcards
+    if (p.includes('*')) {
+      // Ensure forward slashes for glob pattern (required for glob to work on all platforms)
+      const globPattern = p.split(path.sep).join('/');
+      // Use glob to find matching files
+      const matches = glob.sync(globPattern, { nodir: true });
+      // Return true if at least one matching file exists and is non-empty
+      for (const match of matches) {
+        const s = fs.statSync(match);
+        if (s.isFile() && s.size > 0) {
+          return true;
+        }
+      }
+      return false;
+    } else {
+      // Original behavior for exact paths
+      const s = fs.statSync(p);
+      return s.isFile() && s.size > 0;
+    }
   } catch {
     return false;
   }
@@ -56,13 +74,23 @@ function readJsonSafe(p) {
 export { expectedArtifacts };
 
 function validateSpecial(file) {
-  // Minimal sanity checks for certain artifact types
-  const base = path.basename(file).toLowerCase();
-  if (base === 'lighthouse.json') {
-    const j = readJsonSafe(file);
-    if (!j) return 'invalid JSON';
-    const perf = j?.categories?.performance?.score;
-    if (typeof perf !== 'number') return 'missing performance score';
+  // Handle wildcards by finding actual files
+  let filesToCheck = [file];
+  if (file.includes('*')) {
+    filesToCheck = glob.sync(file, { nodir: true });
+    if (filesToCheck.length === 0) return null; // No files to validate
+  }
+  
+  // Validate each matching file
+  for (const actualFile of filesToCheck) {
+    // Minimal sanity checks for certain artifact types
+    const base = path.basename(actualFile).toLowerCase();
+    if (base === 'lighthouse.json') {
+      const j = readJsonSafe(actualFile);
+      if (!j) return 'invalid JSON';
+      const perf = j?.categories?.performance?.score;
+      if (typeof perf !== 'number') return 'missing performance score';
+    }
   }
   return null;
 }

@@ -522,31 +522,169 @@ class NodeExecutors {
       }
     }
 
-    // Deterministic fallback (placeholder until 10b-3 executes tools)
+    // Deterministic execution based on capability
+    const capability = node.params?.capability;
     const agent = node.params?.agent;
     const task = node.params?.task;
-    console.log(`[agent_task] ${node.id}: Agent=${agent}, Task=${task}`);
-
-    const resultPath = tenantPath(this.tenant, `agents/${node.id}/result.json`);
-    const resultDir = path.dirname(resultPath);
-    if (!fs.existsSync(resultDir)) {
-      fs.mkdirSync(resultDir, { recursive: true });
+    
+    console.log(`[agent_task] ${node.id}: Capability=${capability}, Agent=${agent}, Task=${task}`);
+    
+    // Emit observability event for deterministic execution
+    if (mode === 'hybrid' || process.env.HOOKS_MODE) {
+      try {
+        const { appendToHooks } = await import('../../mcp/router.mjs');
+        appendToHooks({
+          event: 'RouterDecision',
+          node_id: node.id,
+          mode: 'deterministic',
+          capability,
+          reason: engine === 'deterministic' ? 'Selected by engine selector' : 'Fallback',
+          timestamp: new Date().toISOString()
+        });
+      } catch {
+        // Observability is optional, don't fail if it errors
+      }
     }
-    fs.writeFileSync(
-      resultPath,
-      JSON.stringify(
-        {
+    
+    // Execute based on capability
+    let result;
+    
+    try {
+      switch (capability) {
+        case 'data.ingest': {
+          const { executeDataIngest } = await import('../lib/deterministic/data_ingest_executor.mjs');
+          result = await executeDataIngest({
+            input: node.params?.input || 'tests/fixtures/sample-data.csv',
+            tenant: this.tenant,
+            runId: this.runId
+          });
+          break;
+        }
+        
+        case 'data.insights': {
+          const { executeDataInsights } = await import('../lib/deterministic/data_insights_executor.mjs');
+          result = await executeDataInsights({
+            tenant: this.tenant,
+            runId: this.runId
+          });
+          break;
+        }
+        
+        case 'chart.render': {
+          const { executeChartRender } = await import('../lib/deterministic/chart_render_executor.mjs');
+          result = await executeChartRender({
+            tenant: this.tenant,
+            runId: this.runId
+          });
+          break;
+        }
+        
+        case 'audio.tts': {
+          const { executeAudioTTS } = await import('../lib/deterministic/audio_tts_executor.mjs');
+          result = await executeAudioTTS({
+            text: node.params?.text,
+            tenant: this.tenant,
+            runId: this.runId
+          });
+          break;
+        }
+        
+        case 'video.compose': {
+          const { executeVideoCompose } = await import('../lib/deterministic/video_compose_executor.mjs');
+          result = await executeVideoCompose({
+            tenant: this.tenant,
+            runId: this.runId
+          });
+          break;
+        }
+        
+        case 'seo.audit': {
+          const { executeSEOAudit } = await import('../lib/deterministic/seo_audit_executor.mjs');
+          result = await executeSEOAudit({
+            url: node.params?.url,
+            tenant: this.tenant,
+            runId: this.runId
+          });
+          break;
+        }
+        
+        case 'doc.generate': {
+          const { executeDocGenerate } = await import('../lib/deterministic/doc_generate_executor.mjs');
+          result = await executeDocGenerate({
+            format: node.params?.format || 'both',
+            tenant: this.tenant,
+            runId: this.runId
+          });
+          break;
+        }
+        
+        default: {
+          // Fallback for unknown capabilities
+          console.log(`[agent_task] No deterministic executor for capability: ${capability}`);
+          const resultPath = tenantPath(this.tenant, `agents/${node.id}/result.json`);
+          const resultDir = path.dirname(resultPath);
+          if (!fs.existsSync(resultDir)) {
+            fs.mkdirSync(resultDir, { recursive: true });
+          }
+          result = {
+            status: 'success',
+            message: `Placeholder for ${capability}`,
+            artifacts: [resultPath],
+            metadata: { capability, node: node.id }
+          };
+          fs.writeFileSync(
+            resultPath,
+            JSON.stringify(result, null, 2)
+          );
+        }
+      }
+      
+      // Emit result event with cost estimates for Phase 13
+      if ((mode === 'hybrid' || process.env.HOOKS_MODE) && result) {
+        try {
+          const { appendToHooks } = await import('../../mcp/router.mjs');
+          
+          appendToHooks({
+            event: 'ExecutionResult',
+            node_id: node.id,
+            capability,
+            status: result.status,
+            artifacts: result.artifacts || [],
+            cost_estimate_usd: 0, // Deterministic execution is free
+            duration_ms: result.duration_ms || 0,
+            timestamp: new Date().toISOString()
+          });
+        } catch {
+          // Observability is optional, don't fail
+        }
+      }
+    } catch (error) {
+      console.error(`[agent_task] Error executing ${capability}: ${error.message}`);
+      throw new GraphRunnerError(
+        `Deterministic executor failed for ${capability}: ${error.message}`,
+        'EXECUTOR_FAILED'
+      );
+    }
+    
+    // Save result
+    if (result) {
+      const resultPath = tenantPath(this.tenant, `agents/${node.id}/result.json`);
+      const resultDir = path.dirname(resultPath);
+      if (!fs.existsSync(resultDir)) {
+        fs.mkdirSync(resultDir, { recursive: true });
+      }
+      fs.writeFileSync(
+        resultPath,
+        JSON.stringify({
+          ...result,
           node: node.id,
-          agent,
-          task,
-          status: 'placeholder',
-          timestamp: new Date().toISOString(),
-        },
-        null,
-        2,
-      ),
-    );
-    return { status: 'success', message: 'Agent task placeholder executed' };
+          capability,
+          timestamp: new Date().toISOString()
+        }, null, 2)
+      );
+    }
+    
+    return result || { status: 'success', message: 'Agent task executed' };
   }
 
   async package(node, _env) {
@@ -658,6 +796,46 @@ class NodeExecutors {
       message: `Work simulation completed: ${label}`,
       duration_ms: actualDuration,
     };
+  }
+
+  async demo_runbook(node, _env) {
+    // Generate demo runbook summary for demo AUVs
+    const auv = node.params?.auv;
+    if (!auv) {
+      throw new GraphRunnerError('Missing auv param for demo_runbook node', 'INVALID_PARAMS');
+    }
+
+    console.log(`[demo_runbook] ${node.id}: Generating runbook for ${auv}`);
+
+    try {
+      const { generateDemoRunbook } = await import('../lib/demo_runbook.mjs');
+      
+      // Collect steps from previous nodes in the graph
+      const steps = node.params?.steps || [];
+      
+      const result = await generateDemoRunbook({
+        auvId: auv,
+        tenant: this.tenant,
+        runId: this.runId,
+        steps
+      });
+
+      if (result.status === 'skipped') {
+        console.log(`[demo_runbook] Skipped: ${result.message}`);
+      } else {
+        console.log(`[demo_runbook] ✅ Runbook generated for ${auv}`);
+      }
+
+      return result;
+    } catch (error) {
+      const err = new GraphRunnerError(
+        `Demo runbook generation failed: ${error.message}`,
+        'DEMO_RUNBOOK_FAILED',
+      );
+      err.stderr = error.stack || error.message;
+      err.exitCode = 402;
+      throw err;
+    }
   }
 
   async _runCommand(command, args, env, timeout) {
@@ -1144,7 +1322,7 @@ if (
 
   const runner = new GraphRunner({
     concurrency,
-    runId: resumeId,
+    runId: resumeId || process.env.RUN_ID,  // Support RUN_ID from environment
   });
 
   try {

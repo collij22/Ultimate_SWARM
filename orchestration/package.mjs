@@ -183,18 +183,41 @@ class PackageBuilder {
     const missingArtifacts = [];
 
     for (const artifactPath of required) {
-      const fullPath = join(PROJECT_ROOT, artifactPath.replace('${AUV}', this.auvId));
-
-      if (existsSync(fullPath)) {
-        const info = await this.getFileInfo(fullPath);
-        artifacts.push({
-          path: artifactPath.replace('${AUV}', this.auvId),
-          bytes: info.bytes,
-          sha256: info.sha256,
-          type: this.classifyArtifact(artifactPath),
-        });
+      // Handle wildcard paths
+      if (artifactPath.includes('*')) {
+        const { glob } = await import('glob');
+        const pattern = artifactPath.split(path.sep).join('/'); // Use forward slashes for glob
+        const matches = glob.sync(pattern, { cwd: PROJECT_ROOT, nodir: true });
+        
+        if (matches.length > 0) {
+          // Use the first matching file
+          const matchedPath = matches[0];
+          const fullPath = join(PROJECT_ROOT, matchedPath);
+          const info = await this.getFileInfo(fullPath);
+          artifacts.push({
+            path: matchedPath,
+            bytes: info.bytes,
+            sha256: info.sha256,
+            type: this.classifyArtifact(matchedPath),
+          });
+        } else {
+          missingArtifacts.push(artifactPath);
+        }
       } else {
-        missingArtifacts.push(artifactPath);
+        // Original behavior for exact paths
+        const fullPath = join(PROJECT_ROOT, artifactPath.replace('${AUV}', this.auvId));
+
+        if (existsSync(fullPath)) {
+          const info = await this.getFileInfo(fullPath);
+          artifacts.push({
+            path: artifactPath.replace('${AUV}', this.auvId),
+            bytes: info.bytes,
+            sha256: info.sha256,
+            type: this.classifyArtifact(artifactPath),
+          });
+        } else {
+          missingArtifacts.push(artifactPath);
+        }
       }
     }
 

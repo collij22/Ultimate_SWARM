@@ -38,22 +38,39 @@ async function cleanupTestArtifacts(tenant) {
   }
 }
 
-describe('Phase 8 E2E Engine Tests', () => {
+// Check Redis availability before defining tests
+async function checkRedis() {
+  try {
+    const { Queue } = await import('bullmq');
+    const testQueue = new Queue('test-connection', {
+      connection: {
+        host: '127.0.0.1',
+        port: 6379,
+        retryStrategy: () => null  // Don't retry
+      }
+    });
+    await testQueue.close();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+describe('Phase 8 E2E Engine Tests', async () => {
+  const redisAvailable = await checkRedis();
+  
+  if (!redisAvailable) {
+    it.skip('should process job and create tenant-scoped artifacts', () => {
+      console.log('[e2e-test] Skipped: Redis not available');
+    });
+    return;
+  }
+  
   let workerProcess;
   const testTenant = 'test-tenant-' + randomBytes(4).toString('hex');
 
   before(async () => {
     console.log(`[e2e-test] Starting with tenant: ${testTenant}`);
-
-    // Check if Redis is available
-    try {
-      const { Queue } = await import('bullmq');
-      const testQueue = new Queue('test-connection');
-      await testQueue.close();
-    } catch (error) {
-      console.log('[e2e-test] Redis not available, skipping E2E tests');
-      return;
-    }
   });
 
   after(async () => {
