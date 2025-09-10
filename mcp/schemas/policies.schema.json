@@ -284,6 +284,40 @@
         }
       },
       "additionalProperties": false
+    },
+    "cvf": {
+      "type": "object",
+      "description": "Capability Validation Framework configuration",
+      "properties": {
+        "thresholds": {
+          "type": "object",
+          "description": "Domain-specific validation thresholds",
+          "properties": {
+            "data": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "charts": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "seo": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "media": {
+              "type": "object",
+              "additionalProperties": true
+            },
+            "db": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["version", "router", "tiers", "capability_map", "agents"],
