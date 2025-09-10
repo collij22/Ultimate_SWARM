@@ -1,10 +1,10 @@
 {
-  "script_length": 98,
-  "duration_seconds": 6.533333333333333,
+  "script_length": 161,
+  "duration_seconds": 12,
   "sample_rate": 44100,
   "channels": 1,
   "bit_depth": 16,
-  "file_size": 576284,
+  "file_size": 548456,
   "generator": "placeholder",
-  "generated_at": "2025-09-10T23:16:53.422Z"
+  "generated_at": "2025-09-10T23:47:02.174Z"
 }

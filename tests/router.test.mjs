@@ -26,6 +26,7 @@ console.log('Test 1: Empty capabilities should pass trivially');
     agentId: 'test-agent',
     requestedCapabilities: [],
     budgetUsd: 0.25,
+    env: {},
     registry,
     policies,
   });
@@ -42,6 +43,7 @@ console.log('Test 2: Primary tools should be preferred over secondary');
     agentId: 'test-agent',
     requestedCapabilities: ['perf.web'],
     budgetUsd: 0.25,
+    env: {},
     registry,
     policies,
   });
@@ -67,6 +69,7 @@ console.log('Test 3: Total budget ceiling enforcement');
     requestedCapabilities: ['packaging.sbom'], // Maps to [sbom, license-checker]
     budgetUsd: 0.01, // Less than sbom cost (0.02)
     secondaryConsent: true,
+    env: {},
     registry,
     policies,
   });
@@ -95,6 +98,7 @@ console.log('Test 4: Secondary tools require consent');
     requestedCapabilities: ['deploy.preview'], // Only has vercel (secondary)
     budgetUsd: 0.25,
     secondaryConsent: false, // No consent
+    env: {},
     registry,
     policies,
   });
@@ -133,6 +137,7 @@ console.log('Test 5: Agent allowlist filtering');
     requestedCapabilities: ['browser.automation', 'deploy.preview'],
     budgetUsd: 0.25,
     secondaryConsent: true,
+    env: {},
     registry,
     policies,
   });
@@ -188,6 +193,7 @@ console.log('Test 7: Budget overrides for specific secondary tools');
     requestedCapabilities: ['perf.load'],
     budgetUsd: 0.3, // More than default but less than k6 override
     secondaryConsent: true,
+    env: {},
     registry,
     policies,
   });
@@ -312,6 +318,7 @@ console.log('Test 11: Deduplication of duplicate capabilities');
     agentId: 'test-agent',
     requestedCapabilities: ['browser.automation', 'browser.automation', 'screenshot', 'screenshot'],
     budgetUsd: 0.25,
+    env: {},
     registry,
     policies,
   });
@@ -330,6 +337,7 @@ console.log('Test 12: Side effects are tracked in plan');
     agentId: 'test-agent',
     requestedCapabilities: ['browser.automation'],
     budgetUsd: 0.25,
+    env: {},
     registry,
     policies,
   });

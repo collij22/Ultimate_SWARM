@@ -238,8 +238,8 @@ function analyzeSEO(seoData) {
 /**
  * Execute SEO audit
  * @param {Object} params - Execution parameters
- * @param {string} params.url - URL to audit (optional, will use fetched or fixture)
- * @param {string} params.tenant - Tenant ID (default: 'default')
+ * @param {string} [params.url] - URL to audit (optional, will use fetched or fixture)
+ * @param {string} [params.tenant] - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
  * @returns {Promise<Object>} Result with status and artifacts
  */

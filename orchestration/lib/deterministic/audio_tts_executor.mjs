@@ -109,7 +109,8 @@ export async function executeAudioTTS(params) {
 
   // If no text provided, generate from insights
   if (!scriptText) {
-    const dataDir = tenantPath(tenant, runId ? `runs/${runId}/data` : 'data');
+    // Correct tenant-scoped path (no extra 'runs/' segment)
+    const dataDir = tenantPath(tenant, runId ? `${runId}/data` : 'data');
     const insightsPath = path.join(dataDir, 'insights.json');
 
     if (fs.existsSync(insightsPath)) {
@@ -148,8 +149,46 @@ export async function executeAudioTTS(params) {
     audioMetadata = generatePlaceholderWAV(scriptText, audioPath);
     console.log('[audio.tts] Note: Piper detected but using placeholder for demo');
   } else {
-    console.log('[audio.tts] Piper not available, generating placeholder audio');
-    audioMetadata = generatePlaceholderWAV(scriptText, audioPath);
+    // Windows fallback: use System.Speech (offline) to synthesize real speech to WAV
+    if (process.platform === 'win32') {
+      try {
+        console.log('[audio.tts] Piper not available, using Windows SAPI for TTS');
+        const psScript = [
+          'Add-Type -AssemblyName System.Speech',
+          '$s = New-Object System.Speech.Synthesis.SpeechSynthesizer',
+          // Choose a reasonable default rate/volume
+          '$s.Rate = 0; $s.Volume = 100',
+          `$out = '${audioPath.replace(/\\/g, '/')}'`,
+          `$txt = Get-Content -Raw '${scriptPath.replace(/\\/g, '/')}'`,
+          '$s.SetOutputToWaveFile($out)',
+          '$s.Speak($txt)',
+          '$s.Dispose()'
+        ].join('; ');
+
+        await new Promise((resolve, reject) => {
+          const proc = spawn('powershell', ['-NoProfile', '-Command', psScript], { shell: true });
+          proc.on('error', (err) => reject(err));
+          proc.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`SAPI exited ${code}`))));
+        });
+
+        const stats = fs.statSync(audioPath);
+        // Estimate duration conservatively: ~ 14 chars/sec speaking speed
+        const estDuration = Math.max(3, Math.min(90, Math.round(scriptText.length / 14)));
+        audioMetadata = {
+          duration: estDuration,
+          sampleRate: 44100,
+          channels: 1,
+          bitDepth: 16,
+          size: stats.size,
+        };
+      } catch (e) {
+        console.log('[audio.tts] Windows SAPI failed, generating placeholder audio');
+        audioMetadata = generatePlaceholderWAV(scriptText, audioPath);
+      }
+    } else {
+      console.log('[audio.tts] Piper not available, generating placeholder audio');
+      audioMetadata = generatePlaceholderWAV(scriptText, audioPath);
+    }
   }
 
   // Write metadata

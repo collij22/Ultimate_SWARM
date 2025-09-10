@@ -33,6 +33,8 @@ nodes:
     requires: [insights]
     params:
       capability: audio.tts
+      # Provide a short dynamic script so TTS has real content
+      text: "Quarterly sales summary: Electronics leads, followed by Furniture and Office Supplies. Average order value and regional distribution are included in this report."
 
   - id: video
     type: agent_task

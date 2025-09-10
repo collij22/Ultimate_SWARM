@@ -1,10 +1,10 @@
 {
-  "generated_at": "2025-09-10T23:16:53.517Z",
+  "generated_at": "2025-09-10T23:47:02.249Z",
   "script_path": "media/script.txt",
   "audio_path": "media/narration.wav",
   "video_path": "media/final.mp4",
-  "expected_duration_s": 6.533333333333333,
-  "actual_duration_s": 6.533333333333333,
+  "expected_duration_s": 12,
+  "actual_duration_s": 12,
   "video_width": 1280,
   "video_height": 720,
   "has_audio_track": true,

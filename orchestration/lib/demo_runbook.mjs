@@ -12,9 +12,9 @@ import { tenantPath } from './tenant.mjs';
  * Generate a demo runbook summary for packaging
  * @param {Object} params - Generation parameters
  * @param {string} params.auvId - AUV identifier (e.g., AUV-1201)
- * @param {string} params.tenant - Tenant ID (default: 'default')
+ * @param {string} [params.tenant] - Tenant ID (default: 'default')
  * @param {string} params.runId - Run ID for this execution
- * @param {Array} params.steps - List of steps executed
+ * @param {Array} [params.steps] - List of steps executed
  * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function generateDemoRunbook(params) {
