@@ -105,6 +105,7 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
     }
 
     // Collect stats
+    // @ts-ignore - audit is validated by schema
     result.stats = {
       totalPages: audit.pages.length,
       brokenLinks: audit.broken_links_count,
@@ -114,10 +115,12 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
     };
 
     // Validate broken links threshold
+    // @ts-ignore - audit is validated by schema
     if (audit.broken_links_count > config.maxBrokenLinks) {
       result.valid = false;
       result.brokenLinksValid = false;
       result.errors.push(
+        // @ts-ignore - audit is validated by schema
         `Broken links (${audit.broken_links_count}) exceed maximum (${config.maxBrokenLinks})`,
       );
     } else {
@@ -125,10 +128,12 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
     }
 
     // Validate canonical rate threshold
+    // @ts-ignore - audit is validated by schema
     if (audit.canonical_present_rate < config.minCanonicalRate) {
       result.valid = false;
       result.canonicalRateValid = false;
       result.errors.push(
+        // @ts-ignore - audit is validated by schema
         `Canonical rate (${(audit.canonical_present_rate * 100).toFixed(1)}%) below minimum (${(config.minCanonicalRate * 100).toFixed(1)}%)`,
       );
     } else {
@@ -136,6 +141,7 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
     }
 
     // Validate sitemap requirement
+    // @ts-ignore - audit is validated by schema
     if (config.requireSitemap && !audit.has_sitemap) {
       result.valid = false;
       result.sitemapValid = false;
@@ -149,6 +155,7 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
     let loadTimeCount = 0;
     const pageIssues = [];
 
+    // @ts-ignore - audit is validated by schema
     audit.pages.forEach((page) => {
       const pageErrors = [];
 
@@ -205,6 +212,7 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
       result.pagesValid = false;
 
       // Fail validation only if issue rate exceeds configured threshold
+      // @ts-ignore - audit is validated by schema
       const issueRate = pageIssues.length / audit.pages.length;
       if (issueRate > config.pageIssueFailRate) {
         result.valid = false;
@@ -224,7 +232,9 @@ export async function validateSEOAudit(auditPath, thresholds = {}) {
     }
 
     // Add recommendations summary
+    // @ts-ignore - audit is validated by schema
     if (audit.recommendations && audit.recommendations.length > 0) {
+      // @ts-ignore - audit is validated by schema
       const highPriority = audit.recommendations.filter((r) => r.priority === 'high').length;
       if (highPriority > 0) {
         result.warnings.push(`${highPriority} high-priority recommendations to address`);

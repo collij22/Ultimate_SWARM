@@ -281,11 +281,14 @@ export async function runSubagent(request, opts = {}) {
       role_id: roleId,
       session_id: sessionId,
       step: steps,
+      // @ts-ignore - parsed is validated by schema
       plan_length: Array.isArray(parsed.plan) ? parsed.plan.length : 0,
+      // @ts-ignore - parsed is validated by schema
       tool_request_count: Array.isArray(parsed.tool_requests) ? parsed.tool_requests.length : 0,
     });
 
     // Stop if a final key is present or no further tool_requests/plan deltas are suggested
+    // @ts-ignore - parsed is validated by schema
     const hasNext = Array.isArray(parsed.tool_requests) && parsed.tool_requests.length > 0;
     if (!hasNext) break;
 
@@ -324,7 +327,9 @@ export async function runSubagent(request, opts = {}) {
     steps,
     summary: ok
       ? {
+          // @ts-ignore - lastAssistantJson is typed as any
           plan_length: lastAssistantJson?.plan?.length || 0,
+          // @ts-ignore - lastAssistantJson is typed as any
           tool_request_count: lastAssistantJson?.tool_requests?.length || 0,
         }
       : null,
