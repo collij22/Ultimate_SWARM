@@ -1,0 +1,33 @@
+version: '1.0'
+project_id: upwork-b1-data-analytics
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 180000
+nodes:
+  - id: ingest
+    type: agent_task
+    params:
+      capability: data.ingest
+      input:
+        file: tests/fixtures/sample-data.csv
+
+  - id: insights
+    type: agent_task
+    requires: [ingest]
+    params:
+      capability: data.insights
+
+  - id: chart
+    type: agent_task
+    requires: [insights]
+    params:
+      capability: chart.render
+
+edges:
+  - [ingest, insights]
+  - [insights, chart]
+
+

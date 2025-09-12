@@ -1,0 +1,36 @@
+version: '1.0'
+project_id: upwork-b2-seo-audit-claude
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 180000
+nodes:
+  - id: search
+    type: web_search_fetch
+    params:
+      query: 'example company site'
+      outDir: websearch_demo
+
+  - id: audit
+    type: agent_task
+    requires: [search]
+    params:
+      execution: claude
+      capability: seo.audit
+
+  - id: doc
+    type: agent_task
+    requires: [audit]
+    params:
+      execution: claude
+      capability: doc.generate
+      input:
+        format: both
+
+edges:
+  - [search, audit]
+  - [audit, doc]
+
+

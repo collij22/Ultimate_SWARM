@@ -1,0 +1,36 @@
+version: '1.0'
+project_id: upwork-b1-data-analytics-claude
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 180000
+nodes:
+  - id: ingest
+    type: agent_task
+    params:
+      execution: claude
+      capability: data.ingest
+      input:
+        file: tests/fixtures/sample-data.csv
+
+  - id: insights
+    type: agent_task
+    requires: [ingest]
+    params:
+      execution: claude
+      capability: data.insights
+
+  - id: chart
+    type: agent_task
+    requires: [insights]
+    params:
+      execution: claude
+      capability: chart.render
+
+edges:
+  - [ingest, insights]
+  - [insights, chart]
+
+

@@ -162,13 +162,15 @@ export async function executeAudioTTS(params) {
           `$txt = Get-Content -Raw '${scriptPath.replace(/\\/g, '/')}'`,
           '$s.SetOutputToWaveFile($out)',
           '$s.Speak($txt)',
-          '$s.Dispose()'
+          '$s.Dispose()',
         ].join('; ');
 
         await new Promise((resolve, reject) => {
           const proc = spawn('powershell', ['-NoProfile', '-Command', psScript], { shell: true });
           proc.on('error', (err) => reject(err));
-          proc.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`SAPI exited ${code}`))));
+          proc.on('exit', (code) =>
+            code === 0 ? resolve() : reject(new Error(`SAPI exited ${code}`)),
+          );
         });
 
         const stats = fs.statSync(audioPath);

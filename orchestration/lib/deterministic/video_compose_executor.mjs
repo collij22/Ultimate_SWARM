@@ -95,7 +95,8 @@ async function runFFmpeg(chartPath, audioPath, outputPath, duration) {
     ];
 
     console.log('[video.compose] Running ffmpeg...');
-    const proc = spawn('ffmpeg', args, { shell: true });
+    // Use direct spawn (no shell) to avoid path/quoting issues with spaces
+    const proc = spawn('ffmpeg', args, { shell: false });
 
     proc.stderr.on('data', () => {
       // Ignore stderr output
@@ -133,11 +134,9 @@ export async function executeVideoCompose(params) {
   const chartPath = path.join(chartsDir, 'bar.svg'); // Or bar.png if real Chart.js used
   const chartPngPath = path.join(chartsDir, 'bar.png');
 
-  // Use PNG if available, otherwise SVG
-  const imageInput = fs.existsSync(chartPngPath) ? chartPngPath : chartPath;
-
-  if (!fs.existsSync(imageInput)) {
-    throw new Error(`Chart not found at: ${imageInput}. Run chart.render first.`);
+  // Strict: require PNG chart from prior step
+  if (!fs.existsSync(chartPngPath)) {
+    throw new Error(`Chart not found at: ${chartPngPath}. Run chart.render first.`);
   }
 
   // Find audio from previous step
@@ -161,14 +160,33 @@ export async function executeVideoCompose(params) {
   const mediaDir = path.resolve('media');
   const outputPath = path.join(mediaDir, 'final.mp4');
 
-  // Check if ffmpeg is available
-  const ffmpegAvailable = await checkFFmpegAvailable();
+  // Check if ffmpeg is available; attempt local bootstrap on Windows
+  let ffmpegAvailable = await checkFFmpegAvailable();
+  if (!ffmpegAvailable && process.platform === 'win32') {
+    try {
+      const bootstrap = path.resolve('scripts', 'bootstrap_ffmpeg.mjs');
+      if (fs.existsSync(bootstrap)) {
+        console.log('[video.compose] Bootstrapping ffmpeg...');
+        const { spawn } = await import('node:child_process');
+        await new Promise((resolve, reject) => {
+          const p = spawn(process.execPath, [bootstrap], { stdio: 'inherit' });
+          p.on('error', reject);
+          p.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`bootstrap exit ${code}`))));
+        });
+        const localBin = path.resolve('tools', 'ffmpeg', 'bin');
+        process.env.PATH = `${localBin};${process.env.PATH}`;
+      }
+      ffmpegAvailable = await checkFFmpegAvailable();
+    } catch (e) {
+      console.warn('[video.compose] ffmpeg bootstrap failed:', e.message);
+    }
+  }
 
   let videoMetadata;
 
-  if (ffmpegAvailable && imageInput.endsWith('.png')) {
+  if (ffmpegAvailable) {
     // Try to use real ffmpeg
-    const result = await runFFmpeg(imageInput, audioPath, outputPath, audioDuration);
+    const result = await runFFmpeg(chartPngPath, audioPath, outputPath, audioDuration);
 
     if (result.success) {
       // Get actual video metadata
@@ -185,14 +203,10 @@ export async function executeVideoCompose(params) {
       };
       console.log('[video.compose] Video composed successfully with ffmpeg');
     } else {
-      videoMetadata = result.metadata;
-      videoMetadata.has_audio = true;
-      console.log('[video.compose] Created placeholder video');
+      throw new Error('ffmpeg failed to compose video');
     }
   } else {
-    console.log('[video.compose] FFmpeg not available or using SVG, creating placeholder video');
-    videoMetadata = createPlaceholderMP4(outputPath, audioDuration);
-    videoMetadata.has_audio = true;
+    throw new Error('ffmpeg is required for video.compose but not available on PATH');
   }
 
   // Create schema-compliant composition metadata
@@ -221,8 +235,8 @@ export async function executeVideoCompose(params) {
     version: '1.0',
     generator: ffmpegAvailable ? 'ffmpeg' : 'placeholder',
     inputs: {
-      video_source: path.basename(imageInput),
-      video_type: imageInput.endsWith('.svg') ? 'svg' : 'png',
+      video_source: path.basename(chartPngPath),
+      video_type: 'png',
       audio_sample_rate: 44100,
     },
   };

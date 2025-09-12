@@ -67,7 +67,14 @@ export async function executeDataIngest(params) {
     throw new Error('Missing required parameter: input');
   }
 
-  const inputPath = path.resolve(input);
+  // Accept string or object input (e.g., { file: 'path' } or { path: 'path' })
+  const inputString =
+    typeof input === 'string' ? input : (input && (input.file || input.path || ''));
+  if (!inputString) {
+    throw new Error('Invalid input: expected string or object with file/path');
+  }
+
+  const inputPath = path.resolve(inputString);
 
   // Check if input file exists, use fixture as fallback
   const csvPath = fs.existsSync(inputPath)

@@ -148,6 +148,8 @@ const thisPath = fileURLToPath(import.meta.url).replace(/\\/g, '/');
 const argvPath = (process.argv[1] || '').replace(/\\/g, '/');
 if (thisPath.endsWith(argvPath) || argvPath.endsWith('router-report.mjs')) {
   try {
+    const args = process.argv.slice(2);
+    const enforce = args.includes('--enforce');
     const report = generateCoverageReport();
 
     // Write report
@@ -197,6 +199,17 @@ if (thisPath.endsWith(argvPath) || argvPath.endsWith('router-report.mjs')) {
     }
 
     console.log(`\n✅ Full report written to: ${outputPath}\n`);
+
+    if (enforce) {
+      const fatalIssues =
+        report.orphaned_capabilities.length + report.unmapped_tools.length;
+      if (fatalIssues > 0) {
+        console.error(
+          `\n❌ Enforcement failed: ${fatalIssues} fatal router configuration issues detected (orphaned capabilities or unmapped tools).`,
+        );
+        process.exit(503); // Router enforcement gate failed
+      }
+    }
 
     process.exit(report.orphaned_capabilities.length > 0 ? 1 : 0);
   } catch (error) {

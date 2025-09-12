@@ -34,6 +34,9 @@
  *   209 - Patch apply failed (Build Lane)
  *   401 - Packaging failed
  *   402 - Report generation failed
+ *   501 - Preflight failed (new)
+ *   502 - Graph normalization required (CI gate)
+ *   503 - Router enforcement failed
  */
 import { runAuv, RunbookError } from './runbooks/auv_delivery.mjs';
 import { compileBrief, validateAuv } from './lib/auv_compiler.mjs';
@@ -102,6 +105,10 @@ Examples:
   node orchestration/cli.mjs package AUV-0005
   node orchestration/cli.mjs report AUV-0005
   node orchestration/cli.mjs deliver AUV-0005
+
+  # New utilities
+  node orchestration/cli.mjs preflight
+  node orchestration/cli.mjs graph-lint orchestration/graph/projects/seo-audit-demo.yaml --fix
 
 Engine Examples:
   node orchestration/cli.mjs engine start --concurrency 5
@@ -173,6 +180,19 @@ async function main() {
     } catch (error) {
       console.error('[cli] Plan failed:', error.message);
       process.exit(1);
+    }
+  }
+
+  // Preflight command
+  if (command === 'preflight') {
+    try {
+      const { runPreflight } = await import('./lib/preflight.mjs');
+      const res = await runPreflight();
+      console.log(`[cli] Preflight report written to ${res.path}`);
+      process.exit(res.ok ? 0 : 501);
+    } catch (err) {
+      console.error('[cli] Preflight error:', err.message);
+      process.exit(501);
     }
   }
 
@@ -294,6 +314,28 @@ async function main() {
     });
 
     try {
+      // Normalize graph before running
+      const { normalizeGraph, writeDiff } = await import('./lib/graph_normalizer.mjs');
+      const rawContent = fs.readFileSync(graphPath, 'utf8');
+      const yamlMod = await import('yaml');
+      const yamlLib = yamlMod.default || yamlMod;
+      const parsedGraph = yamlLib.parse(rawContent);
+      if (parsedGraph) {
+        const before = JSON.parse(JSON.stringify(parsedGraph));
+        const { normalized, changed } = normalizeGraph(parsedGraph);
+        if (changed) {
+          writeDiff(before, normalized);
+          if (process.env.CI === 'true') {
+            console.error('[cli] Graph normalization required. Failing in CI.');
+            process.exit(502);
+          } else {
+            // Apply normalization on the fly for local runs
+            fs.writeFileSync(graphPath, yamlLib.stringify(normalized));
+            console.log('[cli] Applied graph normalization');
+          }
+        }
+      }
+
       await runner.loadGraph(graphPath);
       console.log(
         `[cli] Graph loaded: ${runner.graph.project_id} with ${runner.graph.nodes.length} nodes`,
@@ -320,6 +362,62 @@ async function main() {
       } else {
         process.exit(204);
       }
+    }
+  }
+
+  // graph-lint <graph.yaml> [--fix]
+  if (command === 'graph-lint') {
+    const graphPath = args[1];
+    const shouldFix = args.includes('--fix');
+    if (!graphPath) {
+      console.error('Usage: node orchestration/cli.mjs graph-lint <graph.yaml> [--fix]');
+      process.exit(2);
+    }
+    try {
+      const raw = fs.readFileSync(graphPath, 'utf8');
+      const yamlMod = await import('yaml');
+      const yamlLib = yamlMod.default || yamlMod;
+      const { normalizeGraph, writeDiff } = await import('./lib/graph_normalizer.mjs');
+      const before = yamlLib.parse(raw);
+      const { normalized, changed } = normalizeGraph(JSON.parse(JSON.stringify(before)));
+      // Validate agent_task capability params using schemas
+      for (const n of normalized.nodes || []) {
+        if (n.type === 'agent_task' && n.params?.capability) {
+          try {
+            const { validateCapabilityParams } = await import('./lib/capability_validator.mjs');
+            const validation = validateCapabilityParams(
+              n.params.capability,
+              n.params?.input || n.params,
+              'input',
+            );
+            if (!validation.ok) {
+              console.error(
+                `[graph-lint] Schema validation failed for ${n.id} (${n.params.capability}):`,
+                validation.errors?.join('; '),
+              );
+              process.exit(504);
+            }
+          } catch (e) {
+            console.warn('[graph-lint] Validator error (non-fatal):', e.message);
+          }
+        }
+      }
+      const diffPath = writeDiff(before, normalized);
+      console.log(`[cli] Graph diff at: ${diffPath}`);
+      if (changed && shouldFix) {
+        fs.writeFileSync(graphPath, yamlLib.stringify(normalized));
+        console.log('[cli] Applied normalization to graph file');
+        process.exit(0);
+      }
+      if (changed && !shouldFix) {
+        console.error('[cli] Normalization required. Re-run with --fix to apply.');
+        process.exit(502);
+      }
+      console.log('[cli] No normalization needed');
+      process.exit(0);
+    } catch (err) {
+      console.error('[cli] graph-lint error:', err.message);
+      process.exit(1);
     }
   }
 

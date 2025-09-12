@@ -117,6 +117,26 @@ export async function executeToolRequest(params) {
     return payload;
   }
 
+  // Primary: chart.render
+  if (capability === 'chart.render') {
+    // Accept either direct chart spec or fallback to insights.json from deterministic path
+    const charts = toolRequest.input_spec?.charts;
+    const { executeChartRender } = await import('./deterministic/chart_render_executor.mjs');
+    const result = await executeChartRender({ tenant, runId: params.runId, charts });
+    const payload = { capability, cached: false, artifacts: result.artifacts, outputs: result.metadata };
+    writeCache(cachePath, payload);
+    return payload;
+  }
+
+  // Primary: video.compose
+  if (capability === 'video.compose') {
+    const { executeVideoCompose } = await import('./deterministic/video_compose_executor.mjs');
+    const result = await executeVideoCompose({ tenant, runId: params.runId });
+    const payload = { capability, cached: false, artifacts: result.artifacts, outputs: result.metadata };
+    writeCache(cachePath, payload);
+    return payload;
+  }
+
   // Secondary tool: web.crawl (firecrawl)
   if (capability === 'web.crawl') {
     const maxPages = toolRequest.input_spec?.max_pages || 10;

@@ -219,12 +219,12 @@ function createBarChartSVG(chartData) {
 <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->
   <rect width="${width}" height="${height}" fill="white"/>
-  
+
   <!-- Title -->
   <text x="${width / 2}" y="30" font-family="Arial, sans-serif" font-size="24" font-weight="bold" text-anchor="middle">
     ${title}
   </text>
-  
+
   <!-- Chart area -->
   <g transform="translate(${margin.left}, ${margin.top})">
     <!-- Grid lines -->`;
@@ -257,11 +257,11 @@ function createBarChartSVG(chartData) {
 
   svg += `
   </g>
-  
+
   <!-- Axes -->
   <line x1="${margin.left}" y1="${height - margin.bottom}" x2="${width - margin.right}" y2="${height - margin.bottom}" stroke="black" stroke-width="2"/>
   <line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${height - margin.bottom}" stroke="black" stroke-width="2"/>
-  
+
   <!-- Labels -->
   <text x="${width / 2}" y="${height - 10}" font-family="Arial" font-size="14" text-anchor="middle">Category</text>
   <text x="20" y="${height / 2}" font-family="Arial" font-size="14" text-anchor="middle" transform="rotate(-90 20 ${height / 2})">Revenue (USD)</text>
@@ -349,6 +349,16 @@ export async function executeChartRender(params) {
 
   console.log(`[chart.render] Chart rendered at ${metadata.width}x${metadata.height}`);
   console.log(`[chart.render] Charts written to: ${chartsDir}`);
+
+  // Also write/update a stable path for latest chart to simplify external checks
+  try {
+    const stableDir = tenantPath(tenant, 'charts');
+    if (!fs.existsSync(stableDir)) fs.mkdirSync(stableDir, { recursive: true });
+    const stablePath = path.join(stableDir, 'latest_bar.png');
+    fs.copyFileSync(pngPath, stablePath);
+  } catch (e) {
+    // Non-fatal: stable copy is advisory for test orchestration
+  }
 
   return {
     status: 'success',

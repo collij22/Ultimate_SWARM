@@ -124,6 +124,23 @@ Node types:
 - `package` / `report`: Create distribution bundles and HTML reports (Phase 7)
 - `demo_runbook`: Generate a minimal runbook summary for demo AUVs (Phase 12; gated by DEMO_MODE/TEST_MODE)
 
+### Utilities (Phase 11)
+
+```bash
+# Preflight: environment/binaries/fixtures/router health (optional graph path)
+node orchestration/cli.mjs preflight orchestration/graph/projects/seo-audit-demo.yaml || exit 501
+
+# Graph lint: normalize and validate capability params via JSON Schemas
+node orchestration/cli.mjs graph-lint orchestration/graph/projects/seo-audit-demo.yaml --fix || exit 502
+
+# Router coverage enforcement
+npm run router:enforce || exit 503
+```
+
+Notes:
+- `agent_task` parameters are validated against schemas from `mcp/capability-schemas/*` at lint time and runtime.
+- Graph runner auto-applies normalization locally; in CI it fails with 502 if normalization is needed.
+
 #### Phase 10a Node Example
 
 ### Phase 10b — Execution Modes

@@ -567,6 +567,22 @@ class NodeExecutors {
     let result;
 
     try {
+      // Validate params against capability schema when available
+      if (capability) {
+        try {
+          const { validateCapabilityParams } = await import('../lib/capability_validator.mjs');
+          const validation = validateCapabilityParams(capability, node.params?.input || node.params, 'input');
+          if (!validation.ok) {
+            throw new Error(`Capability params invalid for ${capability}: ${validation.errors?.join('; ')}`);
+          }
+        } catch (vErr) {
+          if (!String(vErr.message || '').startsWith('Capability params invalid')) {
+            console.warn('[agent_task] Schema validation error (non-fatal):', vErr.message);
+          } else {
+            throw vErr;
+          }
+        }
+      }
       switch (capability) {
         case 'data.ingest': {
           const { executeDataIngest } = await import(
@@ -651,6 +667,61 @@ class NodeExecutors {
             roundtripPath: node.params?.input?.roundtrip,
             schemaPath: node.params?.input?.schema,
             content: node.params?.input?.content,
+          });
+          break;
+        }
+
+        case 'nlp.summarize': {
+          const { executeNlpSummarize } = await import('../lib/deterministic/nlp_summarize_executor.mjs');
+          result = await executeNlpSummarize({
+            content: node.params?.input?.content || node.params?.content,
+            max_sentences: node.params?.input?.max_sentences || node.params?.max_sentences,
+            format: node.params?.input?.format || node.params?.format,
+            tenant: this.tenant,
+            runId: this.runId,
+          });
+          break;
+        }
+
+        case 'nlp.extract': {
+          const { executeNlpExtract } = await import('../lib/deterministic/nlp_extract_executor.mjs');
+          result = await executeNlpExtract({
+            content: node.params?.input?.content || node.params?.content,
+            schema: node.params?.input?.schema || node.params?.schema,
+            tenant: this.tenant,
+            runId: this.runId,
+          });
+          break;
+        }
+
+        case 'audio.transcribe': {
+          const { executeAudioTranscribe } = await import('../lib/deterministic/audio_transcribe_executor.mjs');
+          result = await executeAudioTranscribe({
+            audioPath: node.params?.input?.path || node.params?.audio || 'media/narration.wav',
+            tenant: this.tenant,
+            runId: this.runId,
+          });
+          break;
+        }
+
+        case 'ocr.extract': {
+          const { executeOcrExtract } = await import('../lib/deterministic/ocr_extract_executor.mjs');
+          result = await executeOcrExtract({
+            imagePath: node.params?.input?.path || node.params?.image || 'media/frame.png',
+            tenant: this.tenant,
+            runId: this.runId,
+          });
+          break;
+        }
+
+        case 'gltf.validate': {
+          const { executeGltfValidate } = await import('../lib/deterministic/gltf_validate_executor.mjs');
+          result = await executeGltfValidate({
+            path: node.params?.input?.path || node.params?.path,
+            max_size_mb: node.params?.input?.max_size_mb || node.params?.max_size_mb,
+            require_draco: node.params?.input?.require_draco || node.params?.require_draco,
+            tenant: this.tenant,
+            runId: this.runId,
           });
           break;
         }
@@ -922,6 +993,7 @@ class NodeExecutors {
         tenant: this.tenant,
         runId: this.runId,
         steps,
+        force: node.params?.force === true,
       });
 
       if (result.status === 'skipped') {

@@ -18,13 +18,13 @@ import { tenantPath } from './tenant.mjs';
  * @returns {Promise<Object>} Result with status and artifacts
  */
 export async function generateDemoRunbook(params) {
-  const { auvId, tenant = 'default', runId, steps = [] } = params;
+  const { auvId, tenant = 'default', runId, steps = [], force = false } = params;
 
   // Only generate for demo AUVs in test/demo mode
   const isDemoMode = process.env.DEMO_MODE === 'true' || process.env.TEST_MODE === 'true';
   const isDemoAuv = ['AUV-1201', 'AUV-1202'].includes(auvId);
 
-  if (!isDemoMode || !isDemoAuv) {
+  if (!force && (!isDemoMode || !isDemoAuv)) {
     console.log(
       `[demo_runbook] Skipping for ${auvId} (demo_mode=${isDemoMode}, demo_auv=${isDemoAuv})`,
     );

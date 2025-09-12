@@ -1,0 +1,59 @@
+version: '1.0'
+project_id: upwork-b5-media
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 240000
+nodes:
+  - id: tts
+    type: agent_task
+    params:
+      capability: audio.tts
+      text: 'Welcome to the weekly KPI update. This short demo showcases offline TTS and video composition.'
+
+  - id: ingest
+    type: agent_task
+    requires: [tts]
+    params:
+      capability: data.ingest
+      input:
+        file: tests/fixtures/sample-data.csv
+
+  - id: insights
+    type: agent_task
+    requires: [ingest]
+    params:
+      capability: data.insights
+
+  - id: chart
+    type: agent_task
+    requires: [insights]
+    params:
+      capability: chart.render
+
+  - id: video
+    type: agent_task
+    requires: [chart]
+    params:
+      capability: video.compose
+
+  - id: media_report
+    type: agent_task
+    requires: [video]
+    params:
+      capability: doc.generate
+      input:
+        template: media_report
+        format: both
+        compose_data: media/compose-metadata.json
+
+edges:
+  - [tts, ingest]
+  - [ingest, insights]
+  - [insights, chart]
+  - [chart, video]
+  - [video, media_report]
+
+

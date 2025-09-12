@@ -1,0 +1,30 @@
+version: '1.0'
+project_id: upwork-b3-payments
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 180000
+nodes:
+  - id: pay
+    type: agent_task
+    params:
+      capability: payments.test
+      input:
+        amount: 2599
+        currency: usd
+
+  - id: receipt
+    type: agent_task
+    requires: [pay]
+    params:
+      capability: doc.generate
+      input:
+        template: payment_receipt
+        format: both
+
+edges:
+  - [pay, receipt]
+
+

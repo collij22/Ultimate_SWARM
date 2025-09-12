@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "capability://doc.generate.input@v1",
+  "title": "doc.generate input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "template": { "type": "string" },
+    "format": { "type": "string", "enum": ["md", "html", "both"], "default": "both" },
+    "data": { "type": ["string", "object"] },
+    "outDir": { "type": "string", "default": "reports" }
+  },
+  "required": []
+}
+
+

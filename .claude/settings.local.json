@@ -124,9 +124,17 @@
       "Bash(else echo \"Directory not found\")",
       "Bash(if [ -d \"runs/tenants/default/AUV-1201/references\" ])",
       "Bash(then echo \"Found in tenant path\")",
-      "Bash(else echo \"Not in tenant path\")"
+      "Bash(else echo \"Not in tenant path\")",
+      "Bash(ffmpeg:*)",
+      "Bash(unzip:*)",
+      "Bash(setx:*)",
+      "Bash(C:/tools/ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe -version)"
     ],
-    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(./secrets/**)"],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)"
+    ],
     "ask": []
   },
   "enableAllProjectMcpServers": true,

@@ -1,0 +1,38 @@
+version: '1.0'
+project_id: upwork-b4-cloud-db-claude
+concurrency: 3
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 1000
+  timeout_ms: 180000
+nodes:
+  - id: cloud_db
+    type: agent_task
+    params:
+      execution: claude
+      capability: cloud.db
+      input:
+        operation: create_schema
+        schema_name: demo_schema
+        tables:
+          - { name: customers, columns: ['id','name','email'] }
+          - { name: orders, columns: ['id','customer_id','total'] }
+
+  - id: db_report
+    type: agent_task
+    requires: [cloud_db]
+    params:
+      execution: claude
+      capability: doc.generate
+      input:
+        template: database_report
+        format: both
+        connectivity: runs/tenants/default/db_demo/connectivity.json
+        roundtrip: runs/tenants/default/db_demo/roundtrip.json
+        schema: runs/tenants/default/db_demo/schema.json
+
+edges:
+  - [cloud_db, db_report]
+
+

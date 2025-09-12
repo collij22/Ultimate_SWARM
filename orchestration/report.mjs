@@ -708,6 +708,9 @@ class ReportGenerator {
           const abs = join(PROJECT_ROOT, match.path);
           if (existsSync(abs)) return abs;
         }
+        // Final fallback: treat relPath as project-root relative
+        const absRoot = join(PROJECT_ROOT, relPath);
+        if (existsSync(absRoot)) return absRoot;
         return null;
       };
 

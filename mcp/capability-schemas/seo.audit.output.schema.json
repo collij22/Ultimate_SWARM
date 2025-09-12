@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "capability://seo.audit.output@v1",
+  "title": "seo.audit output",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "site": { "type": "string" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": { "type": "string" },
+          "title": { "type": ["string", "null"] },
+          "meta": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "canonical": { "type": ["string", "null"] },
+          "broken_links": { "type": "integer", "minimum": 0 },
+          "load_time_ms": { "type": "integer", "minimum": 0 }
+        },
+        "required": ["url", "broken_links"]
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "page_count": { "type": "integer", "minimum": 0 },
+        "broken_links_total": { "type": "integer", "minimum": 0 },
+        "canonical_rate": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "required": ["page_count", "broken_links_total"]
+    }
+  },
+  "required": ["pages", "summary"]
+}
+
+

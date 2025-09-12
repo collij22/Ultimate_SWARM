@@ -50,11 +50,15 @@
     "router:dry:security": "node mcp/router.mjs --dry --input mcp/router-fixtures/security-request.json",
     "router:dry:secondary": "node mcp/router.mjs --dry --input mcp/router-fixtures/secondary-with-consent.json",
     "router:test": "node mcp/router.mjs --dry --agent B7.rapid_builder --capabilities browser.automation,web.perf_audit --budget 0.25",
+    "router:coverage": "node mcp/router-report.mjs",
+    "router:enforce": "node mcp/router-report.mjs --enforce",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "qa": "npm run format:check && npm run lint && npm run typecheck && npm run test:unit && npm run test:integration",
+    "preflight": "node orchestration/lib/preflight.mjs",
+    "graph:lint": "node orchestration/cli.mjs graph-lint",
     "build-lane": "node orchestration/cli.mjs build-lane",
     "validate:manifest": "node ./node_modules/ajv-cli/dist/index.js validate -s schemas/manifest.schema.json -d \"dist/*/manifest.json\" --verbose",
     "validate:manifest:strict": "node ./node_modules/ajv-cli/dist/index.js validate -s schemas/manifest.schema.json -d \"dist/*/manifest.json\" --verbose --strict --all-errors",
@@ -62,7 +66,7 @@
     "report": "node orchestration/cli.mjs report",
     "deliver:full": "node orchestration/cli.mjs deliver",
     "prepare": "husky",
-    "pre-push": "npm run lint && npm run typecheck && npm run test:unit"
+    "pre-push": "npm run lint && npm run typecheck && npm run test:unit && npm run preflight"
   },
   "lint-staged": {
     "*.{js,mjs,cjs,ts,tsx}": [

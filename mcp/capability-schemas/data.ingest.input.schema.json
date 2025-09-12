@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "capability://data.ingest.input@v1",
+  "title": "data.ingest input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Path to a CSV/Parquet/JSON file"
+    },
+    "files": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "List of input files (when ingesting multiple sources)"
+    },
+    "format": {
+      "type": "string",
+      "enum": ["csv", "parquet", "json"],
+      "description": "Input file format"
+    },
+    "delimiter": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1,
+      "description": "CSV delimiter (for csv format)"
+    },
+    "header": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the CSV has a header row"
+    },
+    "encoding": {
+      "type": "string",
+      "default": "utf-8",
+      "description": "Text encoding for CSV/JSON files"
+    }
+  },
+  "oneOf": [
+    { "required": ["path"] },
+    { "required": ["files"] }
+  ]
+}
+
+

@@ -166,7 +166,7 @@ Domain thresholds can be configured at multiple levels:
 - **Failure Classification**: Transient vs. persistent error detection
 - **Repair Loop**: Automatic retry for network/browser/server transients only
 
-### Typed Exit Codes (Updated for Phase 6)
+### Typed Exit Codes (Updated for Phase 6 and utility gates)
 
 ```
 0   - Success
@@ -203,6 +203,11 @@ Domain thresholds can be configured at multiple levels:
 307 - SEO audit failed (broken links/canonical rate)
 308 - Media composition failed (duration/tracks)
 309 - Database migration failed (schema/validation)
+
+# Phase 11+ Utility Gates
+501 - Preflight failed (environment/binaries/router health)
+502 - Graph normalization required (graph-lint detected canonical fixes)
+503 - Router enforcement failed (coverage/orphans/unmapped tools)
 ```
 
 ### Quality Standards (Additional Gates)

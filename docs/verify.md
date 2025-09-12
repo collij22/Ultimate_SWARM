@@ -72,6 +72,19 @@ Select-String -Pattern "http://|https://|runs/" -Path "dist/AUV-1202/report.html
 Get-Content "dist/AUV-1202/report-metadata.json" -Raw | ConvertFrom-Json | Format-List
 ```
 
+### Preflight and Graph Lint (Phase 11 Utilities)
+
+```bash
+# Preflight environment/binaries/router health (optionally pass a graph path)
+node orchestration/cli.mjs preflight orchestration/graph/projects/seo-audit-demo.yaml || exit 501
+
+# Graph normalization check (CI: do not use --fix)
+node orchestration/cli.mjs graph-lint orchestration/graph/projects/seo-audit-demo.yaml --fix
+
+# Router coverage enforcement (CI gate)
+npm run router:enforce || exit 503
+```
+
 Pass if:
 
 - `dist/<AUV>/report.html` contains no `runs/` or absolute `http(s)://` links for assets

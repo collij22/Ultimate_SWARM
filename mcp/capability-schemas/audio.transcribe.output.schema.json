@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "capability://audio.transcribe.output@v1",
+  "title": "audio.transcribe output",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "text": { "type": "string" },
+    "duration_sec": { "type": "number", "minimum": 0 },
+    "language": { "type": "string" },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "start": { "type": "number", "minimum": 0 },
+          "end": { "type": "number", "minimum": 0 },
+          "text": { "type": "string" }
+        },
+        "required": ["start", "end", "text"]
+      }
+    }
+  },
+  "required": ["text"]
+}
+
+

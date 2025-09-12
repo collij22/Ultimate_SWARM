@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "capability://nlp.summarize.input@v1",
+  "title": "nlp.summarize input",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "content": { "type": "string", "minLength": 1 },
+    "max_sentences": { "type": "integer", "minimum": 1, "maximum": 10, "default": 3 },
+    "format": { "type": "string", "enum": ["md", "txt"], "default": "md" }
+  },
+  "required": ["content"]
+}
+
+

@@ -34,7 +34,7 @@ nodes:
     params:
       capability: audio.tts
       # Provide a short dynamic script so TTS has real content
-      text: "Quarterly sales summary: Electronics leads, followed by Furniture and Office Supplies. Average order value and regional distribution are included in this report."
+      text: 'Quarterly sales summary: Electronics leads, followed by Furniture and Office Supplies. Average order value and regional distribution are included in this report.'
 
   - id: video
     type: agent_task
@@ -48,8 +48,7 @@ nodes:
     params:
       auv: AUV-1201
       steps: ['data.ingest', 'data.insights', 'chart.render', 'audio.tts', 'video.compose']
-    env:
-      DEMO_MODE: 'true'
+      force: true
 
   - id: package
     type: package
