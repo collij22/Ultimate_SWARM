@@ -1,0 +1,182 @@
+version: '1.0'
+project_id: content-weekly-${TIMESTAMP}
+description: Weekly content generation workflow template
+concurrency: 3
+defaults:
+  retries:
+    max: 2
+    backoff_ms: 2000
+  timeout_ms: 300000
+parameters:
+  topic: ${TOPIC}
+  feeds: ${FEEDS}
+  channels: ${CHANNELS}
+  output_format: ${OUTPUT_FORMAT}
+nodes:
+  # Stage 1: Research and Collection
+  - id: rss_collection
+    type: agent_task
+    params:
+      capability: rss.fetch
+      input_spec:
+        feeds: ${FEEDS}
+        max_items_per_feed: 20
+        date_filter:
+          after: ${WEEK_START}
+
+  - id: web_search
+    type: agent_task
+    params:
+      capability: web.search
+      input_spec:
+        query: "latest ${TOPIC} news trends"
+        max_results: 15
+
+  - id: youtube_search
+    type: agent_task
+    params:
+      capability: youtube.search
+      input_spec:
+        query: "${TOPIC} this week"
+        channels: ${CHANNELS}
+        max_results: 10
+        order: date
+
+  # Stage 2: Transcript Extraction
+  - id: youtube_transcripts
+    type: agent_task
+    requires: [youtube_search]
+    params:
+      capability: youtube.transcript
+      input_spec:
+        fallback_to_asr: true
+
+  # Stage 3: Analysis and Extraction
+  - id: content_extraction
+    type: agent_task
+    requires: [rss_collection, web_search, youtube_transcripts]
+    params:
+      capability: nlp.extract
+      input_spec:
+        extraction_type: all
+        max_items: 20
+
+  - id: trend_analysis
+    type: agent_task
+    requires: [content_extraction]
+    params:
+      capability: nlp.summarize
+      input_spec:
+        style: executive
+        max_length: 500
+        focus_topics: ["trends", "insights", "developments"]
+
+  # Stage 4: Content Generation
+  - id: script_generation
+    type: agent_task
+    requires: [trend_analysis]
+    params:
+      capability: doc.generate
+      input_spec:
+        template: podcast_script
+        sections:
+          - intro
+          - main_topics
+          - deep_dive
+          - conclusion
+
+  - id: thumbnail_generation
+    type: agent_task
+    requires: [trend_analysis]
+    params:
+      capability: image.process
+      input_spec:
+        template: youtube_thumbnail
+        title: "Weekly ${TOPIC} Update"
+
+  # Stage 5: Audio/Video Production
+  - id: audio_narration
+    type: agent_task
+    requires: [script_generation]
+    params:
+      capability: audio.tts
+      input_spec:
+        voice: en-GB-Neural
+        speed: 1.0
+
+  - id: video_composition
+    type: agent_task
+    requires: [audio_narration, thumbnail_generation]
+    params:
+      capability: video.compose
+      input_spec:
+        template: podcast_video
+        include_captions: true
+
+  # Stage 6: Publishing Preparation
+  - id: show_notes
+    type: agent_task
+    requires: [trend_analysis, content_extraction]
+    params:
+      capability: doc.generate
+      input_spec:
+        template: show_notes
+        include_links: true
+        include_timestamps: true
+
+  - id: social_snippets
+    type: agent_task
+    requires: [trend_analysis]
+    params:
+      capability: nlp.summarize
+      input_spec:
+        style: bullet
+        max_length: 50
+
+  # Stage 7: Validation and Packaging
+  - id: cvf_check
+    type: cvf
+    requires: [video_composition, show_notes]
+    params:
+      strict: true
+      domains: ["media", "doc"]
+
+  - id: package
+    type: package
+    requires: [cvf_check]
+    params:
+      auv: WEEKLY-${TOPIC}-${TIMESTAMP}
+      include_all_artifacts: true
+
+  - id: report
+    type: report
+    requires: [package]
+    params:
+      auv: WEEKLY-${TOPIC}-${TIMESTAMP}
+      includeAgentFlow: true
+      includeReferences: true
+
+edges:
+  - [rss_collection, content_extraction]
+  - [web_search, content_extraction]
+  - [youtube_search, youtube_transcripts]
+  - [youtube_transcripts, content_extraction]
+  - [content_extraction, trend_analysis]
+  - [trend_analysis, script_generation]
+  - [trend_analysis, thumbnail_generation]
+  - [trend_analysis, social_snippets]
+  - [script_generation, audio_narration]
+  - [audio_narration, video_composition]
+  - [thumbnail_generation, video_composition]
+  - [trend_analysis, show_notes]
+  - [content_extraction, show_notes]
+  - [video_composition, cvf_check]
+  - [show_notes, cvf_check]
+  - [cvf_check, package]
+  - [package, report]
+
+schedule:
+  enabled: false
+  cron: "0 9 * * MON"  # Every Monday at 9 AM
+  timezone: "UTC"
+  metadata_path: "runs/schedules/weekly-${TOPIC}.json"

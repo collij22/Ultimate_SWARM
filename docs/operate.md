@@ -23,6 +23,21 @@ export HOOKS_MODE=off      # Disable completely (default)
 node orchestration/cli.mjs AUV-0003
 ```
 
+### Load Environment Variables (API keys)
+
+Use the helper to load secrets from a git-ignored file before running demos or live API paths:
+
+```bash
+# Create .env.local at repo root then load it
+node scripts/load_env.mjs
+
+# Options
+node scripts/load_env.mjs --file .env        # use alternate file
+node scripts/load_env.mjs --overwrite        # overwrite existing env in this process
+```
+
+Recommended keys (examples): `BRAVE_API_KEY`, `REF_API_KEY`, `YOUTUBE_API_KEY`, `STRIPE_API_KEY` (test), `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `TTS_CLOUD_API_KEY`, `TTS_PROVIDER`.
+
 ### Environment Variables
 
 | Variable                | Purpose                      | Default | Example                                    |
@@ -107,6 +122,21 @@ jq -r '.error' runs/observability/hooks.jsonl | sort | uniq -c | sort -rn
   - CLI: `node orchestration/cli.mjs search-fetch "<query>"`
   - Artifacts: `runs/websearch_demo/{summary.json, brave_search.json, first_result.html, first_result_snippet.txt}`
   - Env: `BRAVE_API_KEY` required; router planning for `web.search` typically requires `TEST_MODE=true`.
+
+### Secondary Tooling Smokes (Payments, TTS, Cloud DB)
+
+Run quick smokes to validate executor paths and artifacts. Load `.env.local` first if testing live providers.
+
+```bash
+# Cloud TTS (uses TEST_MODE=true when no TTS_CLOUD_API_KEY)
+node -e "(async()=>{const m=await import('./orchestration/lib/tool_executor.mjs'); const res=await m.executeToolRequest({tenant:'default',runId:'RUN-smoke-tts',toolRequest:{capability:'audio.tts.cloud',input_spec:{text:'Smoke test cloud TTS',voice:'en-US-Standard-A'}},selectedTools:[{tool_id:'tts-cloud',capabilities:['audio.tts.cloud']}]}); console.log(res.outputs);})();"
+
+# Stripe test (uses TEST_MODE=true when no sk_test_ key)
+node -e "(async()=>{const m=await import('./orchestration/lib/tool_executor.mjs'); const res=await m.executeToolRequest({tenant:'default',runId:'RUN-smoke-stripe',toolRequest:{capability:'payments.test',input_spec:{amount:777,currency:'usd',description:'Smoke Test PaymentIntent'}},selectedTools:[{tool_id:'stripe',capabilities:['payments.test']}]}); console.log(res.outputs);})();"
+
+# Supabase cloud db (requires SUPABASE_URL/SUPABASE_SERVICE_KEY for live)
+node -e "(async()=>{const m=await import('./orchestration/lib/tool_executor.mjs'); const res=await m.executeToolRequest({tenant:'default',runId:'RUN-smoke-supabase',toolRequest:{capability:'cloud.db',input_spec:{operation:'connectivity'}},selectedTools:[{tool_id:'supabase',capabilities:['cloud.db']}]}); console.log(res.outputs);})();"
+```
 
 ## Bundle Verification & Operations (Phase 7)
 

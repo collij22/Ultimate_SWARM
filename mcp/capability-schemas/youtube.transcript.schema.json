@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "YouTube Transcript Schema",
+  "description": "Schema for extracting YouTube video transcripts",
+  "definitions": {
+    "input": {
+      "type": "object",
+      "properties": {
+        "video_id": {
+          "description": "YouTube video ID",
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]{11}$"
+        },
+        "video_url": {
+          "description": "Full YouTube video URL",
+          "type": "string",
+          "pattern": "^https?://(www\\.)?(youtube\\.com/watch\\?v=|youtu\\.be/)"
+        },
+        "language": {
+          "description": "Preferred transcript language",
+          "type": "string",
+          "default": "en"
+        },
+        "fallback_to_asr": {
+          "description": "Use ASR if no captions available",
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "oneOf": [
+        { "required": ["video_id"] },
+        { "required": ["video_url"] }
+      ],
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "video_id": { "type": "string" },
+        "title": { "type": "string" },
+        "channel": { "type": "string" },
+        "duration": { "type": "integer" },
+        "transcript": {
+          "type": "object",
+          "properties": {
+            "text": { "type": "string" },
+            "segments": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "start": { "type": "number" },
+                  "duration": { "type": "number" },
+                  "text": { "type": "string" }
+                },
+                "required": ["start", "duration", "text"]
+              }
+            },
+            "language": { "type": "string" },
+            "source": { 
+              "type": "string", 
+              "enum": ["captions", "auto-generated", "asr-fallback"] 
+            }
+          },
+          "required": ["text", "segments", "source"]
+        }
+      },
+      "required": ["video_id", "transcript"],
+      "additionalProperties": false
+    }
+  }
+}

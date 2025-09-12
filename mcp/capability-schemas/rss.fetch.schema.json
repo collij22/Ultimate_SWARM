@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RSS Fetch Input Schema",
+  "description": "Input schema for fetching and parsing RSS/Atom feeds",
+  "type": "object",
+  "properties": {
+    "feeds": {
+      "description": "Array of RSS/Atom feed URLs to fetch",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uri",
+        "pattern": "^https?://"
+      },
+      "minItems": 1,
+      "maxItems": 20
+    },
+    "max_items_per_feed": {
+      "description": "Maximum number of items to extract from each feed",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 10
+    },
+    "include_content": {
+      "description": "Whether to include full content or just summaries",
+      "type": "boolean",
+      "default": false
+    },
+    "date_filter": {
+      "description": "Filter items by date range",
+      "type": "object",
+      "properties": {
+        "after": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "before": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["feeds"],
+  "additionalProperties": false
+}

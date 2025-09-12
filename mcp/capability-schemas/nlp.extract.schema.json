@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NLP Extract Schema",
+  "description": "Schema for entity and topic extraction",
+  "definitions": {
+    "input": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "description": "Text to extract entities/topics from",
+          "type": "string",
+          "minLength": 10
+        },
+        "extraction_type": {
+          "description": "Type of extraction to perform",
+          "type": "string",
+          "enum": ["entities", "topics", "keywords", "all"],
+          "default": "all"
+        },
+        "schema": {
+          "description": "Custom extraction schema name",
+          "type": "string",
+          "enum": ["topics@v1", "entities@v1", "custom"]
+        },
+        "max_items": {
+          "description": "Maximum number of items to extract per category",
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50,
+          "default": 10
+        }
+      },
+      "required": ["text"],
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "entities": {
+          "description": "Extracted named entities",
+          "type": "object",
+          "properties": {
+            "persons": { "type": "array", "items": { "type": "string" } },
+            "organizations": { "type": "array", "items": { "type": "string" } },
+            "locations": { "type": "array", "items": { "type": "string" } },
+            "dates": { "type": "array", "items": { "type": "string" } },
+            "products": { "type": "array", "items": { "type": "string" } },
+            "events": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "topics": {
+          "description": "Extracted topics with scores",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "topic": { "type": "string" },
+              "score": { "type": "number", "minimum": 0, "maximum": 1 },
+              "keywords": { "type": "array", "items": { "type": "string" } }
+            },
+            "required": ["topic", "score"]
+          }
+        },
+        "keywords": {
+          "description": "Key terms and phrases",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "term": { "type": "string" },
+              "frequency": { "type": "integer" },
+              "importance": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "required": ["term", "frequency"]
+          }
+        },
+        "sentiment": {
+          "description": "Overall sentiment analysis",
+          "type": "object",
+          "properties": {
+            "polarity": { "type": "string", "enum": ["positive", "negative", "neutral", "mixed"] },
+            "score": { "type": "number", "minimum": -1, "maximum": 1 }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

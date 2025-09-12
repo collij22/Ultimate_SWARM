@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "YouTube Upload Schema",
+  "description": "Schema for uploading videos to YouTube",
+  "type": "object",
+  "properties": {
+    "video_path": {
+      "description": "Path to video file to upload",
+      "type": "string"
+    },
+    "title": {
+      "description": "Video title",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "description": {
+      "description": "Video description",
+      "type": "string",
+      "maxLength": 5000
+    },
+    "tags": {
+      "description": "Video tags",
+      "type": "array",
+      "items": { "type": "string" },
+      "maxItems": 500
+    },
+    "category_id": {
+      "description": "YouTube category ID",
+      "type": "string",
+      "default": "22"
+    },
+    "privacy": {
+      "description": "Video privacy status",
+      "type": "string",
+      "enum": ["private", "unlisted", "public"],
+      "default": "unlisted"
+    },
+    "thumbnail_path": {
+      "description": "Custom thumbnail image path",
+      "type": "string"
+    },
+    "playlist_id": {
+      "description": "Playlist to add video to",
+      "type": "string"
+    },
+    "schedule_time": {
+      "description": "Scheduled publish time (for private videos)",
+      "type": "string",
+      "format": "date-time"
+    },
+    "enable_comments": {
+      "type": "boolean",
+      "default": true
+    },
+    "enable_ratings": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": ["video_path", "title"],
+  "additionalProperties": false
+}

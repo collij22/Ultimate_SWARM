@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NLP Summarize Schema",
+  "description": "Input schema for text summarization",
+  "type": "object",
+  "properties": {
+    "text": {
+      "description": "Text content to summarize",
+      "type": "string",
+      "minLength": 50
+    },
+    "texts": {
+      "description": "Multiple texts to summarize together",
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "style": {
+      "description": "Summarization style",
+      "type": "string",
+      "enum": ["brief", "detailed", "bullet", "podcast", "executive", "technical"],
+      "default": "brief"
+    },
+    "max_length": {
+      "description": "Maximum summary length in words",
+      "type": "integer",
+      "minimum": 10,
+      "maximum": 1000,
+      "default": 150
+    },
+    "focus_topics": {
+      "description": "Topics to focus on in the summary",
+      "type": "array",
+      "items": { "type": "string" },
+      "maxItems": 5
+    },
+    "preserve_quotes": {
+      "description": "Whether to preserve important quotes",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "oneOf": [
+    { "required": ["text"] },
+    { "required": ["texts"] }
+  ],
+  "additionalProperties": false
+}

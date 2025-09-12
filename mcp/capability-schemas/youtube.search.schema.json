@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "YouTube Search Schema",
+  "description": "Input schema for YouTube video search",
+  "type": "object",
+  "properties": {
+    "query": {
+      "description": "Search query",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "channels": {
+      "description": "Specific channel IDs to search within",
+      "type": "array",
+      "items": { "type": "string" },
+      "maxItems": 10
+    },
+    "max_results": {
+      "description": "Maximum number of results",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50,
+      "default": 10
+    },
+    "order": {
+      "description": "Sort order for results",
+      "type": "string",
+      "enum": ["relevance", "date", "rating", "viewCount", "title"],
+      "default": "relevance"
+    },
+    "published_after": {
+      "description": "Filter videos published after this date",
+      "type": "string",
+      "format": "date-time"
+    },
+    "published_before": {
+      "description": "Filter videos published before this date",
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration": {
+      "description": "Video duration filter",
+      "type": "string",
+      "enum": ["short", "medium", "long"],
+      "default": "medium"
+    },
+    "include_metadata": {
+      "description": "Include full video metadata",
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": ["query"],
+  "additionalProperties": false
+}

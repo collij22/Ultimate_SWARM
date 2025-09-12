@@ -40,6 +40,8 @@ safety:
     - cloud.db
     - audio.tts.cloud
     - email
+    - youtube.upload
+    - n8n.workflow
   redact_logs:
     - api_keys
     - access_tokens
@@ -118,6 +120,18 @@ capability_map:
   payments.test: [stripe]
   cloud.db: [supabase]
   audio.tts.cloud: [tts-cloud]
+  
+  # Phase 12 capabilities
+  rss.fetch: [rss]
+  audio.transcribe: [whisper-local]
+  ocr.extract: [tesseract]
+  nlp.summarize: [nlp-processor]
+  nlp.extract: [nlp-processor]
+  youtube.search: [youtube-data]
+  youtube.upload: [youtube-data]
+  youtube.metadata: [youtube-data]
+  youtube.transcript: [youtube-transcript]
+  n8n.workflow: [n8n]
 
 # Agent-level allowlists (used by router for filtering)
 agents:
@@ -150,6 +164,13 @@ agents:
         ref,
         brave-search,
         fetch,
+        rss,
+        whisper-local,
+        tesseract,
+        nlp-processor,
+        youtube-data,
+        youtube-transcript,
+        n8n,
       ]
     B8.frontend_specialist:
       [playwright, lighthouse, bundle-analyzer, visual-compare, chart-renderer, imagemagick]

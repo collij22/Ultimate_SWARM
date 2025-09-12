@@ -52,6 +52,47 @@ orchestration/{policies.yaml,...}     # orchestrator policies/gates
 tests/robot/{api,playwright,visual/...}  # user robot
 ```
 
+## Environment configuration
+
+To set all required API keys and environment variables in one step, create a `.env.local` file (git-ignored) in the project root, then load it via the helper script.
+
+1) Create `.env.local` (example — replace with your values):
+
+```
+# Web/Search
+BRAVE_API_KEY=your_brave_key
+REF_API_KEY=your_ref_key
+
+# YouTube
+YOUTUBE_API_KEY=your_youtube_api_key
+# To enable uploads (OAuth not included here)
+YOUTUBE_UPLOAD_ALLOWED=false
+
+# Stripe (test only)
+STRIPE_API_KEY=sk_test_...
+
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=your_service_key
+
+# Cloud TTS
+TTS_CLOUD_API_KEY=your_tts_key
+TTS_PROVIDER=google # or elevenlabs
+
+# Engine/General
+TEST_MODE=true
+NODE_ENV=development
+```
+
+2) Load into current shell (Windows CMD or PowerShell):
+
+```
+node scripts\load_env.mjs
+```
+
+Options: `--file <path>` to specify a custom file, `--overwrite` to overwrite existing vars in the current process.
+
+
 ## Contributing
 
 See **CONTRIBUTING.md**. New? Start with **docs/ONBOARDING.md**.

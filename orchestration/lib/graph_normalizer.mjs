@@ -11,6 +11,10 @@ const CANONICAL_CHAINS = [
   ['data.ingest', 'data.insights', 'chart.render'],
   ['audio.tts', 'video.compose'],
   ['web.search', 'seo.audit', 'doc.generate'],
+  ['youtube.transcript', 'nlp.extract', 'nlp.summarize', 'doc.generate'],
+  ['ocr.extract', 'nlp.extract', 'doc.generate'],
+  ['rss.fetch', 'nlp.summarize'],
+  ['audio.transcribe', 'nlp.extract', 'nlp.summarize'],
 ];
 
 function deepClone(x) {

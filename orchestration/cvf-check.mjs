@@ -387,6 +387,75 @@ async function checkDomainArtifacts(auvId, domains, tenant) {
         }
         break;
       }
+      
+      // Phase 12-15: New domain validators
+      case 'rss': {
+        const summaryPath = domainArtifacts.find((p) => p.includes('/rss/summary.json'));
+        if (summaryPath && fs.existsSync(summaryPath)) {
+          const { validateRSSExtraction, getExitCode } = await import('./lib/rss_validator.mjs');
+          const validation = validateRSSExtraction({ artifactPath: summaryPath, config: thresholds });
+          if (!validation.valid) {
+            results.passed = false;
+            results.exitCode = getExitCode(validation);
+            results.messages.push(`RSS: Validation failed - ${validation.errors[0] || 'Invalid feed data'}`);
+          } else {
+            results.messages.push(
+              `RSS: Valid (${validation.metrics.total_feeds} feeds, ${validation.metrics.total_items} items)`
+            );
+          }
+        }
+        break;
+      }
+      
+      case 'asr':
+      case 'transcripts': {
+        const transcriptPath = domainArtifacts.find((p) => p.includes('transcript.json'));
+        if (transcriptPath && fs.existsSync(transcriptPath)) {
+          const { validateASROutput, getExitCode } = await import('./lib/asr_validator.mjs');
+          const validation = validateASROutput({ artifactPath: transcriptPath, config: thresholds });
+          if (!validation.valid) {
+            results.passed = false;
+            results.exitCode = getExitCode(validation);
+            results.messages.push(`ASR: Validation failed - ${validation.errors[0] || 'Poor quality'}`);
+          } else {
+            results.messages.push(
+              `ASR: Valid (${validation.metrics.duration}s, WER: ${validation.metrics.wer_proxy})`
+            );
+          }
+        }
+        break;
+      }
+      
+      case 'youtube': {
+        const youtubePath = domainArtifacts.find((p) => p.includes('/youtube/'));
+        if (youtubePath && fs.existsSync(youtubePath)) {
+          const { validateYouTubeOperation, getExitCode } = await import('./lib/youtube_validator.mjs');
+          let operation = 'search';
+          if (youtubePath.includes('transcript')) operation = 'transcript';
+          else if (youtubePath.includes('upload')) operation = 'upload';
+          
+          const validation = validateYouTubeOperation({ artifactPath: youtubePath, operation, config: thresholds });
+          if (!validation.valid) {
+            results.passed = false;
+            results.exitCode = getExitCode(validation);
+            results.messages.push(`YouTube: ${operation} failed - ${validation.errors[0] || 'Invalid'}`);
+          } else {
+            results.messages.push(`YouTube: Valid ${operation}`);
+          }
+        }
+        break;
+      }
+      
+      case 'doc': {
+        // Doc domain is non-blocking for now - just check for presence
+        const docPath = domainArtifacts.find((p) => p.includes('/docs/') || p.includes('/doc/'));
+        if (docPath && fs.existsSync(docPath)) {
+          results.messages.push('Doc: Documentation artifacts present');
+        } else {
+          results.messages.push('Doc: No documentation found (non-blocking)');
+        }
+        break;
+      }
     }
   }
 

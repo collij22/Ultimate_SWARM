@@ -119,8 +119,14 @@ class PackageBuilder {
       return;
     }
 
-    const runDir = join(PROJECT_ROOT, tenantPath(this.tenant, this.auvId));
-    const resultCardsDir = join(runDir, 'result-cards');
+    // Prefer tenant-scoped runs path; fallback to legacy non-tenant path
+    const tenantRunDir = join(PROJECT_ROOT, tenantPath(this.tenant, this.auvId));
+    const tenantResultCardsDir = join(tenantRunDir, 'result-cards');
+    const legacyRunDir = join(PROJECT_ROOT, 'runs', this.auvId);
+    const legacyResultCardsDir = join(legacyRunDir, 'result-cards');
+    const resultCardsDir = existsSync(tenantResultCardsDir)
+      ? tenantResultCardsDir
+      : legacyResultCardsDir;
 
     if (!existsSync(resultCardsDir)) {
       throw new Error(`No runs found for ${this.auvId}`);
@@ -161,13 +167,30 @@ class PackageBuilder {
    * Read runbook summary card
    */
   async readRunbookSummary() {
-    const summaryPath = join(
+    // Preferred tenant-scoped path
+    const tenantScoped = join(
       PROJECT_ROOT,
       tenantPath(this.tenant, `${this.auvId}/result-cards/runbook-summary.json`),
     );
 
-    if (!existsSync(summaryPath)) {
-      throw new Error(`Runbook summary not found at ${summaryPath}`);
+    // Legacy non-tenant path
+    const legacy = join(
+      PROJECT_ROOT,
+      'runs',
+      `${this.auvId}/result-cards/runbook-summary.json`,
+    );
+
+    let summaryPath = null;
+    if (existsSync(tenantScoped)) {
+      summaryPath = tenantScoped;
+    } else if (existsSync(legacy)) {
+      summaryPath = legacy;
+    }
+
+    if (!summaryPath) {
+      throw new Error(
+        `Runbook summary not found at ${tenantScoped} (or legacy ${legacy})`,
+      );
     }
 
     const content = await readFile(summaryPath, 'utf8');

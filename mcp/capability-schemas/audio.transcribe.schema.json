@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Audio Transcribe Schema",
+  "description": "Input/output schemas for audio transcription",
+  "definitions": {
+    "input": {
+      "type": "object",
+      "properties": {
+        "audio_path": {
+          "description": "Path to audio file to transcribe",
+          "type": "string"
+        },
+        "audio_url": {
+          "description": "URL of audio file to download and transcribe",
+          "type": "string",
+          "format": "uri"
+        },
+        "language": {
+          "description": "Language code for transcription (e.g., 'en', 'es', 'fr')",
+          "type": "string",
+          "default": "en"
+        },
+        "format": {
+          "description": "Output format",
+          "type": "string",
+          "enum": ["json", "srt", "vtt", "text"],
+          "default": "json"
+        },
+        "model": {
+          "description": "Model to use for transcription",
+          "type": "string",
+          "enum": ["whisper-tiny", "whisper-base", "whisper-small", "whisper-medium", "whisper-large", "vosk"],
+          "default": "whisper-base"
+        }
+      },
+      "oneOf": [
+        { "required": ["audio_path"] },
+        { "required": ["audio_url"] }
+      ],
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "transcript": {
+          "description": "Full transcript text",
+          "type": "string"
+        },
+        "segments": {
+          "description": "Time-aligned segments",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "start": { "type": "number" },
+              "end": { "type": "number" },
+              "text": { "type": "string" },
+              "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "required": ["start", "end", "text"]
+          }
+        },
+        "duration": {
+          "description": "Total audio duration in seconds",
+          "type": "number"
+        },
+        "language": {
+          "description": "Detected or specified language",
+          "type": "string"
+        },
+        "word_count": {
+          "type": "integer"
+        }
+      },
+      "required": ["transcript", "segments", "duration"],
+      "additionalProperties": false
+    }
+  }
+}

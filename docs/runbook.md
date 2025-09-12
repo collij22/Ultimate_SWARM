@@ -7,6 +7,9 @@ This runbook uses the autopilot to: start the mock staging server → ensure or 
 - `STAGING_URL=http://127.0.0.1:3000`
 - `API_BASE=http://127.0.0.1:3000/api`
 - Node 20+, Playwright deps installed (`npx playwright install --with-deps`)
+ - Environment variables loaded (recommended):
+   - Create `.env.local` at repo root and load via `node scripts/load_env.mjs`
+   - For live demos, set provider keys (e.g., `BRAVE_API_KEY`, `TTS_CLOUD_API_KEY`, `STRIPE_API_KEY=sk_test_...`, `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`)
 
 ## Run (examples)
 
@@ -42,6 +45,10 @@ set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/pr
 set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/payments-test-demo.yaml
 set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/cloud-db-demo.yaml
 set TEST_MODE=true && node orchestration/graph/runner.mjs orchestration/graph/projects/tts-cloud-demo.yaml
+ 
+# Tip: For live (non-TEST_MODE) runs, ensure `.env.local` is loaded and
+# required provider keys are present. The executors include timeouts,
+# safe retries, and tenant-scoped artifact writes.
 ```
 
 ### Phase 10a — Search & Fetch Proof

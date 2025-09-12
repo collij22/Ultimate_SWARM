@@ -32,12 +32,13 @@ export function expectedArtifacts(auvId, tenant = process.env.TENANT_ID || 'defa
   // Prefer dynamic artifacts defined in the capability YAML if present
   const dyn = lookupFromCapabilityYaml(auvId);
   if (Array.isArray(dyn) && dyn.length) {
-    // Apply tenant scoping to dynamic artifacts
+    // Normalize dynamic artifacts to a glob that accepts legacy and tenant-scoped paths
+    // Example: runs/AUV-0003/perf/lighthouse.json -> runs/**/AUV-0003/perf/lighthouse.json
     return dyn.map((artifact) => {
-      // If artifact starts with 'runs/', apply tenant scoping
       if (artifact.startsWith('runs/')) {
         const relativePath = artifact.substring(5); // Remove 'runs/' prefix
-        return tenantPath(tenant, relativePath);
+        const globPath = ['runs', '**', relativePath].join('/');
+        return globPath;
       }
       return artifact;
     });
@@ -46,25 +47,26 @@ export function expectedArtifacts(auvId, tenant = process.env.TENANT_ID || 'defa
   // Fallback to static mappings for legacy AUVs
   switch (auvId) {
     case 'AUV-0002':
+      // Accept both legacy (non-tenant) and tenant-scoped paths
       return [
-        tenantPath(tenant, 'AUV-0002/ui/products_grid.png'),
-        tenantPath(tenant, 'AUV-0002/ui/product_detail.png'),
-        tenantPath(tenant, 'AUV-0002/perf/lighthouse.json'),
+        'runs/**/AUV-0002/ui/products_grid.png',
+        'runs/**/AUV-0002/ui/product_detail.png',
+        'runs/**/AUV-0002/perf/lighthouse.json',
       ];
     case 'AUV-0003':
       return [
-        tenantPath(tenant, 'AUV-0003/ui/products_search.png'),
-        tenantPath(tenant, 'AUV-0003/perf/lighthouse.json'),
+        'runs/**/AUV-0003/ui/products_search.png',
+        'runs/**/AUV-0003/perf/lighthouse.json',
       ];
     case 'AUV-0004':
       return [
-        tenantPath(tenant, 'AUV-0004/ui/cart_summary.png'),
-        tenantPath(tenant, 'AUV-0004/perf/lighthouse.json'),
+        'runs/**/AUV-0004/ui/cart_summary.png',
+        'runs/**/AUV-0004/perf/lighthouse.json',
       ];
     case 'AUV-0005':
       return [
-        tenantPath(tenant, 'AUV-0005/ui/checkout_success.png'),
-        tenantPath(tenant, 'AUV-0005/perf/lighthouse.json'),
+        'runs/**/AUV-0005/ui/checkout_success.png',
+        'runs/**/AUV-0005/perf/lighthouse.json',
       ];
     case 'AUV-9999':
       // Test AUV - minimal artifacts for unit tests
@@ -177,6 +179,12 @@ export function expectedArtifactsByDomain(
     seo: [/\/reports\/seo\//, /seo.*\.(json|md|html)$/],
     media: [/\/media\//, /\.(wav|mp3|mp4)$/, /compose-metadata\.json$/],
     db: [/\/db\//, /migration-result\.json$/, /\.sql$/],
+    rss: [/\/rss\//, /feed.*\.json$/, /rss-content\.json$/],
+    asr: [/\/transcripts\//, /transcript.*\.(json|txt|vtt)$/],
+    youtube: [/\/youtube\//, /youtube.*\.json$/, /upload-result\.json$/],
+    nlp: [/\/nlp\//, /summary\.json$/, /extract\.json$/, /entities\.json$/],
+    ocr: [/\/ocr\//, /extracted-text\.txt$/, /ocr-result\.json$/],
+    doc: [/\/docs\//, /\.md$/, /report\.(html|pdf)$/],
   };
 
   const patterns = domainPatterns[domain];
@@ -215,7 +223,7 @@ export function detectDomainsWithArtifacts(auvId, tenant = process.env.TENANT_ID
   const allArtifacts = expectedArtifacts(auvId, tenant);
   if (!allArtifacts || allArtifacts.length === 0) return [];
 
-  const domains = ['data', 'charts', 'seo', 'media', 'db'];
+  const domains = ['data', 'charts', 'seo', 'media', 'db', 'rss', 'asr', 'youtube', 'nlp', 'ocr', 'doc'];
   const detectedDomains = [];
 
   for (const domain of domains) {

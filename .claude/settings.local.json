@@ -128,7 +128,9 @@
       "Bash(ffmpeg:*)",
       "Bash(unzip:*)",
       "Bash(setx:*)",
-      "Bash(C:/tools/ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe -version)"
+      "Bash(C:/tools/ffmpeg/ffmpeg-8.0-essentials_build/bin/ffmpeg.exe -version)",
+      "Bash(git reset:*)",
+      "Bash(set TEST_MODE=false)"
     ],
     "deny": [
       "Read(./.env)",

@@ -534,3 +534,84 @@ tools:
       usd: 0.05
     side_effects: [network, file_write]
     description: Cloud TTS (generic adapter; TEST_MODE only; providers pluggable).
+
+  # -------- New Primary MCPs (Phase 12) --------
+  rss:
+    name: RSS Feed MCP
+    tier: primary
+    capabilities: [rss.fetch]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [network, file_write]
+    description: Fetch and parse RSS/Atom feeds; outputs structured feed items.
+
+  whisper-local:
+    name: Whisper Local MCP
+    tier: primary
+    capabilities: [audio.transcribe]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [exec, file_read, file_write]
+    description: Local speech-to-text using whisper.cpp or vosk; outputs transcript + SRT. Requires whisper and ffmpeg binaries.
+
+  tesseract:
+    name: Tesseract OCR MCP
+    tier: primary
+    capabilities: [ocr.extract]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [exec, file_read, file_write]
+    description: Extract text from images using Tesseract OCR; outputs structured text + confidence. Requires tesseract binary.
+
+  nlp-processor:
+    name: NLP Processor MCP
+    tier: primary
+    capabilities: [nlp.summarize, nlp.extract]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.00
+    side_effects: [file_read, file_write]
+    description: Deterministic NLP operations - summarization, entity/topic extraction using templates.
+
+  # -------- New Secondary MCPs (Phase 12) --------
+  youtube-data:
+    name: YouTube Data API MCP
+    tier: secondary
+    capabilities: [youtube.search, youtube.upload, youtube.metadata]
+    requires_api_key: true
+    api_key_env: YOUTUBE_API_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.10
+    side_effects: [network, file_write]
+    description: YouTube Data API v3 - search videos, upload content, manage metadata.
+
+  youtube-transcript:
+    name: YouTube Transcript MCP
+    tier: secondary
+    capabilities: [youtube.transcript]
+    requires_api_key: false
+    cost_model:
+      type: flat_per_run
+      usd: 0.05
+    side_effects: [network, file_write]
+    description: Extract YouTube video transcripts/captions; fallback to ASR if needed.
+
+  n8n:
+    name: n8n Workflow MCP
+    tier: secondary
+    capabilities: [n8n.workflow]
+    requires_api_key: true
+    api_key_env: N8N_API_KEY
+    cost_model:
+      type: flat_per_run
+      usd: 0.05
+    side_effects: [network]
+    description: Create, update, and run n8n workflows programmatically.

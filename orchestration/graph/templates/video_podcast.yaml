@@ -1,0 +1,257 @@
+version: '1.0'
+project_id: video-podcast-${EPISODE}
+description: Video podcast production pipeline template
+concurrency: 2
+defaults:
+  retries:
+    max: 1
+    backoff_ms: 3000
+  timeout_ms: 600000
+parameters:
+  episode_number: ${EPISODE}
+  topic: ${TOPIC}
+  guest: ${GUEST}
+  duration_minutes: ${DURATION}
+nodes:
+  # Stage 1: Pre-production Research
+  - id: topic_research
+    type: agent_task
+    params:
+      capability: web.search
+      input_spec:
+        query: "${TOPIC} ${GUEST} latest"
+        max_results: 20
+
+  - id: guest_research
+    type: agent_task
+    params:
+      capability: web.search
+      input_spec:
+        query: "${GUEST} recent work interviews"
+        max_results: 10
+
+  # Stage 2: Content Preparation
+  - id: question_generation
+    type: agent_task
+    requires: [topic_research, guest_research]
+    params:
+      capability: doc.generate
+      input_spec:
+        template: interview_questions
+        sections:
+          - opening
+          - background
+          - main_topic
+          - deep_dive
+          - rapid_fire
+          - closing
+
+  - id: talking_points
+    type: agent_task
+    requires: [topic_research]
+    params:
+      capability: nlp.extract
+      input_spec:
+        extraction_type: topics
+        max_items: 15
+
+  # Stage 3: Audio Processing (if recording provided)
+  - id: audio_transcription
+    type: agent_task
+    condition: "${HAS_RECORDING}"
+    params:
+      capability: audio.transcribe
+      input_spec:
+        audio_path: "${RECORDING_PATH}"
+        format: all
+        model: whisper-medium
+
+  - id: audio_enhancement
+    type: agent_task
+    condition: "${HAS_RECORDING}"
+    requires: [audio_transcription]
+    params:
+      capability: audio.process
+      input_spec:
+        denoise: true
+        normalize: true
+        remove_silence: true
+
+  # Stage 4: Synthetic Audio (if no recording)
+  - id: script_synthesis
+    type: agent_task
+    condition: "${NO_RECORDING}"
+    requires: [question_generation, talking_points]
+    params:
+      capability: doc.generate
+      input_spec:
+        template: podcast_dialogue
+        speakers: ["host", "guest"]
+        duration: ${DURATION}
+
+  - id: audio_synthesis
+    type: agent_task
+    condition: "${NO_RECORDING}"
+    requires: [script_synthesis]
+    params:
+      capability: audio.tts
+      input_spec:
+        voices:
+          host: en-US-Neural-A
+          guest: en-GB-Neural-B
+        emotion: conversational
+
+  # Stage 5: Visual Assets
+  - id: thumbnail_main
+    type: agent_task
+    params:
+      capability: image.process
+      input_spec:
+        template: podcast_thumbnail
+        title: "Episode ${EPISODE}: ${TOPIC}"
+        subtitle: "with ${GUEST}"
+
+  - id: chapter_images
+    type: agent_task
+    requires: [talking_points]
+    params:
+      capability: image.process
+      input_spec:
+        template: chapter_cards
+        count: 5
+
+  - id: lower_thirds
+    type: agent_task
+    params:
+      capability: image.process
+      input_spec:
+        template: lower_third
+        items:
+          - "${GUEST} - Title"
+          - "Topic: ${TOPIC}"
+          - "Follow @podcast"
+
+  # Stage 6: Video Composition
+  - id: video_assembly
+    type: agent_task
+    requires: [audio_enhancement, audio_synthesis, thumbnail_main, chapter_images, lower_thirds]
+    params:
+      capability: video.compose
+      input_spec:
+        template: podcast_full
+        layout: split_screen
+        include_waveform: true
+        include_captions: true
+        chapters_enabled: true
+
+  # Stage 7: Post-production
+  - id: highlights_extraction
+    type: agent_task
+    requires: [audio_transcription, script_synthesis]
+    params:
+      capability: nlp.extract
+      input_spec:
+        extraction_type: highlights
+        max_items: 5
+        min_duration: 30
+        max_duration: 60
+
+  - id: shorts_generation
+    type: agent_task
+    requires: [video_assembly, highlights_extraction]
+    params:
+      capability: video.compose
+      input_spec:
+        template: vertical_short
+        segments: "${HIGHLIGHTS}"
+        aspect_ratio: "9:16"
+
+  # Stage 8: Documentation
+  - id: episode_notes
+    type: agent_task
+    requires: [audio_transcription, script_synthesis, talking_points]
+    params:
+      capability: doc.generate
+      input_spec:
+        template: episode_notes
+        include:
+          - timestamps
+          - key_quotes
+          - resources
+          - transcript
+
+  - id: social_posts
+    type: agent_task
+    requires: [highlights_extraction, episode_notes]
+    params:
+      capability: doc.generate
+      input_spec:
+        template: social_posts
+        platforms: ["twitter", "linkedin", "youtube_community"]
+
+  # Stage 9: Quality Checks
+  - id: audio_quality
+    type: agent_task
+    requires: [video_assembly]
+    params:
+      capability: audio.analyze
+      input_spec:
+        check_levels: true
+        check_clipping: true
+        check_silence: true
+
+  - id: cvf_validation
+    type: cvf
+    requires: [video_assembly, episode_notes]
+    params:
+      strict: true
+      domains: ["media", "audio", "doc"]
+
+  # Stage 10: Distribution Package
+  - id: package
+    type: package
+    requires: [cvf_validation]
+    params:
+      auv: PODCAST-EP${EPISODE}
+      bundles:
+        - main_episode
+        - shorts_package
+        - social_kit
+
+  - id: report
+    type: report
+    requires: [package]
+    params:
+      auv: PODCAST-EP${EPISODE}
+      includeAgentFlow: true
+      includeQualityMetrics: true
+
+edges:
+  - [topic_research, question_generation]
+  - [guest_research, question_generation]
+  - [topic_research, talking_points]
+  - [question_generation, script_synthesis]
+  - [talking_points, script_synthesis]
+  - [audio_transcription, audio_enhancement]
+  - [script_synthesis, audio_synthesis]
+  - [talking_points, chapter_images]
+  - [audio_enhancement, video_assembly]
+  - [audio_synthesis, video_assembly]
+  - [thumbnail_main, video_assembly]
+  - [chapter_images, video_assembly]
+  - [lower_thirds, video_assembly]
+  - [audio_transcription, highlights_extraction]
+  - [script_synthesis, highlights_extraction]
+  - [video_assembly, shorts_generation]
+  - [highlights_extraction, shorts_generation]
+  - [audio_transcription, episode_notes]
+  - [script_synthesis, episode_notes]
+  - [talking_points, episode_notes]
+  - [highlights_extraction, social_posts]
+  - [episode_notes, social_posts]
+  - [video_assembly, audio_quality]
+  - [audio_quality, cvf_validation]
+  - [video_assembly, cvf_validation]
+  - [episode_notes, cvf_validation]
+  - [cvf_validation, package]
+  - [package, report]

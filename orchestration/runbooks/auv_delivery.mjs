@@ -11,6 +11,7 @@ import { randomBytes } from 'crypto';
 import YAML from 'yaml';
 import { ensureTests } from '../lib/test_authoring.mjs';
 import { expectedArtifacts } from '../lib/expected_artifacts.mjs';
+import { tenantPath } from '../lib/tenant.mjs';
 
 function readLighthouseMetrics(file) {
   try {
@@ -258,6 +259,7 @@ export async function runAuv(auvId, options = {}) {
   const STAGING_URL = stagingUrl || process.env.STAGING_URL || 'http://127.0.0.1:3000';
   const API_BASE = apiBase || process.env.API_BASE || 'http://127.0.0.1:3000/api';
   const ENV = { ...process.env, STAGING_URL, API_BASE, AUV_ID: auvId, SWARM_ACTIVE: 'true' };
+  const tenant = process.env.TENANT_ID || 'default';
 
   const startTime = Date.now();
   const steps = [];
@@ -340,6 +342,9 @@ export async function runAuv(auvId, options = {}) {
   });
 
   try {
+    // Ensure perf output path is tenant-scoped for consistency with CVF/budgets
+    cfg.perfOut = tenantPath(tenant, `${auvId}/perf/lighthouse.json`);
+
     // Ensure perf dir exists
     fs.mkdirSync(path.dirname(cfg.perfOut), { recursive: true });
 
@@ -411,6 +416,7 @@ export async function runAuv(auvId, options = {}) {
     // 5) Result card
     const totalDuration = Date.now() - startTime;
     const cardPath = `runs/${auvId}/result-cards/runbook-summary.json`;
+    const tenantCardPath = tenantPath(tenant, `${auvId}/result-cards/runbook-summary.json`);
 
     // Generate run ID
     const timestamp = Date.now();
@@ -426,8 +432,8 @@ export async function runAuv(auvId, options = {}) {
     const perf = perfFile ? readLighthouseMetrics(perfFile) : null;
 
     fs.mkdirSync(path.dirname(cardPath), { recursive: true });
-    fs.writeFileSync(
-      cardPath,
+    fs.mkdirSync(path.dirname(tenantCardPath), { recursive: true });
+    const summaryJson =
       JSON.stringify(
         {
           version: '1.0',
@@ -449,8 +455,9 @@ export async function runAuv(auvId, options = {}) {
         },
         null,
         2,
-      ),
-    );
+      );
+    fs.writeFileSync(cardPath, summaryJson);
+    try { fs.writeFileSync(tenantCardPath, summaryJson); } catch {}
     log('DONE:', auvId, '→', cardPath, `(${totalDuration}ms)`);
   } catch (err) {
     // Observability breadcrumb
@@ -465,6 +472,7 @@ export async function runAuv(auvId, options = {}) {
     // Write failure result card
     const totalDuration = Date.now() - startTime;
     const cardPath = `runs/${auvId}/result-cards/runbook-summary.json`;
+    const tenantCardPath = tenantPath(tenant, `${auvId}/result-cards/runbook-summary.json`);
 
     // Generate run ID for failure case
     const timestamp = Date.now();
@@ -473,8 +481,8 @@ export async function runAuv(auvId, options = {}) {
 
     try {
       fs.mkdirSync(path.dirname(cardPath), { recursive: true });
-      fs.writeFileSync(
-        cardPath,
+      fs.mkdirSync(path.dirname(tenantCardPath), { recursive: true });
+      const summaryJson =
         JSON.stringify(
           {
             version: '1.0',
@@ -496,8 +504,9 @@ export async function runAuv(auvId, options = {}) {
           },
           null,
           2,
-        ),
-      );
+        );
+      fs.writeFileSync(cardPath, summaryJson);
+      try { fs.writeFileSync(tenantCardPath, summaryJson); } catch {}
     } catch (cardErr) {
       log('Failed to write error card:', cardErr.message);
     }

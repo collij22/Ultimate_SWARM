@@ -97,7 +97,14 @@ class ReportGenerator {
    */
   async loadManifest() {
     if (!existsSync(this.manifestPath)) {
-      throw new Error(`Manifest not found at ${this.manifestPath}`);
+      // Fallback: auto-package from latest run when manifest is missing
+      try {
+        const { PackageBuilder } = await import('./package.mjs');
+        const builder = new PackageBuilder(this.auvId, { tenant: this.tenant });
+        await builder.build();
+      } catch (e) {
+        throw new Error(`Manifest not found at ${this.manifestPath}`);
+      }
     }
 
     const content = await readFile(this.manifestPath, 'utf8');
@@ -213,6 +220,9 @@ class ReportGenerator {
       // Subagent narrative (Phase 10b-5)
       subagent_narrative: await this.buildSubagentNarrative(),
 
+      // Agent Flow visualization (Phase 13)
+      agent_flow_section: await this.buildAgentFlowSection(),
+
       // Phase 14 Sections are injected as full HTML blocks
       references_section: await this.buildReferencesSection(manifest),
       intent_compare_section: await this.buildIntentCompareSection(manifest),
@@ -226,6 +236,38 @@ class ReportGenerator {
     };
 
     return data;
+  }
+
+  /**
+   * Build Agent Flow visualization section
+   */
+  async buildAgentFlowSection() {
+    try {
+      const { renderAgentFlow } = await import('./lib/agent_flow_renderer.mjs');
+      const outDir = join(PROJECT_ROOT, 'runs', this.auvId, 'agent-flow');
+
+      // Generate the agent flow artifacts
+      const { flow, artifacts } = renderAgentFlow({
+        outDir,
+        runId: this.auvId
+      });
+
+      // Read the generated HTML
+      if (artifacts && artifacts[1]) {
+        const htmlContent = await readFile(artifacts[1], 'utf8');
+        // Extract just the body content (remove HTML wrapper)
+        const bodyMatch = htmlContent.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        if (bodyMatch) {
+          return bodyMatch[1];
+        }
+        return htmlContent;
+      }
+
+      return '<p>Agent flow visualization not available</p>';
+    } catch (e) {
+      console.warn('Could not generate agent flow:', e.message);
+      return '<p>Agent flow visualization not available</p>';
+    }
   }
 
   /**
@@ -937,6 +979,13 @@ class ReportGenerator {
     <section class="subagents">
       <h2>Subagent Narrative</h2>
       {{subagent_narrative}}
+    </section>
+
+    <section class="agent-flow">
+      <h2>Agent Flow Visualization</h2>
+      <div class="agent-flow-content">
+        {{agent_flow_section}}
+      </div>
     </section>
 
     {{references_section}}
